@@ -1,2 +1,57 @@
-# amiga1200
-Amiga 1200
+# Émulateur Amiga 1200
+
+Un Amiga 1200 complet dans le navigateur, en une seule page HTML : processeur 68EC020, chipset AGA,
+2 Mo de Chip RAM, contrôleur IDE Gayle, deux lecteurs de disquettes.
+
+Ouvrez `index.html`, ou déposez-le tel quel sur n'importe quel hébergement web : aucun serveur particulier n'est nécessaire.
+
+## Démarrer
+
+1. **Réglages → Importer un Kickstart** : votre ROM Kickstart 3.1 A1200 (40.068). Sans ROM, la machine démarre sur AROS, un Kickstart libre intégré.
+2. Glissez une disquette `.adf` sur la page ou sur la fente du lecteur.
+3. **Allumer**.
+
+Les ROM et disquettes Workbench d'origine ne sont pas fournies. Vos fichiers restent dans le navigateur (IndexedDB) et ne sont envoyés nulle part.
+
+## Fonctions
+
+- Disquettes `.adf`, `.dms` et ADF étendus dans DF0: et DF1:, création de disquettes vierges formatées
+- Disque dur `.hdf` jusqu'à 512 Mo sur DH0:, création d'un disque vierge à partitionner avec HDToolBox
+- Écritures de l'Amiga enregistrées à l'extinction, bibliothèque locale, téléchargement des disques modifiés
+- Kickstart Amiga Forever chiffrés avec `rom.key`
+- Mémoire Fast 4 ou 8 Mo, processeur 14 MHz ou maximum, PAL/NTSC, trois résolutions
+- Joystick au clavier ou manette USB, touches Amiga virtuelles, Ctrl-Amiga-Amiga
+- LED Power, Drive et HD, plein écran, capture PNG, effet moniteur cathodique
+
+## Clavier et souris
+
+Le clavier suit la position physique des touches : choisissez le keymap `f` dans les Préférences Input du Workbench.
+Cliquez dans l'écran pour capturer la souris, Échap pour la libérer. Les touches Amiga sont la touche Windows/Cmd
+ou les boutons sous les lecteurs.
+
+## Construire
+
+```
+python3 build.py
+```
+
+Concatène et minifie le cœur `vendor/sae`, intègre les ROM AROS compressées et l'interface `src/template.html`
+pour produire `index.html`.
+
+## Structure
+
+| Chemin | Contenu |
+|---|---|
+| `index.html` | Page finale, autonome |
+| `src/template.html` | Interface (HTML, CSS, JavaScript) |
+| `vendor/sae/` | Cœur d'émulation SAE (GPL v2) |
+| `vendor/aros/` | ROM AROS (AROS Public License) |
+| `build.py` | Script de construction |
+
+## Licences
+
+- Cœur d'émulation : [SAE](https://github.com/naTmeg/ScriptedAmigaEmulator) de Rupert Hausberger, dérivé de WinUAE, GNU GPL v2.
+- Kickstart de secours : AROS, AROS Public License.
+- L'ensemble est distribué sous GNU GPL v2 (voir `LICENSE`).
+
+Amiga est une marque de ses détenteurs respectifs ; ce projet n'y est pas affilié.

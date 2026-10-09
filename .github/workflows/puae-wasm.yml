@@ -1,0 +1,55 @@
+name: Cœur PUAE en WebAssembly
+
+on:
+  push:
+    branches: [puae]
+    paths: ["wasm/**", "vendor/puae", ".github/workflows/puae-wasm.yml"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Installer Emscripten
+        run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git "$HOME/emsdk"
+          "$HOME/emsdk/emsdk" install 4.0.15
+          "$HOME/emsdk/emsdk" activate 4.0.15
+          echo "$HOME/emsdk" >> "$GITHUB_PATH"
+          echo "$HOME/emsdk/upstream/emscripten" >> "$GITHUB_PATH"
+
+      - name: Compiler le cœur
+        run: |
+          emcc --version | head -1
+          wasm/build.sh 2>&1 | tee build.log | grep -v "warning:" | tail -40
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Banc d'essai (A1200, AROS)
+        working-directory: wasm/dist
+        run: |
+          mkdir -p sys
+          {
+            echo "## Banc d'essai PUAE WebAssembly"
+            echo '```'
+            node puae-bench.js 150 500 normal frame-normal.ppm | grep -E "images|sauvegarde"
+            node puae-bench.js 150 500 exact frame-exact.ppm | grep -E "images|sauvegarde"
+            for f in puae.wasm puae-bench.wasm; do echo "$f : $(stat -c %s $f) octets, $(gzip -9 -c $f | wc -c) compressé"; done
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: puae-wasm
+          path: |
+            wasm/dist/puae.js
+            wasm/dist/puae.wasm
+            wasm/dist/frame-*.ppm
+            build.log

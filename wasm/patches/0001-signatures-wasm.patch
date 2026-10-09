@@ -1,0 +1,52 @@
+diff --git a/retrodep/stubs/inputrecord.c b/retrodep/stubs/inputrecord.c
+index b35f7d5..22179d2 100644
+--- a/retrodep/stubs/inputrecord.c
++++ b/retrodep/stubs/inputrecord.c
+@@ -182,10 +182,10 @@ void inprec_playdebug_cia (uae_u32 v1, uae_u32 v2, uae_u32 v3)
+ {
+ }
+ 
+-void inprec_recorddebug_cpu (int mode)
++void inprec_recorddebug_cpu (int mode, uae_u16 x)
+ {
+ }
+-void inprec_playdebug_cpu (int mode)
++void inprec_playdebug_cpu (int mode, uae_u16 x)
+ {
+ }
+ 
+diff --git a/sources/src/misc.c b/sources/src/misc.c
+index f2cfcd4..3b054fa 100644
+--- a/sources/src/misc.c
++++ b/sources/src/misc.c
+@@ -1659,7 +1659,7 @@ void target_cpu_speed(void)
+ 
+ #ifndef WITH_X86
+ void x86_rt1000_bios(struct zfile *z, struct romconfig *rc) {}
+-void x86_update_sound(double clk) {}
++void x86_update_sound(float clk) {}
+ void x86_bridge_sync_change(void) {}
+ #endif
+ 
+@@ -1728,7 +1728,7 @@ int is_tablet(void) { return 0; }
+ int is_touch_lightpen(void) { return 0; }
+ void release_keys(void) {}
+ 
+-bool inprec_realtime (bool stopstart) { return false; }
++bool inprec_realtime (void) { return false; }
+ void desktop_coords(int monid, int *dw, int *dh, int *ax, int *ay, int *aw, int *ah) {}
+ void update_disassembly(uae_u32 addr) {}
+ void update_memdump(uae_u32 addr) {}
+diff --git a/sources/src/sndboard.c b/sources/src/sndboard.c
+index a51f5c2..9d69f62 100644
+--- a/sources/src/sndboard.c
++++ b/sources/src/sndboard.c
+@@ -3161,7 +3161,7 @@ Exit:;
+ #endif /* HAVE_X86 */
+ #else
+ 
+-void update_sndboard_sound (double clk) {}
++void update_sndboard_sound (float clk) {}
+ void sndboard_ext_volume(void) {}
+ 
+ struct autoconfig_info;

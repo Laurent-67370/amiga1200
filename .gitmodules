@@ -1,0 +1,3 @@
+[submodule "vendor/puae"]
+	path = vendor/puae
+	url = https://github.com/libretro/libretro-uae.git

@@ -24,6 +24,9 @@ Les ROM et disquettes Workbench d'origine ne sont pas fournies. Vos fichiers res
 - Joystick au clavier ou manette USB, touches Amiga virtuelles, Ctrl-Amiga-Amiga
 - Clavier A1200 complet à l'écran (libellés AZERTY ou QWERTY) et souris tactile : l'écran sert de pavé tactile, deux doigts pour le bouton droit
 - Centrage automatique de l'image
+- Mode **Compatibilité maximale** (prélecture et caches du 68020, blitter au cycle près) pour les démos et jeux capricieux
+- **Saut d'images automatique** : quand le navigateur ne suit pas, l'image est dessinée moins souvent pour que le son et la vitesse de jeu restent à 50 Hz
+- **Profils par disque** : compatibilité, vitesse, mémoire, région, joystick et lecteurs propres à un jeu, appliqués quand sa disquette est dans DF0: ou son disque sur DH0:
 - LED Power, Drive et HD, plein écran, capture PNG, effet moniteur cathodique
 
 ## Clavier et souris
@@ -34,6 +37,7 @@ ou les boutons sous les lecteurs.
 
 ## Limites
 
+- Le 68020 n'est pas émulé au cycle près (SAE ne le permet pas) : la vitesse « 14 MHz » est une approximation fidèle mais pas exacte.
 - Pas de sauvegarde d'état de la machine : le cœur SAE garde son état dans des fermetures JavaScript qu'on ne peut pas figer ni restaurer.
 - Archives `.lha` / `.lzx` et images `.ipf` non prises en charge.
 

@@ -284,6 +284,7 @@ button{font:inherit}
         <button class="gad small" data-act="eject" disabled>Éjecter</button>
         <button class="gad small" data-act="blank">Vierge</button>
         <button class="gad small" data-act="download" disabled>Télécharger</button>
+        <button class="gad small" data-act="profile" disabled title="Réglages propres à ce disque">Profil</button>
       </div>
     </div>
     <div class="drive wb" id="drive-df1" data-unit="df1">
@@ -294,6 +295,7 @@ button{font:inherit}
         <button class="gad small" data-act="eject" disabled>Éjecter</button>
         <button class="gad small" data-act="blank">Vierge</button>
         <button class="gad small" data-act="download" disabled>Télécharger</button>
+        <button class="gad small" data-act="profile" disabled title="Réglages propres à ce disque">Profil</button>
       </div>
     </div>
     <div class="drive wb" id="drive-dh0" data-unit="dh0">
@@ -304,6 +306,7 @@ button{font:inherit}
         <button class="gad small" data-act="eject" disabled>Retirer</button>
         <button class="gad small" data-act="blank">Nouveau</button>
         <button class="gad small" data-act="download" disabled>Télécharger</button>
+        <button class="gad small" data-act="profile" disabled title="Réglages propres à ce disque">Profil</button>
       </div>
     </div>
   </section>
@@ -354,6 +357,13 @@ button{font:inherit}
       </div>
       <p class="hint">L'extension mémoire ajoute aussi l'horloge sauvegardée, comme une carte trappe.</p>
 
+      <h3>Compatibilité</h3>
+      <div class="opt" data-setting="compat">
+        <label><input type="radio" name="compat" value="normal"> Rapide (recommandé)</label>
+        <label><input type="radio" name="compat" value="max"> Maximale</label>
+      </div>
+      <p class="hint">Maximale : prélecture et caches du 68020, blitter au cycle près. Plus fidèle pour les démos et jeux capricieux, mais plus gourmand.</p>
+
       <h3>Processeur</h3>
       <div class="opt" data-setting="cpu">
         <label><input type="radio" name="cpu" value="orig"> 14 MHz (d'origine)</label>
@@ -374,6 +384,7 @@ button{font:inherit}
         <label><input type="checkbox" id="optCrt"> Effet moniteur cathodique</label>
         <label><input type="checkbox" id="optSharp"> Pixels nets</label>
         <label><input type="checkbox" id="optCenter"> Centrer l'image automatiquement</label>
+        <label><input type="checkbox" id="optSkip"> Sauter des images si l'ordinateur ne suit pas</label>
       </div>
 
       <h3>Clavier à l'écran</h3>
@@ -434,6 +445,33 @@ button{font:inherit}
   </div>
 </div>
 
+<!-- Fenêtre : Profil de disque -->
+<div class="veil" id="winProfile" role="dialog" aria-modal="true" aria-labelledby="tProfile">
+  <div class="win wb" style="width:min(560px,100%)">
+    <div class="titlebar"><button class="closebox" data-close aria-label="Fermer"></button><span class="t" id="tProfile">Profil du disque</span><span class="stripes"></span></div>
+    <div class="body">
+      <p id="profIntro"></p>
+      <div class="opt"><label><input type="checkbox" id="profOn"> Utiliser des réglages propres à ce disque</label></div>
+      <div id="profFields">
+        <h3>Compatibilité</h3>
+        <div class="opt"><label><input type="radio" name="p_compat" value="normal"> Rapide</label><label><input type="radio" name="p_compat" value="max"> Maximale</label></div>
+        <h3>Processeur</h3>
+        <div class="opt"><label><input type="radio" name="p_cpu" value="orig"> 14 MHz</label><label><input type="radio" name="p_cpu" value="max"> Aussi vite que possible</label></div>
+        <h3>Mémoire</h3>
+        <div class="opt"><label><input type="radio" name="p_fast" value="0"> 2 Mo Chip</label><label><input type="radio" name="p_fast" value="4"> + 4 Mo Fast</label><label><input type="radio" name="p_fast" value="8"> + 8 Mo Fast</label></div>
+        <h3>Région</h3>
+        <div class="opt"><label><input type="radio" name="p_region" value="pal"> PAL 50 Hz</label><label><input type="radio" name="p_region" value="ntsc"> NTSC 60 Hz</label></div>
+        <h3>Joystick (port 2)</h3>
+        <div class="opt"><label><input type="radio" name="p_joy" value="keys"> Flèches + Ctrl droit</label><label><input type="radio" name="p_joy" value="pad"> Manette USB</label><label><input type="radio" name="p_joy" value="none"> Aucun</label></div>
+        <h3>Lecteurs de disquettes</h3>
+        <div class="opt"><label><input type="radio" name="p_floppy" value="orig"> Vitesse d'origine</label><label><input type="radio" name="p_floppy" value="turbo"> Turbo</label></div>
+      </div>
+      <p class="hint">Le profil s'applique à l'allumage quand ce disque est dans DF0: ou branché sur DH0: ; il passe avant les Réglages généraux.</p>
+    </div>
+    <div class="actions"><button class="gad" data-close>Annuler</button><button class="gad primary" id="profSave">Enregistrer le profil</button></div>
+  </div>
+</div>
+
 <!-- Fenêtre : Aide -->
 <div class="veil" id="winHelp" role="dialog" aria-modal="true" aria-labelledby="tHelp">
   <div class="win wb">
@@ -456,6 +494,8 @@ button{font:inherit}
       <p>Les touches Amiga sont la touche Windows/Cmd, ou les boutons <b>Amiga gauche</b> et <b>Amiga droite</b> sous les lecteurs, qui restent enfoncés jusqu'à la touche suivante. <span class="kbd">Menu</span> correspond à Help. Le bouton <b>Clavier</b> affiche un clavier A1200 complet à l'écran, pratique sur tablette.</p>
       <h3>Écran tactile</h3>
       <p>L'écran se comporte comme un pavé tactile : glissez un doigt pour déplacer la souris, touchez pour cliquer, touchez deux fois et gardez le doigt posé pour glisser une fenêtre ou une icône. Pour les menus, posez deux doigts (bouton droit), glissez jusqu'à l'option et relevez.</p>
+      <h3>Compatibilité et vitesse</h3>
+      <p>Le mode <b>Rapide</b> convient à la plupart des logiciels. Si un jeu ou une démo affiche des défauts, essayez <b>Compatibilité maximale</b> dans Réglages, ou mieux, dans le <b>Profil</b> de sa disquette : le réglage ne servira qu'à lui. Quand l'ordinateur ne suit pas, l'émulateur saute des images pour garder le son et la vitesse de jeu justes ; le compteur sous l'écran indique alors « 1 image sur 2 ».</p>
       <h3>Enregistrement des disques</h3>
       <p>Quand l'Amiga écrit sur une disquette ou le disque dur, la copie de la Bibliothèque est mise à jour quelques secondes après la fin de l'écriture, ainsi qu'à l'extinction et quand vous quittez l'onglet. L'heure du dernier enregistrement s'affiche sur le lecteur.</p>
       <h3>Formats acceptés</h3>
@@ -551,7 +591,7 @@ function newId() { return Date.now().toString(36) + Math.random().toString(36).s
    Réglages persistants
    ========================================================= */
 const DEFAULTS = { fast: "0", cpu: "orig", region: "pal", res: "hires", joy: "none", floppy: "orig",
-  crt: true, sharp: false, autosave: true, center: true, kbd: "azerty", kbdOpen: false, romId: "aros", keyId: null, df0: null, df1: null, dh0: null, muted: false };
+  crt: true, sharp: false, autosave: true, center: true, kbd: "azerty", kbdOpen: false, compat: "normal", autoskip: true, romId: "aros", keyId: null, df0: null, df1: null, dh0: null, muted: false };
 let S = Object.assign({}, DEFAULTS);
 try { Object.assign(S, JSON.parse(localStorage.getItem("a1200.settings") || "{}")); } catch (e) {}
 function saveSettings() { try { localStorage.setItem("a1200.settings", JSON.stringify(S)); } catch (e) {} }
@@ -609,12 +649,60 @@ function setFile(f, name, data, tag) {
   if (tag) f._tag = tag; else delete f._tag;
 }
 
+/* ---- Profils par disque : réglages propres à un jeu, appliqués au démarrage ---- */
+const PROFILE_KEYS = ["compat", "cpu", "fast", "region", "joy", "floppy"];
+let E = Object.assign({}, S); /* réglages effectifs de la session en cours */
+async function bootProfileRec() {
+  for (const t of ["df0", "dh0"]) {
+    if (!mounted[t]) continue;
+    const r = await DB.get(mounted[t].id);
+    if (r && r.profile) return r;
+  }
+  return null;
+}
+async function effectiveSettings() {
+  const e = Object.assign({}, S);
+  const r = await bootProfileRec();
+  if (r) { for (const k of PROFILE_KEYS) if (r.profile[k] !== undefined) e[k] = r.profile[k]; e._profile = r.name.replace(/\.(adf|dms|hdf)$/i, ""); }
+  return e;
+}
+
+/* ---- Saut d'images automatique : on dessine moins souvent quand le navigateur ne suit pas,
+        pour garder le son et la vitesse de jeu à leur cadence réelle ---- */
+const skip = {
+  level: 1, low: 0, high: 0,
+  reset() { this.level = 1; this.low = 0; this.high = 0; },
+  set(l) { this.level = l; if (cfg) cfg.video.framerate = l; },
+  update(fps) {
+    if (!E.autoskip || !fps) { if (this.level !== 1) this.set(1); return; }
+    const target = E.region === "ntsc" ? 60 : 50;
+    if (fps < target * 0.94) {
+      this.high = 0;
+      if (++this.low >= 2 && this.level < 4) { this.set(this.level + 1); this.low = 0; }
+    } else if (fps >= target * 0.985) {
+      this.low = 0;
+      if (++this.high >= 10 && this.level > 1) { this.set(this.level - 1); this.high = 0; }
+    } else { this.low = 0; this.high = 0; }
+  }
+};
+
 async function buildConfig() {
-  const fast = +S.fast;
+  E = await effectiveSettings();
+  const fast = +E.fast;
   sae.setModel(SAEC_Model_A1200, fast ? 1 : 0);
   cfg.memory.z2FastSize = fast ? fast << 20 : 0;
-  cfg.cpu.speed = S.cpu === "max" ? SAEC_Config_CPU_Speed_Maximum : SAEC_Config_CPU_Speed_Original;
-  cfg.chipset.ntsc = S.region === "ntsc";
+  cfg.cpu.speed = E.cpu === "max" ? SAEC_Config_CPU_Speed_Maximum : SAEC_Config_CPU_Speed_Original;
+  cfg.chipset.ntsc = E.region === "ntsc";
+  /* Compatibilité maximale : prélecture et caches du 68020, blitter au cycle près */
+  if (E.compat === "max") {
+    cfg.cpu.compatible = true;
+    cfg.chipset.blitter.cycle_exact = true;
+    cfg.chipset.blitter.immediate = false;
+  } else {
+    cfg.cpu.compatible = false;
+    cfg.chipset.blitter.cycle_exact = false;
+  }
+  cfg.video.framerate = 1; skip.reset();
 
   /* Kickstart */
   cfg.memory.rom.clr(); cfg.memory.extRom.clr(); cfg.memory.romKey.clr();
@@ -630,7 +718,7 @@ async function buildConfig() {
   }
 
   /* Disquettes */
-  cfg.floppy.speed = S.floppy === "turbo" ? SAEC_Config_Floppy_Speed_Turbo : SAEC_Config_Floppy_Speed_Original;
+  cfg.floppy.speed = E.floppy === "turbo" ? SAEC_Config_Floppy_Speed_Turbo : SAEC_Config_Floppy_Speed_Original;
   for (const [n, tag] of [[0, "df0"], [1, "df1"]]) {
     const d = cfg.floppy.drive[n];
     d.type = SAEC_Config_Floppy_Type_35_DD;
@@ -688,10 +776,10 @@ async function buildConfig() {
   cfg.ports[0].type = SAEC_Config_Ports_Type_Mouse;
   cfg.ports[0].move = SAEC_Config_Ports_Move_None;
   cfg.ports[0].device = SAEC_Config_Ports_Device_None;
-  if (S.joy === "keys") {
+  if (E.joy === "keys") {
     cfg.ports[1].type = SAEC_Config_Ports_Type_JoyEmu; cfg.ports[1].move = SAEC_Config_Ports_Move_Arrows;
     cfg.ports[1].fire = ["ControlRight", "ShiftRight"]; cfg.ports[1].device = SAEC_Config_Ports_Device_None;
-  } else if (S.joy === "pad") {
+  } else if (E.joy === "pad") {
     cfg.ports[1].type = SAEC_Config_Ports_Type_Joy; cfg.ports[1].device = 0;
   } else {
     cfg.ports[1].type = SAEC_Config_Ports_Type_None; cfg.ports[1].device = SAEC_Config_Ports_Device_None;
@@ -716,7 +804,10 @@ async function buildConfig() {
     }
   };
   cfg.hook.led.hd = rw => { $("#ledHd").classList.toggle("on", rw > 0); if (rw === 2) markDirty("dh0"); };
-  cfg.hook.led.fps = (fps, p) => { $("#statFps").textContent = p ? "en pause" : (fps ? fps.toFixed(1) + " ips" : "—"); };
+  cfg.hook.led.fps = (fps, p) => {
+    if (!p) skip.update(fps);
+    $("#statFps").textContent = p ? "en pause" : (fps ? fps.toFixed(1) + " ips" + (skip.level > 1 ? " (1 image sur " + skip.level + ")" : "") : "—");
+  };
   cfg.hook.led.cpu = (u, p) => { $("#statCpu").textContent = p ? "" : "charge " + Math.round(u) + " %"; };
   cfg.debug.level = 0;
 }
@@ -741,7 +832,8 @@ async function powerOff() {
 function onStarted() {
   starting = false; running = true; setPowerUi("on");
   if (S.muted) sae.mute(true);
-  $("#statMode").textContent = (S.region === "ntsc" ? "NTSC" : "PAL") + (+S.fast ? " +" + S.fast + " Mo" : "");
+  $("#statMode").textContent = (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "")
+    + (E.compat === "max" ? ", compatibilité max" : "") + (E._profile ? ", profil " + E._profile : "");
   showCaptureHint();
 }
 function onStopped() {
@@ -779,6 +871,7 @@ function setMounted(tag, rec) {
   const card = $("#drive-" + tag);
   card.querySelector('[data-act="eject"]').disabled = !rec;
   card.querySelector('[data-act="download"]').disabled = !rec;
+  card.querySelector('[data-act="profile"]').disabled = !rec;
 }
 
 async function mountMedia(tag, rec) {
@@ -1087,17 +1180,18 @@ async function refreshIdleRom() {
 }
 
 function syncSettingsForm() {
-  for (const k of ["fast", "cpu", "region", "res", "joy", "floppy", "kbd"]) {
-    $$('input[name="' + k + '"]').forEach(i => i.checked = i.value === S[k]);
+  for (const k of ["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat"]) {
+    $$('#winSettings input[name="' + k + '"]').forEach(i => i.checked = i.value === S[k]);
   }
-  $("#optCenter").checked = S.center;
+  $("#optCenter").checked = S.center; $("#optSkip").checked = S.autoskip;
   $("#optCrt").checked = S.crt; $("#optSharp").checked = S.sharp; $("#optAutosave").checked = S.autosave;
   $("#restartHint").textContent = running ? "L'Amiga est allumé : ces réglages s'appliqueront au prochain allumage." : "Les réglages s'appliquent au prochain allumage.";
 }
-for (const k of ["fast", "cpu", "region", "res", "joy", "floppy", "kbd"]) {
-  $$('input[name="' + k + '"]').forEach(i => i.addEventListener("change", () => { S[k] = i.value; saveSettings(); if (k === "kbd" && S.kbdOpen) buildKeyboard(); }));
+for (const k of ["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat"]) {
+  $$('#winSettings input[name="' + k + '"]').forEach(i => i.addEventListener("change", () => { S[k] = i.value; saveSettings(); if (k === "kbd" && S.kbdOpen) buildKeyboard(); }));
 }
 $("#optCenter").onchange = e => { S.center = e.target.checked; saveSettings(); };
+$("#optSkip").onchange = e => { S.autoskip = e.target.checked; E.autoskip = S.autoskip; saveSettings(); if (!S.autoskip && running) skip.set(1); };
 $("#optCrt").onchange = e => { S.crt = e.target.checked; saveSettings(); applyLook(); };
 $("#optSharp").onchange = e => { S.sharp = e.target.checked; saveSettings(); applyLook(); };
 $("#optAutosave").onchange = e => { S.autosave = e.target.checked; saveSettings(); };
@@ -1119,7 +1213,7 @@ async function renderLib() {
     for (const r of items) {
       const row = document.createElement("div"); row.className = "lib-row";
       row.innerHTML = '<span class="n"></span><span class="s"></span>';
-      row.querySelector(".n").textContent = r.label || r.name; row.querySelector(".n").title = r.name;
+      row.querySelector(".n").textContent = (r.label || r.name) + (r.profile ? " (profil)" : ""); row.querySelector(".n").title = r.name;
       row.querySelector(".s").textContent = fmtSize(r.size);
       const btn = (txt, fn, dis) => { const b = document.createElement("button"); b.className = "gad small"; b.textContent = txt; b.disabled = !!dis; b.onclick = fn; row.appendChild(b); };
       const inUse = Object.keys(mounted).find(t => mounted[t] && mounted[t].id === r.id);
@@ -1342,6 +1436,7 @@ $$(".drive").forEach(card => {
     if (act === "insert") pickFile(tag === "dh0" ? ".hdf,.hdz,.zip,.gz" : ".adf,.dms,.adz,.zip,.gz", f => importFile(f, tag));
     else if (act === "eject") ejectMedia(tag);
     else if (act === "download") downloadMedia(tag);
+    else if (act === "profile") openProfile(tag);
     else if (act === "blank") {
       if (tag === "dh0") { if (running) { toast("Éteignez l'Amiga pour brancher un nouveau disque dur.", true); return; } showWin("winHd"); }
       else blankFloppy(tag);
@@ -1349,6 +1444,32 @@ $$(".drive").forEach(card => {
   });
 });
 $("#slot").onclick = () => pickFile(".adf,.dms,.adz,.zip,.gz", f => importFile(f, "df0"));
+
+/* Profil par disque */
+let profTarget = null;
+async function openProfile(tag) {
+  const m = mounted[tag]; if (!m) return;
+  const rec = await DB.get(m.id); if (!rec) return;
+  profTarget = rec.id;
+  const base = Object.assign({}, S, rec.profile || {});
+  $("#profIntro").textContent = rec.name;
+  $("#profOn").checked = !!rec.profile;
+  for (const k of PROFILE_KEYS) $$('input[name="p_' + k + '"]').forEach(i => i.checked = i.value === String(base[k]));
+  $("#profFields").style.opacity = rec.profile ? "1" : ".5";
+  showWin("winProfile");
+}
+$("#profOn").onchange = e => { $("#profFields").style.opacity = e.target.checked ? "1" : ".5"; };
+$("#profFields").addEventListener("change", () => { $("#profOn").checked = true; $("#profFields").style.opacity = "1"; });
+$("#profSave").onclick = async () => {
+  const rec = await DB.get(profTarget); if (!rec) { closeWin(); return; }
+  if ($("#profOn").checked) {
+    rec.profile = {};
+    for (const k of PROFILE_KEYS) { const i = $('input[name="p_' + k + '"]:checked'); if (i) rec.profile[k] = i.value; }
+  } else delete rec.profile;
+  await DB.put(rec); closeWin();
+  toast(rec.profile ? "Profil enregistré pour " + rec.name + (running ? " : il s'appliquera au prochain allumage." : ".") : "Profil retiré : " + rec.name + " utilise les Réglages généraux.");
+  if ($("#winLib").classList.contains("open")) renderLib();
+};
 
 /* Glisser-déposer */
 let dragDepth = 0, dropTarget = null;

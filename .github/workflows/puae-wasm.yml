@@ -10,6 +10,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,6 +57,20 @@ jobs:
             fi
           done
           test $ok = 1
+
+      - name: Publier la page d'essai dans /puae/ (branche main, GitHub Pages)
+        run: |
+          git fetch --depth 1 origin main
+          git worktree add ../site-main origin/main
+          rm -rf ../site-main/puae && mkdir -p ../site-main/puae
+          cp wasm/dist/site/* ../site-main/puae/
+          cd ../site-main
+          git add puae
+          if git diff --cached --quiet; then echo "rien à publier"; exit 0; fi
+          git -c user.name="github-actions[bot]" -c user.email="41898099+github-actions[bot]@users.noreply.github.com" \
+            commit -m "Page d'essai PUAE : ${GITHUB_SHA::7}"
+          git push origin HEAD:main
+          echo "::notice title=Publié::https://laurent-67370.github.io/amiga1200/puae/"
 
       - uses: actions/upload-artifact@v4
         with:

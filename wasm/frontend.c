@@ -238,6 +238,10 @@ extern void disk_eject(int num);
 API void fe_drive_insert(int num, const char *path) { if (num >= 0 && num < 4) disk_insert(num, path); }
 API void fe_drive_eject(int num) { if (num >= 0 && num < 4) disk_eject(num); }
 
+/* Le cœur écrit disquettes et disques durs par fwrite : la dernière écriture peut rester dans le tampon
+   de la bibliothèque C. À appeler avant de relire un média depuis JavaScript. */
+API void fe_flush(void) { fflush(NULL); }
+
 /* ---------- sauvegardes d'état ---------- */
 API unsigned fe_state_size(void) { return (unsigned)retro_serialize_size(); }
 API int fe_state_save(void *dst, unsigned size) { return retro_serialize(dst, size); }

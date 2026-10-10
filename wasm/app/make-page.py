@@ -42,7 +42,7 @@ rep('<title>Amiga 1200</title>', '<title>Amiga 1200 · PUAE</title>')
 between('<script>\n/*__SAE_CORE__*/\n</script>\n<script>\n"use strict";',
         'const AROS_EXT_GZ = "__AROS_EXT__";\n',
         '<script src="puae.js"></script>\n<script type="module">\n'
-        'import { PuaeMachine } from "./puae-frontend.js";\nimport { makeBlankAdf } from "./adf.js";\n',
+        'import { PuaeMachine } from "./puae-frontend.js";\nimport { makeBlankAdf } from "./adf.js";\nimport { makeHardDisk } from "./hdf.js";\n',
         keep_end=False)
 
 # 2. Moteur : configuration, allumage, extinction, statistiques, LED
@@ -121,13 +121,19 @@ rep('''  if (!inf.video.webGL && !inf.video.canvas) toast("Ce navigateur ne peut
 
 # 9. Textes
 rep("Cœur d'émulation : <a href=\"https://github.com/naTmeg/ScriptedAmigaEmulator\" rel=\"noopener\">SAE</a> (Scripted Amiga Emulator, R. Hausberger, licence GPL v2) dérivé de WinUAE.\n    Kickstart de secours : AROS (AROS Public License).",
-    "Cœur d'émulation : <a href=\"https://github.com/libretro/libretro-uae\" rel=\"noopener\">PUAE</a> (libretro-uae, licence GPL v2), le moteur de WinUAE compilé en WebAssembly.\n    Kickstart de secours : AROS (AROS Public License), intégré au cœur.")
+    "Cœur d'émulation : <a href=\"https://github.com/libretro/libretro-uae\" rel=\"noopener\">PUAE</a> (libretro-uae, licence GPL v2), le moteur de WinUAE compilé en WebAssembly.\n    Kickstart de secours : AROS, version d'août 2026 (AROS Public License).")
 rep('<label><input type="radio" name="cpu" value="max"> Aussi vite que possible</label>',
     '<label><input type="radio" name="cpu" value="max"> Accéléré (×5)</label>')
 rep('<label><input type="radio" name="compat" value="max"> Maximale</label>',
     '<label><input type="radio" name="compat" value="max"> Cycle exact</label>')
 rep("Maximale : prélecture et caches du 68020, blitter au cycle près. Plus fidèle pour les démos et jeux capricieux, mais plus gourmand.",
     "Cycle exact : processeur et puces émulés au cycle près, comme WinUAE. Le plus fidèle pour les démos et jeux capricieux, mais plus gourmand.")
+
+# Disque dur : désormais livré partitionné et formaté
+rep("<p>Un disque vierge, comme sorti de sa boîte. Partitionnez-le ensuite avec HDToolBox (disquette Install) puis formatez-le depuis le Workbench.</p>",
+    "<p>Un disque prêt à l'emploi : partitionné comme avec HDToolBox (une partition DH0: amorçable) et formaté en FFS, nommé « Travail ». Vous pouvez y installer le Workbench directement.</p>")
+rep("<li>Démarrez sur la disquette Install 3.1, lancez HDToolBox, partitionnez, puis formatez DH0: depuis le Workbench.</li>",
+    "<li>Le disque arrive déjà partitionné et formaté : démarrez sur la disquette Install 3.1.</li>")
 
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)
 assert not leftovers, f"restes de SAE : {sorted(set(leftovers))[:10]}"

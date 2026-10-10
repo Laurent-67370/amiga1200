@@ -47,6 +47,11 @@ const skip = {
 };
 
 function safeName(n) { return n.replace(/[\/\\:,]/g, "_"); }
+async function fetchGz(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("fichier " + url + " introuvable (" + r.status + ")");
+  return new Uint8Array(await new Response(r.body.pipeThrough(new DecompressionStream("gzip"))).arrayBuffer());
+}
 
 /* Options du cœur d'après les réglages effectifs */
 function coreOptions() {
@@ -77,15 +82,17 @@ async function powerOn() {
       onLog: t => { if (/error|erreur|fail/i.test(t)) console.warn(t); },
       onStats: onStats, onFrame: onLeds
     });
-    /* Kickstart */
-    let kick = null, key = null;
+    /* Kickstart : le vôtre, sinon AROS d'août 2026 (celui intégré à PUAE ne démarre pas avec un disque dur) */
+    let kick = null, key = null, arosExt = null;
     if (S.romId !== "aros") {
       const r = await DB.get(S.romId);
       if (r) kick = new Uint8Array(await r.blob.arrayBuffer()); else { S.romId = "aros"; saveSettings(); }
       if (kick && S.keyId) { const k = await DB.get(S.keyId); if (k) key = new Uint8Array(await k.blob.arrayBuffer()); }
     }
+    if (!kick) [kick, arosExt] = await Promise.all([fetchGz("aros-rom.bin.gz"), fetchGz("aros-ext.bin.gz")]);
     /* Médias écrits dans le système de fichiers du cœur + configuration au format WinUAE */
     const lines = ["nr_floppies=2", "floppy1type=0"];
+    if (arosExt) { machine.writeFile("/sys/aros-ext.bin", arosExt); lines.push("kickstart_ext_rom_file=/sys/aros-ext.bin"); }
     for (const tag of ["df0", "df1"]) {
       fsPath[tag] = null;
       if (!mounted[tag]) continue;

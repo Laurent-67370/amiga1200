@@ -81,7 +81,7 @@ export class PuaeMachine {
     if (dir) this.M.FS.mkdirTree(dir);
     this.M.FS.writeFile(path, bytes);
   }
-  readFile(path) { return this.M.FS.readFile(path); }
+  readFile(path) { this.M._fe_flush(); return this.M.FS.readFile(path); }
 
   /* ---------- démarrage ---------- */
   /** @param {object} cfg { model, kickstart: Uint8Array|null, romKey: Uint8Array|null, df0: {name, bytes}|null,
@@ -155,6 +155,8 @@ export class PuaeMachine {
     if (document.pointerLockElement === this.canvas) document.exitPointerLock();
   }
   /** Date de dernière écriture d'un fichier (ms), pour repérer ce que l'Amiga a modifié. */
+  /** Vide les tampons d'écriture du cœur : à appeler avant de relire un média. */
+  flush() { if (this.running || this.M) this.M._fe_flush(); }
   fileMtime(path) { try { const st = this.M.FS.stat(path); return +st.mtime; } catch (e) { return 0; } }
   removeFile(path) { try { this.M.FS.unlink(path); } catch (e) {} }
   /** Lecteurs DF0: à DF3: */

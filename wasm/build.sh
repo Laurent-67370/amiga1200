@@ -60,5 +60,8 @@ rm -rf "$OUT/site" && mkdir -p "$OUT/site"
 cp "$ROOT"/wasm/web/* "$OUT/site/"
 cp "$OUT/puae.js" "$OUT/puae.wasm" "$OUT/site/"
 python3 "$ROOT/wasm/app/make-page.py" "$OUT/site/index.html"
+# Kickstart de secours : AROS d'août 2026, compressé (décompressé par la page)
+gzip -9 -n -c "$ROOT/vendor/aros/aros-20260820-rom.bin" > "$OUT/site/aros-rom.bin.gz"
+gzip -9 -n -c "$ROOT/vendor/aros/aros-20260820-ext.bin" > "$OUT/site/aros-ext.bin.gz"
 ls -la "$OUT" "$OUT/site"
 for f in "$OUT"/*.wasm; do echo "$(basename "$f") compressé : $(gzip -9 -c "$f" | wc -c) octets"; done

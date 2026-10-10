@@ -47,6 +47,7 @@ function driveLabel(tag) {
 function refreshDriveLabel(tag) { const el = $("#trk-" + tag); if (el) el.textContent = driveLabel(tag); }
 function checkDirty() {
   if (!running) return;
+  machine.flush(); /* les dernières écritures du cœur passent dans les fichiers */
   for (const t of ["df0", "df1", "dh0"]) {
     if (!fsPath[t]) continue;
     const m = machine.fileMtime(fsPath[t]);
@@ -117,7 +118,8 @@ async function blankHd(mb) {
   const all = await DB.all();
   let i = 1; while (all.some(r => r.name === "Disque " + mb + " Mo" + (i > 1 ? " " + i : "") + ".hdf")) i++;
   const name = "Disque " + mb + " Mo" + (i > 1 ? " " + i : "") + ".hdf";
-  const rec = { id: newId(), kind: "hdf", name, size, blob: new Blob([new Uint8Array(size)]), crc: undefined, added: Date.now() };
+  /* Partitionné (RDB) et formaté en FFS, prêt à recevoir le Workbench */
+  const rec = { id: newId(), kind: "hdf", name, size, blob: new Blob([makeHardDisk(mb, "Travail")]), crc: undefined, added: Date.now() };
   await DB.put(rec);
   if (running) { toast(name + " créé : il sera branché au prochain allumage."); setMounted("dh0", rec); }
   else { setMounted("dh0", rec); toast(name + " créé et branché sur DH0:"); }

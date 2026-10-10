@@ -68,6 +68,45 @@ button{font:inherit}
 .idle h1{margin:0;font-size:clamp(22px,4vw,34px);font-weight:700;font-stretch:115%;letter-spacing:.02em;color:#d6dbe0}
 .idle p{margin:0;max-width:46ch}
 .idle .rom-line{font-size:13px;color:#7c8792}
+/* Accueil */
+.launch{justify-content:flex-start;align-items:stretch;text-align:left;gap:14px;padding:clamp(14px,3.5%,30px);overflow:auto;
+  background:radial-gradient(ellipse at 50% 0%,#1d2633,#0d1014 75%);color:#c3cbd4}
+.l-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px}
+.launch h1{font-size:clamp(22px,3.4vw,32px);text-align:left}
+.l-kick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;background:rgba(255,255,255,.05);padding:5px 6px 5px 10px;border:1px solid rgba(255,255,255,.08)}
+.l-kick-lbl{color:#7c8792;text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+.l-kick-name{color:#e3e7eb}
+.l-main{flex:1 0 auto;display:flex;flex-direction:column;gap:10px;min-height:0}
+.l-title{font-size:13px;color:#8e99a4;text-transform:uppercase;letter-spacing:.08em}
+.l-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.l-tile{display:flex;flex-direction:column;background:#161b22;border:1px solid #2a323d;min-width:0}
+.l-tile.in{border-color:var(--wb-blue);box-shadow:0 0 0 1px var(--wb-blue)}
+.l-pick{appearance:none;background:none;border:0;color:inherit;font:inherit;text-align:left;padding:0;cursor:pointer;display:flex;flex-direction:column;min-width:0}
+.l-pick:hover .l-img,.l-pick:focus-visible .l-img{filter:brightness(1.15)}
+.l-pick:focus-visible{outline:2px dashed var(--wb-blue);outline-offset:2px}
+.l-img{aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;background:#0b0e12;overflow:hidden}
+.l-img img{width:100%;height:100%;object-fit:cover;display:block}
+.l-img svg{width:44%;height:auto}
+.l-name{padding:7px 9px 0;font-weight:600;color:#e8ecef;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.l-sub{padding:1px 9px 8px;font-size:12px;color:#7f8a95}
+.l-resume{appearance:none;font:inherit;font-size:12.5px;border:0;border-top:1px solid #2a323d;background:#1d2530;color:#b9c8dc;padding:6px 9px;text-align:left;cursor:pointer}
+.l-resume:hover{background:#26303d}
+.l-more{appearance:none;font:inherit;font-size:13px;background:none;border:0;color:#b9c8dc;text-decoration:underline;cursor:pointer;align-self:flex-start;padding:2px 0}
+.l-steps{margin:0;padding:0;list-style:none;counter-reset:st;display:flex;flex-direction:column;gap:10px;max-width:640px}
+.l-steps li{counter-increment:st;display:grid;grid-template-columns:34px 1fr;column-gap:12px;row-gap:3px;align-items:start}
+.l-steps li::before{content:counter(st);grid-row:span 3;width:30px;height:30px;border-radius:50%;background:var(--wb-blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+.l-steps b{color:#e8ecef}
+.l-steps span{font-size:13.5px;color:#9aa3ad}
+.l-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.l-foot{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px}
+.l-power{font-size:16px;padding:9px 18px}
+.l-power svg{width:18px;height:18px}
+.l-what{font-size:13px;color:#9aa3ad;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:46ch}
+.l-sp{flex:1}
+.tube.off{touch-action:auto}
+.tube.off .glare,.tube.off.crt::after{display:none}
+/* Amiga éteint : on n'affiche que ce qui sert */
+body.is-off #btnPower,body.is-off #btnReset,body.is-off #btnPause,body.is-off #btnShot,body.is-off #kCAA,body.is-off .keys,body.is-off .vkbd,body.is-off .touch-tip{display:none!important}
 .capture-hint{
   position:absolute;left:50%;bottom:12px;transform:translateX(-50%);
   background:rgba(0,0,0,.65);color:#fff;font-size:12.5px;padding:5px 12px;border-radius:12px;
@@ -222,7 +261,14 @@ button{font:inherit}
   .toolbar .sep{display:none}
   .monitor-foot .stat{display:none}
 }
-@media (max-width:560px){.vk{height:38px;font-size:12px}.vk .l{display:none}.vk .s{display:inline}.vk small{display:none}.vrow{gap:2px}.vkbd{padding:4px;gap:3px}.idle p,.idle .rom-line{display:none}.idle h1{font-size:22px}}
+@media (max-width:560px){.vk{height:38px;font-size:12px}.vk .l{display:none}.vk .s{display:inline}.vk small{display:none}.vrow{gap:2px}.vkbd{padding:4px;gap:3px}.idle p,.idle .rom-line{display:none}.idle h1{font-size:22px}
+  .tube.off{aspect-ratio:auto;min-height:min(520px,calc(100vh - 160px))}
+  .tube.off .launch{position:relative;min-height:inherit}
+  .l-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .l-power{flex:1;justify-content:center}
+  .l-what{order:3;flex-basis:100%;max-width:none}
+  .l-sp{display:none}
+  #lOpen{flex:1;justify-content:center}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -233,11 +279,18 @@ button{font:inherit}
     <div class="bezel">
       <div class="tube crt" id="tube">
         <canvas id="amigaScreen" width="720" height="568" aria-label="Écran de l'Amiga"></canvas>
-        <div class="idle" id="idle">
-          <h1>Amiga 1200</h1>
-          <p>68EC020 à 14 MHz, chipset AGA, 2 Mo de Chip RAM. Glissez une disquette .adf, une archive .zip ou un disque dur .hdf n'importe où sur la page, puis allumez.</p>
-          <button class="gad primary" id="idlePower">Allumer</button>
-          <div class="rom-line" id="idleRom"></div>
+        <div class="idle launch" id="idle">
+          <div class="l-head">
+            <h1>Amiga 1200</h1>
+            <div class="l-kick" id="lKick"></div>
+          </div>
+          <div class="l-main" id="lMain"></div>
+          <div class="l-foot">
+            <button class="gad primary l-power" id="idlePower"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 1v6M4.2 3.5a6 6 0 1 0 7.6 0"/></svg><span>Allumer</span></button>
+            <span class="l-what" id="lWhat"></span>
+            <span class="l-sp"></span>
+            <button class="gad" id="lOpen"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 3.5h5l1.5 1.5h6.5v8.5h-13z"/></svg>Ouvrir un fichier…</button>
+          </div>
         </div>
         <div class="glare"></div>
         <div class="capture-hint" id="captureHint" style="opacity:0">Cliquez dans l'écran pour utiliser la souris. Échap pour la libérer.</div>
@@ -848,6 +901,9 @@ function setPowerUi(st) {
   b.classList.toggle("primary", !on);
   ["#btnReset", "#btnPause", "#btnShot", "#kCAA"].forEach(s => $(s).disabled = !on);
   $("#idle").style.display = on || st === "starting" ? "none" : "flex";
+  document.body.classList.toggle("is-off", st === "off");
+  $("#tube").classList.toggle("off", !on && st !== "starting");
+  if (st === "off" && typeof renderLauncherSoon === "function") renderLauncherSoon();
   $("#monLed").classList.toggle("on", on);
 }
 
@@ -1613,6 +1669,121 @@ DB.del = async id => {
     had = true;
   });
 })();
+
+
+/* =========================================================
+   Écran d'accueil (Amiga éteint) : Kickstart, derniers disques, Allumer
+   ========================================================= */
+const LAUNCH_MAX = 6;
+const ICON_FLOPPY = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 4h31l5 5v35H6z" fill="#3b4a63"/><rect x="13" y="4" width="20" height="13" fill="#c9ccd1"/><rect x="26" y="6" width="5" height="9" fill="#3b4a63"/><rect x="11" y="24" width="26" height="20" fill="#eef0f2"/><path d="M14 30h20M14 35h20M14 40h14" stroke="#9aa3ad" stroke-width="1.6"/></svg>';
+const ICON_HD = '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="10" width="38" height="28" rx="2" fill="#5a6270"/><circle cx="21" cy="24" r="10" fill="#8d96a3"/><circle cx="21" cy="24" r="2.5" fill="#3a404a"/><path d="M21 24l14 9" stroke="#d8d2c2" stroke-width="2.2"/><rect x="34" y="14" width="5" height="2.5" fill="#4dff6a"/></svg>';
+
+function whenUsed(t) {
+  if (!t) return "";
+  const d = Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(t).setHours(0, 0, 0, 0)) / 86400000);
+  return d <= 0 ? "aujourd'hui" : d === 1 ? "hier" : d < 30 ? "il y a " + d + " jours" : new Date(t).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+}
+function lEl(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+
+/* Marque les disques en place comme « utilisés » pour les remonter en tête de l'accueil */
+async function markUsed() {
+  for (const t of ["df0", "dh0"]) {
+    if (!mounted[t]) continue;
+    const r = await DB.get(mounted[t].id);
+    if (r) { r.used = Date.now(); await DB.put(r); }
+  }
+}
+async function launchWith(rec) {
+  if (running || starting) return;
+  if (rec.kind === "hdf") {
+    /* Démarrer sur le disque dur : on libère DF0: (une disquette amorçable passerait devant) */
+    if (mounted.df0) await ejectMedia("df0", true);
+    if (!mounted.dh0 || mounted.dh0.id !== rec.id) await mountMedia("dh0", rec);
+  } else if (!mounted.df0 || mounted.df0.id !== rec.id) await mountMedia("df0", rec);
+  await markUsed(); powerOn();
+}
+
+let _lTimer = 0;
+function renderLauncherSoon() { clearTimeout(_lTimer); _lTimer = setTimeout(renderLauncher, 60); }
+async function renderLauncher() {
+  const box = $("#lMain"); if (!box) return;
+  let all = [];
+  try { all = await DB.all(); } catch (e) {}
+  /* Kickstart */
+  const kick = $("#lKick"); kick.innerHTML = "";
+  let romRec = S.romId !== "aros" ? all.find(r => r.id === S.romId) : null;
+  const kTxt = lEl("span", "l-kick-name");
+  kTxt.textContent = romRec ? (romRec.label || romRec.name) : "AROS (Kickstart libre)";
+  kick.append(lEl("span", "l-kick-lbl", "Kickstart"), kTxt);
+  const kBtn = lEl("button", "gad small"); kBtn.textContent = romRec ? "Changer" : "Importer le mien…";
+  kBtn.onclick = romRec ? () => $("#btnSettings").click() : () => pickFile(".rom,.bin,.key", f => importFile(f));
+  kick.appendChild(kBtn);
+
+  /* Disques : les plus récemment utilisés d'abord */
+  const disks = all.filter(r => r.kind === "adf" || r.kind === "hdf").sort((a, b) => (b.used || b.added) - (a.used || a.added));
+  const thumbs = {};
+  for (const s of all.filter(r => r.kind === "state").sort((a, b) => a.updated - b.updated)) thumbs[s.game] = s;
+  box.innerHTML = "";
+  if (!disks.length) {
+    /* Première visite : trois étapes */
+    const steps = lEl("ol", "l-steps");
+    const s1 = lEl("li", null, "<b>Kickstart</b><span></span>");
+    s1.querySelector("span").textContent = romRec ? "Le vôtre est prêt : " + (romRec.label || romRec.name) + "." : "AROS, un Kickstart libre, est fourni. Pour l'A1200 d'origine, importez votre ROM Kickstart 3.1 (bouton ci-dessus).";
+    const s2 = lEl("li", null, "<b>Une disquette</b><span>Un jeu, une démo ou le Workbench au format .adf, ou une archive .zip. Elle sera rangée dans la Bibliothèque pour les prochaines fois.</span>");
+    const acts = lEl("div", "l-acts");
+    const o = lEl("button", "gad"); o.textContent = "Ouvrir une disquette…"; o.onclick = () => $("#lOpen").click();
+    const h = lEl("button", "gad"); h.textContent = "Créer un disque dur"; h.onclick = () => $('#drive-dh0 [data-act="blank"]').click();
+    acts.append(o, h); s2.appendChild(acts);
+    const s3 = lEl("li", null, "<b>Allumer</b><span>L'Amiga démarre sur la disquette. " + (isTouch ? "Ensuite, l'écran sert de pavé tactile : un doigt pour la souris, deux doigts pour les menus." : "Cliquez dans l'écran pour prendre la souris, Échap pour la rendre.") + "</span>");
+    steps.append(s1, s2, s3); box.appendChild(steps);
+  } else {
+    box.appendChild(lEl("div", "l-title", "Reprendre là où vous en étiez"));
+    const grid = lEl("div", "l-grid");
+    for (const r of disks.slice(0, LAUNCH_MAX)) {
+      const tile = lEl("div", "l-tile");
+      const inDrive = (mounted.df0 && mounted.df0.id === r.id) || (mounted.dh0 && mounted.dh0.id === r.id);
+      if (inDrive) tile.classList.add("in");
+      const pick = lEl("button", "l-pick");
+      pick.title = "Insérer et allumer : " + r.name;
+      const img = lEl("span", "l-img");
+      const st = thumbs[r.id];
+      if (st && st.thumb) { const i = new Image(); i.src = st.thumb; i.alt = ""; img.appendChild(i); }
+      else img.innerHTML = r.kind === "hdf" ? ICON_HD : ICON_FLOPPY;
+      const nm = lEl("span", "l-name"); nm.textContent = r.name.replace(/\.(adf|adz|dms|hdf)$/i, "");
+      const sub = lEl("span", "l-sub"); sub.textContent = (inDrive ? (r.kind === "hdf" ? "branché" : "dans le lecteur") : r.kind === "hdf" ? "disque dur" : "disquette") + (r.used ? " · " + whenUsed(r.used) : "");
+      pick.append(img, nm, sub);
+      pick.onclick = () => launchWith(r);
+      tile.appendChild(pick);
+      if (st) {
+        const rs = lEl("button", "l-resume"); rs.textContent = "▶ Reprendre la sauvegarde"; rs.title = "Reprendre la dernière sauvegarde d'état";
+        rs.onclick = () => resumeState(st.id); tile.appendChild(rs);
+      }
+      grid.appendChild(tile);
+    }
+    box.appendChild(grid);
+    if (disks.length > LAUNCH_MAX) {
+      const more = lEl("button", "l-more"); more.textContent = "Toute la bibliothèque (" + disks.length + " disques)";
+      more.onclick = () => $("#btnLib").click(); box.appendChild(more);
+    }
+  }
+  /* Ce qui démarrera avec le bouton Allumer */
+  const what = [];
+  if (mounted.df0) what.push(mounted.df0.name.replace(/\.(adf|adz|dms)$/i, ""));
+  if (mounted.dh0) what.push((mounted.df0 ? "+ disque dur " : "disque dur ") + mounted.dh0.name.replace(/\.hdf$/i, ""));
+  $("#lWhat").textContent = what.length ? "avec " + what.join(" ") : "sans disque";
+}
+
+/* Le bouton « Ouvrir un fichier » : disquette, archive, disque dur ou Kickstart */
+$("#lOpen").onclick = () => pickFile(".adf,.adz,.dms,.zip,.gz,.hdf,.rom,.bin,.key", f => importFile(f));
+/* Allumer depuis l'accueil ou la barre d'outils : les disques en place remontent en tête */
+$("#idlePower").onclick = async () => { await markUsed(); powerOn(); };
+{ const b = $("#btnPower"), prev = b.onclick; b.onclick = async e => { if (!running) await markUsed(); prev(e); }; }
+
+/* Tout changement de disque ou de la bibliothèque rafraîchit l'accueil */
+{ const _sm = setMounted; setMounted = (t, r) => { _sm(t, r); renderLauncherSoon(); }; }
+{ const _put = DB.put.bind(DB), _del = DB.del; DB.put = async r => { const x = await _put(r); renderLauncherSoon(); return x; };
+  DB.del = async id => { const x = await _del(id); renderLauncherSoon(); return x; }; }
+refreshIdleRom = async () => renderLauncherSoon();
 
 /* Profil par disque */
 let profTarget = null;

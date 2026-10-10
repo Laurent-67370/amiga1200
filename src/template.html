@@ -1043,7 +1043,7 @@ async function unzip(u8) {
     if (method === 0) data = raw.slice();
     else if (method === 8) data = await inflate(raw, "deflate-raw");
     else throw new Error("méthode de compression non gérée dans " + name);
-    out.push({ name: name.split("/").pop(), data });
+    out.push({ name: name.split("/").pop(), path: name, data });
   }
   return out;
 }

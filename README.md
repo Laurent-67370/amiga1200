@@ -46,6 +46,13 @@ La Bibliothèque est propre à chaque navigateur : importez votre Kickstart et v
   image avec table de partitions (RDB), ou image d'une seule partition FFS/OFS (« partition hardfile » de WinUAE),
   complétée automatiquement d'une table de partitions pour démarrer. Rangé par morceaux de 8 Mo : seuls ceux que l'Amiga modifie sont réenregistrés
 - **Nouveau** crée un disque partitionné (RDB) et formaté (FFS), prêt pour le Workbench
+- **Copier des fichiers sur le disque dur** (Amiga éteint, bouton *Fichiers…*) : fichiers, dossier entier, archives `.lha`/`.lzh`
+  et `.zip` décompressées au passage, dans le dossier choisi ; c'est la façon d'installer des jeux **WHDLoad**.
+  Un bouton copie aussi vos Kickstart dans `Devs:Kickstarts` sous les noms attendus par WHDLoad (`kick34005.A500`, `kick40068.A1200`…).
+  Partitions OFS et FFS (DOS\0 à DOS\3) ; PFS, SFS et FFS à cache de dossiers ne sont pas modifiables
+- **Mode Amiga 500** (68000, OCS, 512 Ko Chip + 512 Ko Slow) pour les jeux A500 qui refusent l'A1200 : bascule sur l'accueil,
+  dans Réglages ou dans le profil d'une disquette ; Kickstart 1.3 choisi automatiquement dans la Bibliothèque
+- Archives `.lha` acceptées aussi pour les disquettes qu'elles contiennent
 - Enregistrement automatique des disques modifiés dans la Bibliothèque, téléchargement
 - **Sauvegardes d'état** : 4 emplacements par jeu, avec vignette ; Ctrl+Maj+S / Ctrl+Maj+R
 - **Profils par disque** : cycle exact, vitesse, carte accélératrice, mémoire Fast, PAL/NTSC, joystick, lecteurs
@@ -55,6 +62,15 @@ La Bibliothèque est propre à chaque navigateur : importez votre Kickstart et v
 - Clavier A1200 à l'écran (AZERTY ou QWERTY), souris tactile, manette USB, touches Amiga
 - Saut d'images automatique, centrage de l'image, effet moniteur, capture
 - Plein écran : on en sort avec Échap (deux fois si la souris est capturée), le bouton *Quitter le plein écran* qui apparaît en haut à droite quand on bouge la souris ou touche l'écran, ou le geste retour sur téléphone
+
+## Jeux WHDLoad
+
+1. Créez un disque dur (**Nouveau**) ou branchez le vôtre, Amiga éteint.
+2. **Fichiers…** → dossier `C` : copiez-y le programme `WHDLoad` (archive de whdload.de).
+3. **Copier dans Devs:Kickstarts** : vos Kickstart 1.3 et 3.1 de la Bibliothèque, sous les noms de WHDLoad
+   (ajoutez les fichiers `.RTB` fournis avec WHDLoad dans le même dossier).
+4. **Fichiers…** → dossier `Jeux` : vos jeux `.lha`, décompressés directement.
+5. Réglages : 8 Mo de Fast. Démarrez sur le Workbench, ouvrez Jeux et double-cliquez sur l'icône du jeu. F10 pour quitter.
 
 ## Clavier et souris
 

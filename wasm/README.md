@@ -106,4 +106,13 @@ extinction (reprise au clavier) ; profil cycle exact + 8 Mo Fast + NTSC appliqu�
   Le fichier du cœur reçoit le tableau sans copie (`canOwn`). Vérifié : image de partition FFS de 1,9 Go faite par
   amitools, importée en 7 s, démarrage dessus, fichier écrit par le script de démarrage retrouvé dans l'image
   téléchargée.
+- **Fichiers sur le disque dur** : `web/lha.js` lit les archives LhA (en-têtes de niveau 0 à 2, méthodes -lh0-, -lh4- à
+  -lh7-, contrôle CRC-16 ; vérifié contre lhasa sur ses archives de test Amiga et MorphOS), `web/ffs.js` écrit dans une
+  partition OFS/FFS (DOS\0 à DOS\3) : carte des blocs libres, dossiers, en-têtes de fichiers et blocs d'extension,
+  chaînes de hachage triées, sommes de contrôle. Images vérifiées avec le validateur d'amitools (0 erreur) et relues
+  par xdftool. La copie se fait sur le disque en mémoire ; seuls les morceaux de 8 Mo touchés sont réenregistrés,
+  et rien n'est écrit en cas d'erreur (place insuffisante, partition non gérée).
+- **Mode Amiga 500** : `puae_model=A500` (68000, OCS, 512 Ko Chip + 512 Ko Slow ; la variante 512 Ko seuls ne démarre
+  pas AROS), processeur laissé au modèle, pas de disque IDE. Kickstart de l'A500 choisi à part (`romId500`) :
+  automatiquement un 1.x/2.0x de la Bibliothèque, reconnu par la version écrite dans l'en-tête de la ROM.
 

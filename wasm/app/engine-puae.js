@@ -11,11 +11,37 @@ const DRIVE_NUM = { df0: 0, df1: 1 };
 /* Empreintes connues des Kickstart A1200 (CRC32 du fichier) */
 const KNOWN_ROMS = {
   0x1483a091: "Kickstart 3.1 (40.068) A1200",
-  0x6c9b07d2: "Kickstart 3.0 (39.106) A1200"
+  0x6c9b07d2: "Kickstart 3.0 (39.106) A1200",
+  0xc4f0f55f: "Kickstart 1.3 (34.005) A500",
+  0xc3bdb240: "Kickstart 2.04 (37.175) A500+"
 };
+/* Version d'un Kickstart, lue dans son en-tête (octets 12 à 15) : [version, révision] ou null */
+function kickVersion(u8) {
+  if (!u8 || u8.length < 16 || u8[2] !== 0x4e || u8[3] !== 0xf9 || u8[0] !== 0x11) return null;
+  return [(u8[12] << 8) | u8[13], (u8[14] << 8) | u8[15]];
+}
+const KICK_NAMES = { 33: "1.2", 34: "1.3", 36: "2.0", 37: "2.04", 39: "3.0", 40: "3.1", 45: "3.9", 46: "3.1.4", 47: "3.2" };
+
+/* ---- Modèle : Amiga 1200 ou Amiga 500 (68000, OCS, 512 Ko de Chip + 512 Ko de Slow, Kickstart 1.3) ---- */
+const MODELS = { a1200: { core: "A1200OG", name: "Amiga 1200" }, a500: { core: "A500", name: "Amiga 500" } };
+const modelOf = s => s && s.model === "a500" ? "a500" : "a1200";
+/* Kickstart pour l'A500 : celui choisi, sinon un 1.x ou 2.0x de la Bibliothèque (le plus ancien d'abord) */
+async function romFor500(all) {
+  all = all || await DB.all();
+  if (S.romId500 && S.romId500 !== "auto") { if (S.romId500 === "aros" || all.some(r => r.id === S.romId500)) return S.romId500; }
+  const cands = [];
+  for (const r of all.filter(x => x.kind === "rom")) {
+    if (r.kickVer === undefined) {
+      try { const u8 = new Uint8Array(await r.blob.slice(0, 16).arrayBuffer()); r.kickVer = kickVersion(u8); await DB.put(r); } catch (e) { r.kickVer = null; }
+    }
+    if (r.kickVer && r.kickVer[0] <= 37) cands.push(r);
+  }
+  cands.sort((a, b) => Math.abs(a.kickVer[0] - 34) - Math.abs(b.kickVer[0] - 34));
+  return cands.length ? cands[0].id : "aros";
+}
 
 /* ---- Profils par disque : réglages propres à un jeu, appliqués au démarrage ---- */
-const PROFILE_KEYS = ["compat", "cpu", "fast", "region", "joy", "floppy", "accel"];
+const PROFILE_KEYS = ["compat", "cpu", "fast", "region", "joy", "floppy", "accel", "model"];
 /* Cartes accélératrices : processeur, FPU et multiplicateur d'horloge (×4 = 14 MHz, ×8 = 28 MHz, ×12 = 42 MHz) */
 const ACCEL = {
   none: { cpu: "68020", fpu: "0", mult: "0", label: "" },
@@ -63,7 +89,7 @@ async function fetchGz(url) {
 /* Options du cœur d'après les réglages effectifs */
 function coreOptions() {
   return {
-    puae_model: "A1200OG",
+    puae_model: MODELS[modelOf(E)].core,
     puae_fastmem_size: String(+E.fast || 0),
     puae_cpu_throttle: E.cpu === "max" ? "4000.0" : "0.0",
     puae_cpu_compatibility: E.compat === "max" ? "exact" : "normal",
@@ -72,9 +98,10 @@ function coreOptions() {
     puae_crop: S.center ? "auto" : "disabled",
     puae_floppy_speed: E.floppy === "turbo" ? "0" : "100",
     puae_gfx_framerate: "disabled",
-    puae_cpu_model: (ACCEL[E.accel] || ACCEL.none).cpu,
-    puae_fpu_model: (ACCEL[E.accel] || ACCEL.none).fpu,
-    puae_cpu_multiplier: (ACCEL[E.accel] || ACCEL.none).mult,
+    /* L'A500 garde son 68000 : la carte accélératrice ne concerne que l'A1200 */
+    puae_cpu_model: modelOf(E) === "a500" ? "auto" : (ACCEL[E.accel] || ACCEL.none).cpu,
+    puae_fpu_model: modelOf(E) === "a500" ? "auto" : (ACCEL[E.accel] || ACCEL.none).fpu,
+    puae_cpu_multiplier: modelOf(E) === "a500" ? "0" : (ACCEL[E.accel] || ACCEL.none).mult,
     puae_floppy_sound: S.floppySound ? "75" : "100",
     puae_floppy_sound_type: "internal"
   };
@@ -95,9 +122,11 @@ async function powerOn() {
     const resume = pendingResume; pendingResume = null;
     if (resume) {
       for (const t of ["df0", "df1", "dh0"]) setMounted(t, resume.ctx[t] ? await DB.get(resume.ctx[t]) : null);
-      E = Object.assign({}, S, { accel: "none" }, resume.settings, { _profile: "" });
+      E = Object.assign({}, S, { accel: "none", model: "a1200" }, resume.settings, { _profile: "" });
     } else E = await effectiveSettings();
-    const romId = resume ? resume.ctx.rom : S.romId;
+    const a500 = modelOf(E) === "a500";
+    const romId = resume ? resume.ctx.rom : a500 ? await romFor500() : S.romId;
+    if (a500 && romId === "aros" && !resume) toast("Mode Amiga 500 sans Kickstart 1.3 : AROS démarre, mais la plupart des jeux A500 ont besoin du vrai Kickstart (Réglages).", true);
     skip.reset();
     machine = await PuaeMachine.create({
       canvas: $("#amigaScreen"), factory: window.createPuae,
@@ -110,7 +139,7 @@ async function powerOn() {
       const r = await DB.get(romId);
       if (r) kick = new Uint8Array(await r.blob.arrayBuffer());
       else if (resume) throw new Error("le Kickstart de cette sauvegarde n'est plus dans la Bibliothèque");
-      else { S.romId = "aros"; saveSettings(); }
+      else if (!a500) { S.romId = "aros"; saveSettings(); }
       if (kick && S.keyId) { const k = await DB.get(S.keyId); if (k) key = new Uint8Array(await k.blob.arrayBuffer()); }
     }
     if (!kick) [kick, arosExt] = await Promise.all([fetchGz("aros-rom.bin.gz"), fetchGz("aros-ext.bin.gz")]);
@@ -132,7 +161,8 @@ async function powerOn() {
       lines.push(`floppy${DRIVE_NUM[tag]}=${fsPath[tag]}`);
     }
     fsPath.dh0 = null;
-    if (mounted.dh0) {
+    if (mounted.dh0 && a500) toast("Mode Amiga 500 : le disque dur n'est pas branché (l'A500 n'a pas de contrôleur IDE).");
+    if (mounted.dh0 && !a500) {
       const r = await DB.get(mounted.dh0.id);
       if (r) {
         fsPath.dh0 = "/media/dh0/" + safeName(r.name);
@@ -145,7 +175,7 @@ async function powerOn() {
     machine.writeFile("/cfg/a1200.uae", new TextEncoder().encode(lines.join("\n") + "\n"));
     for (const t in fsPath) seen[t] = fsPath[t] ? machine.fileMtime(fsPath[t]) : 0;
 
-    await machine.start({ model: "A1200OG", kickstart: kick, romKey: key, content: "/cfg/a1200.uae", options: coreOptions() });
+    await machine.start({ model: MODELS[modelOf(E)].core, kickstart: kick, romKey: key, content: "/cfg/a1200.uae", options: coreOptions() });
     machine.setMuted(!!S.muted);
     machine.inputBlocked = false;
     E._rom = romId;
@@ -164,8 +194,8 @@ async function powerOff() {
 }
 function onStarted() {
   starting = false; running = true; setPowerUi("on");
-  $("#statMode").textContent = (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "")
-    + (ACCEL[E.accel] && ACCEL[E.accel].label ? ", " + ACCEL[E.accel].label : "")
+  $("#statMode").textContent = (modelOf(E) === "a500" ? "A500, " : "") + (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "")
+    + (modelOf(E) !== "a500" && ACCEL[E.accel] && ACCEL[E.accel].label ? ", " + ACCEL[E.accel].label : "")
     + (E.compat === "max" ? ", cycle exact" : "") + (E._profile ? ", profil " + E._profile : "");
   showCaptureHint();
 }

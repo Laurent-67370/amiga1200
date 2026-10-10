@@ -61,6 +61,8 @@ between("function describeRom(name, u8) {", "function pickFile(accept, cb) {", '
     return { label: name + " (Amiga Forever, rom.key nécessaire)", warn: !S.keyId };
   const known = KNOWN_ROMS[crc32u8(u8)];
   if (known) return { label: known, warn: false };
+  const v = kickVersion(u8);
+  if (v) return { label: "Kickstart " + (KICK_NAMES[v[0]] || "") + " (" + v[0] + "." + String(v[1]).padStart(3, "0") + ")", warn: false };
   if (u8.length !== 262144 && u8.length !== 524288) return { label: name + " (taille inhabituelle)", warn: true };
   return { label: name + " (version non répertoriée)", warn: false };
 }
@@ -177,7 +179,7 @@ note = "Vos fichiers restent dans ce navigateur (stockage local) et ne sont envo
 rep(note, note + '\n    <br><a href="sae/">Ancienne version (cœur SAE)</a>, conservée pour comparer : elle partage la même Bibliothèque.')
 
 # Carte accélératrice, horloge et bruit des lecteurs (version PUAE)
-rep('compat: "normal", autoskip: true,', 'compat: "normal", accel: "none", floppySound: false, autoskip: true,')
+rep('compat: "normal", autoskip: true,', 'compat: "normal", accel: "none", model: "a1200", romId500: "auto", floppySound: false, autoskip: true,')
 rep("""      <h3>Affichage</h3>
       <div class="opt" data-setting="region">""", """      <h3>Carte accélératrice</h3>
       <div class="opt" data-setting="accel">
@@ -267,7 +269,7 @@ rep("button{font:inherit}", "button{font:inherit}\n[hidden]{display:none!importa
 # Écran d'accueil : Kickstart, derniers disques, Allumer
 between('        <div class="idle" id="idle">', '        <div class="glare"></div>', '''        <div class="idle launch" id="idle">
           <div class="l-head">
-            <h1>Amiga 1200</h1>
+            <h1 id="lTitle">Amiga 1200</h1>
             <div class="l-kick" id="lKick"></div>
           </div>
           <div class="l-main" id="lMain"></div>
@@ -286,6 +288,9 @@ rep(".idle .rom-line{font-size:13px;color:#7c8792}", """.idle .rom-line{font-siz
 .l-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px}
 .launch h1{font-size:clamp(22px,3.4vw,32px);text-align:left}
 .l-kick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;background:rgba(255,255,255,.05);padding:5px 6px 5px 10px;border:1px solid rgba(255,255,255,.08)}
+.l-model{display:inline-flex;border:1px solid rgba(255,255,255,.25);margin-right:6px}
+.l-seg{appearance:none;font:inherit;font-size:12.5px;background:none;border:0;color:#aeb7c1;padding:3px 9px;cursor:pointer}
+.l-seg[aria-pressed="true"]{background:var(--wb-blue);color:#fff}
 .l-kick-lbl{color:#7c8792;text-transform:uppercase;letter-spacing:.08em;font-size:11px}
 .l-kick-name{color:#e3e7eb}
 .l-main{flex:1 0 auto;display:flex;flex-direction:column;gap:10px;min-height:0}
@@ -377,6 +382,103 @@ rep('''$("#btnShot").onclick = () => {''', '''(function fullscreenExit() {
   b.onclick = e => { e.stopPropagation(); exit(); };
 })();
 $("#btnShot").onclick = () => {''')
+
+# Copier des fichiers sur le disque dur (jeux WHDLoad .lha, dossiers, Kickstart)
+rep('import { makeBlankAdf } from "./adf.js";', 'import { makeBlankAdf } from "./adf.js";\nimport { readLha } from "./lha.js";\nimport { listPartitions, AmigaVolume, amigaName } from "./ffs.js";')
+rep('''        <button class="gad small" data-act="blank">Nouveau</button>''', '''        <button class="gad small" data-act="blank">Nouveau</button>
+        <button class="gad small" data-act="files" disabled title="Copier des fichiers, un dossier ou un jeu WHDLoad (.lha) sur ce disque">Fichiers…</button>''')
+rep('''  if (/\\.(lha|lzh|lzx|rar|7z)$/.test(n)) throw new Error(name + " : format d'archive non géré, extrayez-la d'abord (.zip, .adz et .gz sont acceptés)");''',
+    '''  if (/\\.(lha|lzh)$/.test(n)) {
+    /* Archive LhA : les disquettes et disques qu'elle contient */
+    const items = [];
+    for (const e of readLha(u8)) if (!e.dir && e.data && /\\.(adf|adz|dms|hdf|hdz|zip|gz|rom|key)$/i.test(e.path)) items.push(...await expandFile(e.path.split("/").pop(), e.data));
+    if (!items.length) throw new Error(name + " ne contient ni disquette ni disque dur : pour un jeu WHDLoad, utilisez le bouton « Fichiers… » du disque dur");
+    return items;
+  }
+  if (/\\.(lzx|rar|7z)$/.test(n)) throw new Error(name + " : format d'archive non géré, extrayez-la d'abord (.zip, .lha, .adz et .gz sont acceptés)");''')
+rep('''        btn("DH0:", async () => { if (running) { toast("Éteignez l'Amiga pour changer de disque dur.", true); return; } await mountMedia("dh0", r); renderLib(); }, inUse);''',
+    '''        btn("DH0:", async () => { if (running) { toast("Éteignez l'Amiga pour changer de disque dur.", true); return; } await mountMedia("dh0", r); renderLib(); }, inUse);
+        btn("Fichiers…", () => openFiles(r));''')
+rep("<!-- Fenêtre : Aide -->", '''<!-- Fenêtre : copier des fichiers sur le disque dur -->
+<div class="veil" id="winFiles" role="dialog" aria-modal="true" aria-labelledby="tFiles">
+  <div class="win wb">
+    <div class="titlebar"><button class="closebox" data-close aria-label="Fermer"></button><span class="t" id="tFiles">Copier sur le disque dur</span><span class="stripes"></span></div>
+    <div class="body" id="filesBody"></div>
+    <div class="actions"><span></span><button class="gad primary" data-close>Fermer</button></div>
+  </div>
+</div>
+<input type="file" id="filesPick" multiple hidden>
+<input type="file" id="dirPick" webkitdirectory multiple hidden>
+
+<!-- Fenêtre : Aide -->''')
+rep(".footnote{margin-top:18px", '''.files-log{white-space:pre-wrap;font:12.5px/1.4 ui-monospace,Menlo,Consolas,monospace;background:#ddd;border:1px solid;border-color:#000 #fff #fff #000;padding:6px 8px;margin:10px 0 0;min-height:1.4em;max-height:180px;overflow:auto}
+.files-log:empty{display:none}
+.files-warn{background:#e9b7a6;padding:6px 8px;border:1px solid #000}
+.footnote{margin-top:18px''')
+rep("/* Profil par disque */", (APP / "hdfiles-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+rep('''      <h3>Sauvegardes d'état</h3>''', '''      <h3>Copier des fichiers sur le disque dur</h3>
+      <p>Amiga éteint, le bouton <b>Fichiers…</b> du disque dur (ou de la Bibliothèque) copie des fichiers, un dossier entier ou des archives .lha et .zip, décompressées au passage, dans le dossier de votre choix. C'est la façon d'installer des jeux <b>WHDLoad</b> : copiez WHDLoad dans C:, vos jeux .lha dans Jeux, et vos Kickstart dans Devs:Kickstarts avec le bouton prévu (1.3 pour l'A500, 3.1 pour l'A1200). Disques OFS et FFS ; PFS, SFS et FFS à cache de dossiers ne sont pas modifiables ici.</p>
+      <h3>Sauvegardes d'état</h3>''')
+
+# Mode Amiga 500
+rep('''      <h3>Kickstart</h3>
+      <div id="romChoices" class="lib-list"></div>''', '''      <h3>Modèle</h3>
+      <div class="opt" data-setting="model">
+        <label><input type="radio" name="model" value="a1200"> Amiga 1200 (68EC020, AGA, 2 Mo)</label>
+        <label><input type="radio" name="model" value="a500"> Amiga 500 (68000, OCS, 1 Mo)</label>
+      </div>
+      <p class="hint">L'Amiga 500 sert aux jeux A500 qui refusent de tourner sur l'A1200, lancés depuis leurs disquettes ; il demande le Kickstart 1.3. Ni disque dur ni carte accélératrice dans ce mode. Le choix peut aussi se faire pour une seule disquette, dans son Profil.</p>
+
+      <h3>Kickstart</h3>
+      <p class="hint">Pour l'Amiga 1200 :</p>
+      <div id="romChoices" class="lib-list"></div>
+      <p class="hint">Pour l'Amiga 500 :</p>
+      <div id="rom500Choices" class="lib-list"></div>''')
+lst = '["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel"]'
+assert page.count(lst) == 2
+page = page.replace(lst, '["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel", "model"]')
+rep('''        <h3>Carte accélératrice</h3>
+        <div class="opt"><label><input type="radio" name="p_accel"''', '''        <h3>Modèle</h3>
+        <div class="opt"><label><input type="radio" name="p_model" value="a1200"> Amiga 1200</label><label><input type="radio" name="p_model" value="a500"> Amiga 500</label></div>
+        <h3>Carte accélératrice</h3>
+        <div class="opt"><label><input type="radio" name="p_accel"''')
+rep("/* Profil par disque */", '''/* Kickstart de l'Amiga 500 : automatique (un 1.x de la Bibliothèque), AROS, ou une ROM précise */
+async function renderRom500() {
+  const box = $("#rom500Choices"); if (!box) return;
+  const all = await DB.all(), roms = all.filter(r => r.kind === "rom").sort((a, b) => a.added - b.added);
+  const eff = await romFor500(all), effRec = roms.find(r => r.id === eff);
+  box.innerHTML = "";
+  const row = (id, label) => {
+    const r = document.createElement("label"); r.className = "lib-row";
+    r.innerHTML = '<input type="radio" name="rom500"><span class="n"></span>';
+    const inp = r.querySelector("input"); inp.checked = (S.romId500 || "auto") === id;
+    inp.onchange = () => { S.romId500 = id; saveSettings(); renderRom500(); renderLauncherSoon(); };
+    r.querySelector(".n").textContent = label; box.appendChild(r);
+  };
+  row("auto", "Automatique : " + (effRec ? (effRec.label || effRec.name) : "AROS, aucun Kickstart 1.x dans la Bibliothèque"));
+  row("aros", "AROS (libre, intégré)");
+  roms.forEach(r => row(r.id, r.label || r.name));
+}
+{ const _r = renderRomChoices; renderRomChoices = async () => { await _r(); await renderRom500(); }; }
+$$('#winSettings input[name="model"]').forEach(i => i.addEventListener("change", () => renderLauncherSoon()));
+
+/* Profil par disque */''')
+rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Amiga 500</h3>
+      <p>Certains jeux A500 ne fonctionnent pas sur l'A1200. Choisissez <b>Amiga 500</b> sur l'écran d'accueil ou dans Réglages (68000, chipset OCS, 512 Ko de Chip + 512 Ko de Slow), ou seulement pour une disquette dans son <b>Profil</b>. Importez le Kickstart 1.3 dans Réglages : il est choisi automatiquement pour l'A500. Les jeux A500 installés sur disque dur se lancent, eux, avec WHDLoad sur l'A1200.</p>
+      <h3>Copier des fichiers sur le disque dur</h3>''')
+
+rep('''    rec.label = info.label;
+    await DB.put(rec);
+    S.romId = rec.id; saveSettings();
+    toast("Kickstart sélectionné : " + info.label + (running ? ". Éteignez puis rallumez pour l'utiliser." : ""), info.warn);''', '''    rec.label = info.label; rec.kickVer = kickVersion(u8);
+    await DB.put(rec);
+    if (rec.kickVer && rec.kickVer[0] <= 37) {
+      /* Kickstart 1.x / 2.0x : pour le mode Amiga 500, l'A1200 garde le sien */
+      toast(info.label + " ajouté : il servira au mode Amiga 500.");
+    } else {
+      S.romId = rec.id; saveSettings();
+      toast("Kickstart sélectionné : " + info.label + (running ? ". Éteignez puis rallumez pour l'utiliser." : ""), info.warn);
+    }''')
 
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)
 assert not leftovers, f"restes de SAE : {sorted(set(leftovers))[:10]}"

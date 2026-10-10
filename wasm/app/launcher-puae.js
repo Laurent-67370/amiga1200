@@ -39,11 +39,22 @@ async function renderLauncher() {
   try { all = await DB.all(); } catch (e) {}
   /* Kickstart */
   const kick = $("#lKick"); kick.innerHTML = "";
-  let romRec = S.romId !== "aros" ? all.find(r => r.id === S.romId) : null;
+  const is500 = S.model === "a500";
+  /* Bascule Amiga 1200 / Amiga 500 */
+  const seg = lEl("span", "l-model");
+  for (const [m, t] of [["a1200", "A1200"], ["a500", "A500"]]) {
+    const b = lEl("button", "l-seg"); b.textContent = t; b.setAttribute("aria-pressed", (S.model || "a1200") === m ? "true" : "false");
+    b.title = m === "a500" ? "Amiga 500 : 68000, OCS, pour les jeux A500 récalcitrants" : "Amiga 1200 : 68EC020, AGA";
+    b.onclick = () => { S.model = m; saveSettings(); renderLauncher(); };
+    seg.appendChild(b);
+  }
+  $("#lTitle").textContent = is500 ? "Amiga 500" : "Amiga 1200";
+  const romId = is500 ? await romFor500(all) : S.romId;
+  let romRec = romId !== "aros" ? all.find(r => r.id === romId) : null;
   const kTxt = lEl("span", "l-kick-name");
   kTxt.textContent = romRec ? (romRec.label || romRec.name) : "AROS (Kickstart libre)";
-  kick.append(lEl("span", "l-kick-lbl", "Kickstart"), kTxt);
-  const kBtn = lEl("button", "gad small"); kBtn.textContent = romRec ? "Changer" : "Importer le mien…";
+  kick.append(seg, lEl("span", "l-kick-lbl", "Kickstart"), kTxt);
+  const kBtn = lEl("button", "gad small"); kBtn.textContent = romRec ? "Changer" : is500 ? "Importer le 1.3…" : "Importer le mien…";
   kBtn.onclick = romRec ? () => $("#btnSettings").click() : () => pickFile(".rom,.bin,.key", f => importFile(f));
   kick.appendChild(kBtn);
 
@@ -56,7 +67,9 @@ async function renderLauncher() {
     /* Première visite : trois étapes */
     const steps = lEl("ol", "l-steps");
     const s1 = lEl("li", null, "<b>Kickstart</b><span></span>");
-    s1.querySelector("span").textContent = romRec ? "Le vôtre est prêt : " + (romRec.label || romRec.name) + "." : "AROS, un Kickstart libre, est fourni. Pour l'A1200 d'origine, importez votre ROM Kickstart 3.1 (bouton ci-dessus).";
+    s1.querySelector("span").textContent = romRec ? "Le vôtre est prêt : " + (romRec.label || romRec.name) + "."
+      : is500 ? "Le mode Amiga 500 demande le Kickstart 1.3 : importez-le (bouton ci-dessus)."
+      : "AROS, un Kickstart libre, est fourni. Pour l'A1200 d'origine, importez votre ROM Kickstart 3.1 (bouton ci-dessus).";
     const s2 = lEl("li", null, "<b>Une disquette</b><span>Un jeu, une démo ou le Workbench au format .adf, ou une archive .zip. Elle sera rangée dans la Bibliothèque pour les prochaines fois.</span>");
     const acts = lEl("div", "l-acts");
     const o = lEl("button", "gad"); o.textContent = "Ouvrir une disquette…"; o.onclick = () => $("#lOpen").click();

@@ -40,6 +40,7 @@ COMMON=(-pthread -O3 -sPTHREAD_POOL_SIZE=8 -sINITIAL_MEMORY=512MB -sSTACK_SIZE=8
 
 # 4. Banc d'essai Node (accès direct aux fichiers)
 emcc $FLAGS -I"$LC/include" -c "$ROOT/wasm/bench.c" -o "$OBJ/bench.o"
+echo "=== édition des liens : banc d'essai ==="
 emcc "${COMMON[@]}" "$OBJ/bench.o" -sNODERAWFS=1 -sENVIRONMENT=node -sEXIT_RUNTIME=1 -o "$OUT/puae-bench.js"
 
 # 5. Module navigateur : l'API libretro exposée à JavaScript
@@ -47,6 +48,7 @@ EXPORTS='["_retro_api_version","_retro_init","_retro_deinit","_retro_run","_retr
 "_retro_get_system_info","_retro_get_system_av_info","_retro_set_environment","_retro_set_video_refresh","_retro_set_audio_sample",
 "_retro_set_audio_sample_batch","_retro_set_input_poll","_retro_set_input_state","_retro_set_controller_port_device",
 "_retro_serialize_size","_retro_serialize","_retro_unserialize","_malloc","_free"]'
+echo "=== édition des liens : module navigateur ==="
 emcc "${COMMON[@]}" -sMODULARIZE=1 -sEXPORT_NAME=createPuae -sENVIRONMENT=web,worker -sFORCE_FILESYSTEM=1 \
   -sEXPORTED_FUNCTIONS="$(echo "$EXPORTS" | tr -d '\n')" \
   -sEXPORTED_RUNTIME_METHODS='["FS","addFunction","removeFunction","UTF8ToString","stringToNewUTF8","setValue","getValue","HEAPU8","HEAP16","HEAPU32"]' \

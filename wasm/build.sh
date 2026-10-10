@@ -36,7 +36,7 @@ done
 emcc $FLAGS -c "$ROOT/wasm/stubs.c" -o "$OBJ/stubs.o"
 emcc $FLAGS -I"$LC/include" -c "$ROOT/wasm/frontend.c" -o "$OBJ/frontend.o"
 
-COMMON=(-pthread -O3 -sPTHREAD_POOL_SIZE=8 -sINITIAL_MEMORY=512MB -sSTACK_SIZE=8MB -sALLOW_TABLE_GROWTH=1 \
+COMMON=(-pthread -O3 -sPTHREAD_POOL_SIZE=8 -sINITIAL_MEMORY=256MB -sSTACK_SIZE=8MB -sALLOW_TABLE_GROWTH=1 \
         "$OBJ"/lc_*.o "$OBJ/stubs.o" @"$OBJ/objs.txt")
 
 # 4. Banc d'essai Node (accès direct aux fichiers)
@@ -55,9 +55,10 @@ emcc "${COMMON[@]}" "$OBJ/frontend.o" -sMODULARIZE=1 -sEXPORT_NAME=createPuae -s
   -sEXPORTED_RUNTIME_METHODS='["FS","addFunction","removeFunction","UTF8ToString","stringToNewUTF8","setValue","getValue","HEAPU8","HEAP16","HEAPU32","HEAPF32"]' \
   -o "$OUT/puae.js"
 
-# 6. Page d'essai : frontal + module, prête à publier
-mkdir -p "$OUT/site"
+# 6. Site : interface complète (générée depuis src/template.html) + page d'essai brute + frontal + module
+rm -rf "$OUT/site" && mkdir -p "$OUT/site"
 cp "$ROOT"/wasm/web/* "$OUT/site/"
 cp "$OUT/puae.js" "$OUT/puae.wasm" "$OUT/site/"
+python3 "$ROOT/wasm/app/make-page.py" "$OUT/site/index.html"
 ls -la "$OUT" "$OUT/site"
 for f in "$OUT"/*.wasm; do echo "$(basename "$f") compressé : $(gzip -9 -c "$f" | wc -c) octets"; done

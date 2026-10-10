@@ -232,6 +232,12 @@ API int fe_disk_insert(const char *path) {
 }
 API int fe_disk_eject(void) { return have_disk_ext ? disk.set_eject_state(true) : 0; }
 
+/* Lecteurs DF0: à DF3: pilotés directement (le cœur applique le changement à la trame suivante). */
+extern void disk_insert(int num, const char *name);
+extern void disk_eject(int num);
+API void fe_drive_insert(int num, const char *path) { if (num >= 0 && num < 4) disk_insert(num, path); }
+API void fe_drive_eject(int num) { if (num >= 0 && num < 4) disk_eject(num); }
+
 /* ---------- sauvegardes d'état ---------- */
 API unsigned fe_state_size(void) { return (unsigned)retro_serialize_size(); }
 API int fe_state_save(void *dst, unsigned size) { return retro_serialize(dst, size); }

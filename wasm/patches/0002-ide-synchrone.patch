@@ -1,0 +1,44 @@
+diff --git a/sources/src/ide.c b/sources/src/ide.c
+index a6680cb5..028b2a81 100644
+--- a/sources/src/ide.c
++++ b/sources/src/ide.c
+@@ -834,15 +834,29 @@ static void setbsy (struct ide_hdf *ide)
+ 	ide->regs.ide_status &= ~IDE_STATUS_DRQ;
+ }
+ 
++#ifdef __EMSCRIPTEN__
++/* Navigateur : les fichiers ne sont accessibles que depuis le fil principal, qui attendrait
++   le fil IDE pendant que celui-ci attend les fichiers. Les commandes sont donc traitées sur place. */
++static void do_process_rw_command (struct ide_hdf *ide);
++static void do_process_packet_command (struct ide_hdf *ide);
++#endif
+ static void process_rw_command (struct ide_hdf *ide)
+ {
+ 	setbsy (ide);
++#ifdef __EMSCRIPTEN__
++	do_process_rw_command (ide);
++#else
+ 	write_comm_pipe_u32 (&ide->its->requests, ide->num, 1);
++#endif
+ }
+ static void process_packet_command (struct ide_hdf *ide)
+ {
+ 	setbsy (ide);
++#ifdef __EMSCRIPTEN__
++	do_process_packet_command (ide);
++#else
+ 	write_comm_pipe_u32 (&ide->its->requests, ide->num | 0x8000, 1);
++#endif
+ }
+ 
+ static void atapi_data_done (struct ide_hdf *ide)
+@@ -1588,6 +1602,9 @@ static void ide_thread (void *idedata)
+ 
+ void start_ide_thread(struct ide_thread_state *its)
+ {
++#ifdef __EMSCRIPTEN__
++	return; /* commandes traitées sur place, voir process_rw_command */
++#endif
+ 	if (!its->state) {
+ 		its->state = 1;
+ 		init_comm_pipe (&its->requests, 100, 1);

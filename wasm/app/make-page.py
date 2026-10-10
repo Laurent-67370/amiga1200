@@ -480,6 +480,34 @@ rep('''    rec.label = info.label;
       toast("Kickstart sélectionné : " + info.label + (running ? ". Éteignez puis rallumez pour l'utiliser." : ""), info.warn);
     }''')
 
+# Réglages et profils cohérents avec le modèle choisi (A500 : 7 MHz, 512 Ko + 512 Ko, pas de carte accélératrice)
+rep("/* Profil par disque */", '''function modelUi(win, prefix, model) {
+  const a500 = model === "a500";
+  const lab = (name, value, text) => { const i = $(win + ' input[name="' + prefix + name + '"][value="' + value + '"]'); if (i) i.parentElement.lastChild.textContent = " " + text; };
+  lab("fast", "0", a500 ? "512 Ko Chip + 512 Ko Slow (d'origine)" : prefix ? "2 Mo Chip" : "2 Mo Chip (d'origine)");
+  lab("cpu", "orig", a500 ? (prefix ? "7 MHz" : "7 MHz (d'origine, 68000)") : (prefix ? "14 MHz" : "14 MHz (d'origine)"));
+  /* La carte accélératrice ne concerne que l'A1200 : son titre, ses choix et son explication disparaissent */
+  const acc = $(win + ' input[name="' + prefix + 'accel"]');
+  if (acc) {
+    const box = acc.closest(".opt"), h = box.previousElementSibling, hint = box.nextElementSibling;
+    for (const el of [box, h, hint && hint.classList.contains("hint") && !hint.querySelector("input") ? hint : null]) if (el) el.hidden = a500;
+  }
+}
+function settingsModelUi() {
+  modelUi("#winSettings", "", S.model);
+  $("#tSettings").textContent = "Réglages de l'" + (S.model === "a500" ? "Amiga 500" : "Amiga 1200");
+}
+function profileModelUi() {
+  const c = $('#winProfile input[name="p_model"]:checked');
+  modelUi("#winProfile", "p_", c ? c.value : S.model);
+}
+{ const _s = syncSettingsForm; syncSettingsForm = () => { _s(); settingsModelUi(); }; }
+$$('#winSettings input[name="model"]').forEach(i => i.addEventListener("change", settingsModelUi));
+$$('#winProfile input[name="p_model"]').forEach(i => i.addEventListener("change", profileModelUi));
+{ const _o = openProfile; openProfile = async t => { await _o(t); profileModelUi(); }; }
+
+/* Profil par disque */''')
+
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)
 assert not leftovers, f"restes de SAE : {sorted(set(leftovers))[:10]}"
 

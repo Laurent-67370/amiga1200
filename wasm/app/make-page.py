@@ -655,6 +655,26 @@ rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Ré
       <p>Au lancement d'un jeu WHDLoad, l'émulateur consulte la base de réglages de l'émulateur Amiberry (plus de 11 000 jeux des collections WHDLoad, projet Amiberry-XML-Builder) : NTSC, processeur plus rapide, cycle exact, blitter immédiat, souris ou manette CD32 sont appliqués tout seuls. Le jeu est reconnu par le nom de son archive (gardez le nom d'origine), sinon par son empreinte. Ce que la base indique s'affiche sous la vignette du jeu. La base est téléchargée depuis GitHub au premier jeu, puis rafraîchie tous les 30 jours ou depuis les Réglages.</p>
       <h3>Copier des fichiers sur le disque dur</h3>''')
 
+# CD32 : ROM de la console, images .iso / .cue + .bin, manette CD32
+rep("/* Profil par disque */", (APP / "cd32-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+rep('''  const whdId = sessionStorage.getItem("a1200.whd");''', '''  const cdId = sessionStorage.getItem("a1200.cd");
+  if (cdId) { sessionStorage.removeItem("a1200.cd"); cdGame = await DB.get(cdId) || null; }
+  const whdId = sessionStorage.getItem("a1200.whd");''')
+rep('const groups = [["whd", "Jeux WHDLoad"],', 'const groups = [["whd", "Jeux WHDLoad"], ["cd", "CD (CD32)"],')
+rep('''      } else if (kind === "whd") {''', '''      } else if (kind === "cd") {
+        btn("Jouer", () => { if (running) { toast("Éteignez d'abord l'Amiga.", true); return; } closeWin(); launchCd(r); });
+      } else if (kind === "whd") {''')
+rep('btn("Télécharger", async () => download(r.kind === "hdf" ? await recBlob(r) :', '''if (kind === "cd") { if (r.cue) btn("Télécharger", async () => { download(new TextEncoder().encode(r.cue), r.name); for (const [k, f] of r.files.entries()) download(await recBlob(cdFileRec(r, k)), f.name); }); }
+      else btn("Télécharger", async () => download(r.kind === "hdf" ? await recBlob(r) :''')
+rep('''<button type="button" data-fire="8" class="vf2" aria-label="Deuxième bouton">2</button>''', '''<button type="button" data-fire="3" class="vf3" aria-label="Play (manette CD32)">▶</button><button type="button" data-fire="8" class="vf2" aria-label="Deuxième bouton">2</button>''')
+rep(".tube > #vkbd{position:absolute;", """.vjoy-fire .vf3{display:none;width:min(12vmin,50px);background:rgba(90,90,90,.5);font-size:18px}
+[data-cd32] .vjoy-fire .vf3{display:block}
+.tube > #vkbd{position:absolute;""")
+rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>CD32</h3>
+      <p>Ouvrez l'image d'un CD de CD32 : un fichier <b>.iso</b>, ou un <b>.cue</b> choisi ou glissé <i>en même temps que ses pistes .bin</i> (CD audio compris). Le CD rejoint la Bibliothèque et sa vignette lance la console : 68EC020, AGA, 2 Mo, lecteur CD et manette CD32 à 7 boutons (une manette USB y correspond, avec ses gâchettes ; sur écran tactile, le bouton ▶ est Play). Importez d'abord les ROM de la console dans Réglages → Kickstart : le Kickstart CD32 40.060 et sa ROM d'extension, ou la ROM CD32 complète d'1 Mo ; elles ne remplacent pas le Kickstart de l'A1200.</p>
+      <h3>Copier des fichiers sur le disque dur</h3>''')
+rep("Les archives .lzx doivent être extraites avant.", "Images de CD de CD32 : .iso, ou .cue avec ses pistes .bin. Les archives .lzx doivent être extraites avant.")
+
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)
 assert not leftovers, f"restes de SAE : {sorted(set(leftovers))[:10]}"
 

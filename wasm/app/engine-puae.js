@@ -117,6 +117,7 @@ async function powerOn() {
   if (machine) {
     sessionStorage.setItem("a1200.autostart", "1");
     if (whdGame) sessionStorage.setItem("a1200.whd", whdGame.id);
+    if (cdGame) sessionStorage.setItem("a1200.cd", cdGame.id);
     if (pendingResume) sessionStorage.setItem("a1200.resume", pendingResume.id);
     location.reload(); return;
   }
@@ -128,16 +129,22 @@ async function powerOn() {
     if (resume) {
       for (const t of ["df0", "df1", ...HD_TAGS]) setMounted(t, resume.ctx[t] ? await DB.get(resume.ctx[t]) : null);
       whdGame = resume.ctx.whd ? await DB.get(resume.ctx.whd) : null;
+      cdGame = resume.ctx.cd ? await DB.get(resume.ctx.cd) : null;
       E = Object.assign({}, S, { accel: "none", model: "a1200" }, resume.settings, { _profile: "" });
-    } else E = whdGame ? Object.assign({}, S) : await effectiveSettings(); /* les profils de disques ne s'appliquent pas à un jeu WHDLoad */
+    } else E = whdGame || cdGame ? Object.assign({}, S) : await effectiveSettings(); /* les profils de disques ne s'appliquent pas à un jeu WHDLoad */
     /* Jeu WHDLoad : sur l'A1200, avec de la mémoire Fast (8 Mo si les réglages n'en donnent pas) */
     const whd = whdGame;
     if (whd && !resume) {
       E.model = "a1200"; if (!+E.fast) E.fast = "8"; E._profile = "";
       if (whd.whdCfg) Object.assign(E, whd.whdCfg.e); /* réglages de la base WHDLoad pour ce jeu */
     }
+    /* CD32 : la console telle qu'elle est (2 Mo de Chip, 68EC020), ses propres ROM */
+    const cd = cdGame;
+    if (cd && !resume) Object.assign(E, { model: "a1200", fast: "0", accel: "none", _profile: "" });
+    const cdRoms = cd ? await cd32Roms() : null;
+    if (cd && !cdRoms) throw new Error("ROM de la CD32 absentes de la Bibliothèque");
     const a500 = modelOf(E) === "a500";
-    const romId = resume ? resume.ctx.rom : a500 ? await romFor500() : S.romId;
+    const romId = cd ? cdRoms.id : resume ? resume.ctx.rom : a500 ? await romFor500() : S.romId;
     if (a500 && romId === "aros" && !resume) toast("Mode Amiga 500 sans Kickstart 1.3 : AROS démarre, mais la plupart des jeux A500 ont besoin du vrai Kickstart (Réglages).", true);
     skip.reset();
     machine = await PuaeMachine.create({
@@ -149,7 +156,8 @@ async function powerOn() {
     let kick = null, key = null, arosExt = null;
     if (romId !== "aros") {
       const r = await DB.get(romId);
-      if (r) kick = new Uint8Array(await r.blob.arrayBuffer());
+      if (cd) kick = cdRoms.main;
+      else if (r) kick = new Uint8Array(await r.blob.arrayBuffer());
       else if (resume) throw new Error("le Kickstart de cette sauvegarde n'est plus dans la Bibliothèque");
       else if (!a500) { S.romId = "aros"; saveSettings(); }
       if (kick && S.keyId) { const k = await DB.get(S.keyId); if (k) key = new Uint8Array(await k.blob.arrayBuffer()); }
@@ -168,7 +176,7 @@ async function powerOn() {
     if (arosExt) { machine.writeFile("/sys/aros-ext.bin", arosExt); lines.push("kickstart_ext_rom_file=/sys/aros-ext.bin"); }
     for (const tag of ["df0", "df1"]) {
       fsPath[tag] = null;
-      if (!mounted[tag] || whd) continue;
+      if (!mounted[tag] || whd || cd) continue;
       const r = await DB.get(mounted[tag].id);
       if (!r) { setMounted(tag, null); continue; }
       fsPath[tag] = "/media/" + tag + "/" + safeName(r.name);
@@ -176,12 +184,13 @@ async function powerOn() {
       lines.push(`floppy${DRIVE_NUM[tag]}=${fsPath[tag]}`);
     }
     const anyHd = HD_TAGS.some(t => mounted[t]);
-    if (anyHd && whd) toast("Les disques durs ne sont pas branchés pendant un jeu WHDLoad.");
+    if (anyHd && cd) toast("Les disques durs ne sont pas branchés sur la CD32.");
+    else if (anyHd && whd) toast("Les disques durs ne sont pas branchés pendant un jeu WHDLoad.");
     else if (anyHd && a500) toast("Mode Amiga 500 : les disques durs ne sont pas branchés (l'A500 n'a pas de contrôleur IDE).");
     const partNames = new Set();
     for (const [unit, tag] of HD_TAGS.entries()) {
       fsPath[tag] = null;
-      if (!mounted[tag] || a500 || whd) continue;
+      if (!mounted[tag] || a500 || whd || cd) continue;
       const r = await DB.get(mounted[tag].id);
       if (!r) { setMounted(tag, null); continue; }
       fsPath[tag] = "/media/" + tag + "/" + safeName(r.name);
@@ -197,6 +206,14 @@ async function powerOn() {
     /* uaehf.device a besoin de la ROM de démarrage d'UAE : seulement si DH2: ou DH3: est branché (voir plus haut) */
     if (fsPath.dh2 || fsPath.dh3) lines.splice(0, lines.length, ...lines.filter(l => !/^(boot_rom_uae|uaeboard)=/.test(l)));
     let content = "/cfg/a1200.uae", options = coreOptions();
+    if (cd) {
+      /* Modèle CD32 du cœur ; l'extension est cherchée sous le nom kick40060.CD32.ext (inutile avec la ROM complète) */
+      if (cdRoms.ext) machine.writeFile("/sys/kick40060.CD32.ext", cdRoms.ext);
+      lines.splice(0, lines.length, ...lines.filter(l => !/^(nr_floppies|floppy1type)=/.test(l))); /* pas de lecteur de disquettes */
+      lines.push(`cdimage0=${await writeCd(machine, cd)},`);
+      options.puae_model = "CD32"; options.puae_fastmem_size = "0";
+      E._cd = true;
+    }
     if (whd) {
       /* Le cœur reçoit l'archive elle-même : il la monte en DH0: et démarre sur son volume WHDLoad:. Nos lignes
          de configuration passent par le fichier .uae propre au contenu, lu après les siennes. Il faut la ROM de
@@ -214,10 +231,11 @@ async function powerOn() {
     } else machine.writeFile(content, new TextEncoder().encode(lines.join("\n") + "\n"));
     for (const t in fsPath) seen[t] = fsPath[t] ? machine.fileMtime(fsPath[t]) : 0;
 
-    await machine.start({ model: MODELS[modelOf(E)].core, kickstart: kick, romKey: key, content, options });
+    await machine.start({ model: cd ? "CD32" : MODELS[modelOf(E)].core, kickstart: kick, romKey: cd ? null : key, content, options });
     machine.setMuted(!!S.muted);
     /* Jeu WHDLoad prévu pour la manette CD32 (7 boutons) : la manette du port joystick en devient une */
-    if (whd && whd.whdCfg && whd.whdCfg.cd32) machine.M._retro_set_controller_port_device(0, CD32PAD);
+    if ((whd && whd.whdCfg && whd.whdCfg.cd32) || cd) machine.M._retro_set_controller_port_device(0, CD32PAD);
+    if (cd) document.documentElement.dataset.cd32 = "1";
     if (whd && whd.whdCfg && whd.whdCfg.mouse && isTouch) toast("Ce jeu se joue à la souris : un doigt la déplace, une touche clique.");
     machine.inputBlocked = false;
     E._rom = romId;
@@ -236,7 +254,7 @@ async function powerOff() {
 }
 function onStarted() {
   starting = false; running = true; setPowerUi("on");
-  $("#statMode").textContent = (modelOf(E) === "a500" ? "A500, " : "") + (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "")
+  $("#statMode").textContent = (E._cd ? "CD32, " : modelOf(E) === "a500" ? "A500, " : "") + (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "")
     + (modelOf(E) !== "a500" && ACCEL[E.accel] && ACCEL[E.accel].label ? ", " + ACCEL[E.accel].label : "")
     + (E.compat === "max" ? ", cycle exact" : "") + (E._profile ? ", profil " + E._profile : "") + (E._whd ? ", WHDLoad" + (whdGame && whdGame.whdCfg ? " (réglages de la base)" : "") : "");
   showCaptureHint();

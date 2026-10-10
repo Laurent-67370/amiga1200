@@ -597,19 +597,12 @@ assert _i >= 0 and _j > _i
 _panel = page[_i:_j]
 _extra = ""
 for _n, _lbl in [(1, "IDE, esclave"), (2, "disque UAE"), (3, "disque UAE")]:
-    _extra += (_panel.replace('class="drive wb"', 'class="drive wb hd-extra" hidden').replace("dh0", "dh%d" % _n)
+    _extra += (_panel.replace('class="drive wb"', 'class="drive wb hd-extra"').replace("dh0", "dh%d" % _n)
                .replace("DH0:", "DH%d:" % _n).replace('IDE interne 2,5"', _lbl))
 page = page[:_j] + _extra + page[_j:]
-rep("/* Profil par disque */", """/* Disques durs supplémentaires : chaque unité occupée a son panneau, plus la suivante, libre, pour en ajouter une */
-function refreshHdPanels() {
-  HD_TAGS.forEach((t, i) => { if (i) $("#drive-" + t).hidden = !mounted[t] && !mounted[HD_TAGS[i - 1]]; });
-}
-{ const _sm = setMounted; setMounted = (t, r) => { _sm(t, r); refreshHdPanels(); }; }
-
-/* Profil par disque */""")
-rep('''  if (sessionStorage.getItem("a1200.autostart")) {''', '''  refreshHdPanels();
-  if (sessionStorage.getItem("a1200.autostart")) {''')
 rep(".tube > #vkbd{position:absolute;", """.hd-extra [data-act="profile"]{display:none}
+/* Sur téléphone, un disque dur supplémentaire libre se réduit à son titre et à ses deux boutons utiles */
+@media (max-width:760px){.hd-extra:has(.media.empty) .media,.hd-extra:has(.media.empty) button:disabled{display:none}.hd-extra:has(.media.empty){gap:6px;padding:8px 12px}}
 .tube > #vkbd{position:absolute;""")
 
 # Export et import de la Bibliothèque : un seul fichier pour passer d'un appareil à l'autre
@@ -617,8 +610,9 @@ rep('<button class="gad" id="libImport">Ajouter des fichiers…</button>', '''<b
       <button class="gad" id="libExport" title="Tout enregistrer dans un seul fichier, pour un autre appareil ou une sauvegarde">Exporter tout…</button>
       <button class="gad" id="libRestore" title="Reprendre une Bibliothèque exportée (fichier .tar)">Importer…</button>''')
 rep("/* Profil par disque */", (APP / "library-io-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+rep("<li>Sous DH0:, cliquez sur <b>Nouveau</b> et choisissez une taille.</li>", "<li>Sous DH0:, cliquez sur <b>Nouveau</b> et choisissez une taille. DH1: à DH3: accueillent d'autres disques, pour vos jeux ou vos données.</li>")
 rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Plusieurs disques durs</h3>
-      <p>Jusqu'à quatre disques : <b>DH0:</b> et <b>DH1:</b> sur le contrôleur IDE de l'A1200 (maître et esclave), <b>DH2:</b> et <b>DH3:</b> par le pilote de disque d'UAE (uaehf.device), reconnu par tous les Kickstart. Dès qu'un disque est branché, le panneau de l'unité suivante apparaît ; la Bibliothèque a un bouton par unité. L'Amiga démarre sur DH0:. Si deux disques ont une partition du même nom (souvent DH0), celle du second est renommée au démarrage.</p>
+      <p>Jusqu'à quatre disques : <b>DH0:</b> et <b>DH1:</b> sur le contrôleur IDE de l'A1200 (maître et esclave), <b>DH2:</b> et <b>DH3:</b> par le pilote de disque d'UAE (uaehf.device), reconnu par tous les Kickstart. Chaque unité a son panneau sous l'écran, à côté des lecteurs de disquettes : <b>Nouveau</b> y crée un disque (sa partition prend le nom de l'unité), <b>Choisir…</b> en importe un. Dans la Bibliothèque, les boutons <b>DH0:</b> à <b>DH3:</b> branchent un disque déjà rangé ; un disque ne peut être branché qu'à un endroit. Les disques se branchent Amiga éteint. L'Amiga démarre sur DH0:. Si deux disques ont une partition du même nom (souvent DH0), celle du second est renommée au démarrage.</p>
       <h3>Changer d'appareil</h3>
       <p>Dans la Bibliothèque, <b>Exporter tout…</b> enregistre tout dans un seul fichier .tar : disquettes, disques durs, Kickstart, jeux WHDLoad, sauvegardes d'état et de jeux. Sur l'autre appareil, <b>Importer…</b> (ou glissez le fichier sur la page) les ajoute ; ce qui y est déjà et plus récent est gardé. Le fichier reste lisible par 7-Zip ou tar.</p>
       <h3>Copier des fichiers sur le disque dur</h3>''')

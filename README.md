@@ -46,7 +46,7 @@ La Bibliothèque est propre à chaque navigateur : importez votre Kickstart et v
   image avec table de partitions (RDB), ou image d'une seule partition FFS/OFS (« partition hardfile » de WinUAE),
   complétée automatiquement d'une table de partitions pour démarrer. Rangé par morceaux de 8 Mo : seuls ceux que l'Amiga modifie sont réenregistrés
 - **Quatre disques durs** : DH0: et DH1: sur l'IDE de l'A1200 (maître, esclave), DH2: et DH3: par le pilote de disque d'UAE ;
-  le panneau de l'unité suivante apparaît dès qu'un disque est branché
+  chaque unité a son panneau sous l'écran (sur téléphone, une unité libre se réduit à Choisir… et Nouveau)
 - **Nouveau** crée un disque partitionné (RDB) et formaté (FFS), prêt pour le Workbench
 - **Copier des fichiers sur le disque dur** (Amiga éteint, bouton *Fichiers…*) : fichiers, dossier entier, archives `.lha`/`.lzh`
   et `.zip` décompressées au passage, dans le dossier choisi ; c'est la façon d'installer des jeux **WHDLoad**.

@@ -4,7 +4,8 @@ Branche de travail pour remplacer le cœur SAE par [PUAE](https://github.com/lib
 (le moteur de WinUAE) compilé en WebAssembly. Voir l'étude de faisabilité pour le plan complet.
 
 - `vendor/puae` : PUAE en sous-module, épinglé sur le commit étudié.
-- `patches/` : correctifs nécessaires en WebAssembly (types de fonctions incohérents, sans effet en natif).
+- `patches/` : correctifs nécessaires en WebAssembly (types de fonctions incohérents, sans effet en natif), et la table des
+  instructions du 68k construite une seule fois (`0002`).
 - `build.sh` : compilation Emscripten avec fils d'exécution → `dist/puae.js` + `dist/puae.wasm`, et un banc d'essai Node.
 - `bench.c` : frontal libretro minimal sans écran (A1200 d'origine, AROS intégré), mesure la vitesse et teste la sauvegarde d'état.
 
@@ -138,3 +139,11 @@ extinction (reprise au clavier) ; profil cycle exact + 8 Mo Fast + NTSC appliqu�
   assemble des Blob (rien n'est copié en mémoire), l'import lit le fichier par tranches et range les disques durs en morceaux.
   À l'import, un élément plus récent sur l'appareil est gardé. Vérifié : quatre disques de 64 Mo, une disquette, un jeu WHDLoad
   et WHDSaves exportés puis importés dans un navigateur vierge, contenus identiques ; l'archive se relit avec GNU tar.
+- **Latence et run-ahead** : mesuré dans Chromium (A1200, AROS), une image prend 5,5 ms, une sauvegarde d'état 4 ms, un
+  rechargement 28,5 ms : PUAE recharge un état par une réinitialisation complète (table des instructions refaite, puces remises
+  à zéro, mémoire effacée) puis émule une image en silence ; l'instantané léger de WinUAE (« rewind ») est désactivé dans la
+  version libretro. Le run-ahead (sauvegarde + image d'avance + rechargement à chaque image) dépasse donc les 20 ms d'une image.
+  Fait à la place : la table des instructions n'est plus reconstruite à chaque reprise (`patches/0002`, rechargement 12 ms, la
+  reprise d'une sauvegarde est plus rapide), et la boucle calcule les images dues au rafraîchissement de l'écran, juste avant de
+  les dessiner (un minuteur prend le relais onglet masqué) : de l'appui à l'image dessinée, 19,1 ms en moyenne avant, 16,3 ms après.
+  Le reste vient de l'attente du début de l'image Amiga suivante (une toutes les 20 ms), qu'aucun réglage de la page ne réduit.

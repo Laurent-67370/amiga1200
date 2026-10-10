@@ -127,11 +127,20 @@ export class PuaeMachine {
     this.running = true;
     this._t = performance.now(); this._acc = 0; this._frames = 0; this._statT = this._t;
     this._attachInput();
-    /* L'émulation suit sa propre horloge, indépendante de l'affichage : un écran lent ou chargé
-       ne ralentit pas l'Amiga. L'image est dessinée au rythme de l'écran. */
-    this._timer = setInterval(() => this._step(performance.now()), 4);
-    const draw = () => { if (!this.running) return; requestAnimationFrame(draw); if (this._newFrame) { this._newFrame = false; this._draw(); } };
-    requestAnimationFrame(draw);
+    /* L'émulation suit l'horloge réelle, au rythme exact de l'Amiga. Pour la latence, les images dues sont calculées
+       au moment où l'écran se rafraîchit, juste avant d'être dessinées : les commandes sont lues le plus tard possible
+       et l'image n'attend pas le rafraîchissement suivant. Onglet masqué (plus de rafraîchissement), un minuteur prend
+       le relais pour que le son et le jeu continuent. */
+    this._lastRaf = 0;
+    this._timer = setInterval(() => { const now = performance.now(); if (document.hidden || now - this._lastRaf > 60) this._step(now); }, 4);
+    const frame = () => {
+      if (!this.running) return;
+      requestAnimationFrame(frame);
+      this._lastRaf = performance.now();
+      this._step(this._lastRaf);
+      if (this._newFrame) { this._newFrame = false; this._draw(); }
+    };
+    requestAnimationFrame(frame);
   }
 
   /* ---------- boucle : on rattrape le temps réel au rythme exact de l'Amiga ---------- */

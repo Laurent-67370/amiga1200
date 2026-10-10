@@ -385,6 +385,13 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
 [data-model="a1200"] .gad.primary{box-shadow:inset 0 -2px 0 rgba(0,0,0,.18)}
 [data-model="a1200"] .titlebar .t{letter-spacing:.01em}
 [data-model="a500"] .drive .media,[data-model="a500"] .files-log{color:#000}
+/* CD32 : console noire, logo multicolore */
+[data-model="cd32"]{--room-top:#2b2b31; --room-bot:#0b0b0e; --glow:rgba(228,37,44,.14); --accent:#e4252c; --accent-ink:#fff}
+[data-model="cd32"] .launch{background:radial-gradient(ellipse at 50% 0%,#24242a,#050506 75%)}
+[data-model="cd32"] .l-title,[data-model="cd32"] .l-kick-lbl{color:#ff8a8f}
+[data-model="cd32"] .monitor,[data-model="cd32"] .wedge{--plastic:#3a3a40;--plastic-hi:#55555c;--plastic-lo:#26262b;--plastic-edge:#141417}
+[data-model="cd32"] .wedge,[data-model="cd32"] .monitor-foot{color:#d9d9de}
+[data-model="cd32"] .led{color:#b9b9c0}
 </style>
 </head>
 <body>
@@ -588,6 +595,7 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
       <div class="opt" data-setting="model">
         <label><input type="radio" name="model" value="a1200"> Amiga 1200 (68EC020, AGA, 2 Mo)</label>
         <label><input type="radio" name="model" value="a500"> Amiga 500 (68000, OCS, 1 Mo)</label>
+        <label><input type="radio" name="model" value="cd32"> Amiga CD32 (console CD)</label>
       </div>
       <p class="hint">L'Amiga 500 sert aux jeux A500 qui refusent de tourner sur l'A1200, lancés depuis leurs disquettes ; il demande le Kickstart 1.3. Ni disque dur ni carte accélératrice dans ce mode. Le choix peut aussi se faire pour une seule disquette, dans son Profil.</p>
 
@@ -1058,7 +1066,7 @@ async function powerOn() {
       whdGame = resume.ctx.whd ? await DB.get(resume.ctx.whd) : null;
       cdGame = resume.ctx.cd ? await DB.get(resume.ctx.cd) : null;
       E = Object.assign({}, S, { accel: "none", model: "a1200" }, resume.settings, { _profile: "" });
-    } else E = whdGame || cdGame ? Object.assign({}, S) : await effectiveSettings(); /* les profils de disques ne s'appliquent pas à un jeu WHDLoad */
+    } else E = whdGame || cdGame || S.model === "cd32" ? Object.assign({}, S) : await effectiveSettings(); /* les profils de disques ne s'appliquent pas à un jeu WHDLoad */
     /* Jeu WHDLoad : sur l'A1200, avec de la mémoire Fast (8 Mo si les réglages n'en donnent pas) */
     const whd = whdGame;
     if (whd && !resume) {
@@ -1066,7 +1074,7 @@ async function powerOn() {
       if (whd.whdCfg) Object.assign(E, whd.whdCfg.e); /* réglages de la base WHDLoad pour ce jeu */
     }
     /* CD32 : la console telle qu'elle est (2 Mo de Chip, 68EC020), ses propres ROM */
-    const cd = cdGame;
+    const cd = cdGame || (!resume && !whdGame && S.model === "cd32") ? cdGame || "sans CD" : null; /* console CD32, avec ou sans CD */
     if (cd && !resume) Object.assign(E, { model: "a1200", fast: "0", accel: "none", _profile: "" });
     const cdRoms = cd ? await cd32Roms() : null;
     if (cd && !cdRoms) throw new Error("ROM de la CD32 absentes de la Bibliothèque");
@@ -1137,7 +1145,7 @@ async function powerOn() {
       /* Modèle CD32 du cœur ; l'extension est cherchée sous le nom kick40060.CD32.ext (inutile avec la ROM complète) */
       if (cdRoms.ext) machine.writeFile("/sys/kick40060.CD32.ext", cdRoms.ext);
       lines.splice(0, lines.length, ...lines.filter(l => !/^(nr_floppies|floppy1type)=/.test(l))); /* pas de lecteur de disquettes */
-      lines.push(`cdimage0=${await writeCd(machine, cd)},`);
+      if (cdGame) lines.push(`cdimage0=${await writeCd(machine, cdGame)},`);
       options.puae_model = "CD32"; options.puae_fastmem_size = "0";
       E._cd = true;
     }
@@ -2190,31 +2198,51 @@ async function renderLauncher() {
   try { all = await DB.all(); } catch (e) {}
   /* Kickstart */
   const kick = $("#lKick"); kick.innerHTML = "";
-  const is500 = S.model === "a500";
-  /* Bascule Amiga 1200 / Amiga 500 */
+  const is500 = S.model === "a500", isCd32 = S.model === "cd32";
+  /* Bascule Amiga 1200 / Amiga 500 / CD32 */
   const seg = lEl("span", "l-model");
-  for (const [m, t] of [["a1200", "A1200"], ["a500", "A500"]]) {
+  for (const [m, t] of [["a1200", "A1200"], ["a500", "A500"], ["cd32", "CD32"]]) {
     const b = lEl("button", "l-seg"); b.textContent = t; b.setAttribute("aria-pressed", (S.model || "a1200") === m ? "true" : "false");
-    b.title = m === "a500" ? "Amiga 500 : 68000, OCS, pour les jeux A500 récalcitrants" : "Amiga 1200 : 68EC020, AGA";
+    b.title = m === "a500" ? "Amiga 500 : 68000, OCS, pour les jeux A500 récalcitrants" : m === "cd32" ? "Amiga CD32 : la console CD (68EC020, AGA, manette à 7 boutons)" : "Amiga 1200 : 68EC020, AGA";
     b.onclick = () => { S.model = m; saveSettings(); renderLauncher(); };
     seg.appendChild(b);
   }
-  $("#lTitle").textContent = is500 ? "Amiga 500" : "Amiga 1200";
+  $("#lTitle").textContent = is500 ? "Amiga 500" : isCd32 ? "Amiga CD32" : "Amiga 1200";
   const romId = is500 ? await romFor500(all) : S.romId;
-  let romRec = romId !== "aros" ? all.find(r => r.id === romId) : null;
+  const romRec = romId !== "aros" ? all.find(r => r.id === romId) : null;
+  if (isCd32) {
+    /* ROM de la console : état et import (plusieurs fichiers à la fois : Kickstart, extension, rom.key) */
+    const st = await cd32RomStatus(all);
+    const t = lEl("span", "l-kick-name"); t.textContent = st.ok ? st.label : st.label || "absentes";
+    const b = lEl("button", "gad small"); b.textContent = st.ok ? "Changer" : "Importer les ROM CD32…";
+    b.onclick = () => pickFiles(".rom,.bin,.key", files => { (async () => { for (const f of files) await importFile(f); })(); });
+    kick.append(seg, lEl("span", "l-kick-lbl", "ROM CD32"), t, b);
+  } else {
   const kTxt = lEl("span", "l-kick-name");
   kTxt.textContent = romRec ? (romRec.label || romRec.name) : "AROS (Kickstart libre)";
   kick.append(seg, lEl("span", "l-kick-lbl", "Kickstart"), kTxt);
   const kBtn = lEl("button", "gad small"); kBtn.textContent = romRec ? "Changer" : is500 ? "Importer le 1.3…" : "Importer le mien…";
   kBtn.onclick = romRec ? () => $("#btnSettings").click() : () => pickFile(".rom,.bin,.key", f => importFile(f));
   kick.appendChild(kBtn);
+  }
 
   /* Disques : les plus récemment utilisés d'abord */
-  const disks = all.filter(r => r.kind === "adf" || r.kind === "hdf" || r.kind === "whd" || r.kind === "cd").sort((a, b) => (b.used || b.added) - (a.used || a.added));
+  const disks = all.filter(r => isCd32 ? r.kind === "cd" : r.kind === "adf" || r.kind === "hdf" || r.kind === "whd" || r.kind === "cd").sort((a, b) => (b.used || b.added) - (a.used || a.added));
   const thumbs = {};
   for (const s of all.filter(r => r.kind === "state").sort((a, b) => a.updated - b.updated)) thumbs[s.game] = s;
   box.innerHTML = "";
-  if (!disks.length) {
+  if (!disks.length && isCd32) {
+    /* CD32 : ROM, un CD, Allumer */
+    const st = await cd32RomStatus(all);
+    const steps = lEl("ol", "l-steps");
+    const s1 = lEl("li", null, "<b>ROM de la CD32</b><span></span>");
+    s1.querySelector("span").textContent = st.ok ? "Prêtes : " + st.label + "."
+      : "Le Kickstart CD32 40.060 et sa ROM d'extension, ou la ROM CD32 complète d'1 Mo (Amiga Forever compris, avec rom.key) : bouton ci-dessus." + (st.label ? " Déjà là : " + st.label + "." : "");
+    const s2 = lEl("li", null, "<b>Un CD</b><span>Une image .iso, ou un fichier .cue choisi en même temps que ses pistes .bin (CD audio compris).</span>");
+    const acts = lEl("div", "l-acts"); const o = lEl("button", "gad"); o.textContent = "Ouvrir un CD…"; o.onclick = () => $("#lOpen").click(); acts.appendChild(o); s2.appendChild(acts);
+    const s3 = lEl("li", null, "<b>Allumer</b><span>Une touche sur la vignette du CD lance la console. Allumer sans CD affiche l'écran de démarrage de la CD32. Manette USB ou joystick tactile (▶ = Play).</span>");
+    steps.append(s1, s2, s3); box.appendChild(steps);
+  } else if (!disks.length) {
     /* Première visite : trois étapes */
     const steps = lEl("ol", "l-steps");
     const s1 = lEl("li", null, "<b>Kickstart</b><span></span>");
@@ -2263,7 +2291,7 @@ async function renderLauncher() {
   if (mounted.df0) what.push(mounted.df0.name.replace(/\.(adf|adz|dms)$/i, ""));
   const hds = HD_TAGS.filter(t => mounted[t]).map(t => mounted[t].name.replace(/\.hdf$/i, ""));
   if (hds.length) what.push((mounted.df0 ? "+ " : "") + (hds.length > 1 ? "disques durs " : "disque dur ") + hds.join(", "));
-  $("#lWhat").textContent = what.length ? "avec " + what.join(" ") : "sans disque";
+  $("#lWhat").textContent = isCd32 ? "console CD32, sans CD (touchez un CD pour le lancer)" : what.length ? "avec " + what.join(" ") : "sans disque";
 }
 
 /* Le bouton « Ouvrir un fichier » : disquette, archive, disque dur ou Kickstart */
@@ -2518,7 +2546,7 @@ function modelUi(win, prefix, model) {
 }
 function settingsModelUi() {
   modelUi("#winSettings", "", S.model);
-  $("#tSettings").textContent = "Réglages de l'" + (S.model === "a500" ? "Amiga 500" : "Amiga 1200");
+  $("#tSettings").textContent = "Réglages de l'" + (S.model === "a500" ? "Amiga 500" : S.model === "cd32" ? "Amiga CD32" : "Amiga 1200");
 }
 function profileModelUi() {
   const c = $('#winProfile input[name="p_model"]:checked');
@@ -2794,19 +2822,19 @@ const BOING = '<svg class="boing" viewBox="0 0 40 40" aria-hidden="true"><defs>'
 
 let themeModel = null;
 function applyModelTheme(model) {
-  model = model === "a500" ? "a500" : "a1200";
+  model = model === "a500" ? "a500" : model === "cd32" ? "cd32" : "a1200";
   if (model === themeModel) return;
   themeModel = model;
   document.documentElement.dataset.model = model;
-  const label = model === "a500" ? "AMIGA 500" : "AMIGA 1200";
+  const label = model === "a500" ? "AMIGA 500" : model === "cd32" ? "AMIGA CD32" : "AMIGA 1200";
   const brand = $(".monitor-foot .brand"), name = $(".wedge .name");
   if (brand) { const led = $("#monLed"); brand.innerHTML = AMIGA_TICK + label; if (led) brand.appendChild(led); }
   if (name) name.innerHTML = AMIGA_TICK + label;
-  const wedge = $(".wedge"); if (wedge) wedge.setAttribute("aria-label", "Boîtier " + (model === "a500" ? "Amiga 500" : "Amiga 1200"));
+  const wedge = $(".wedge"); if (wedge) wedge.setAttribute("aria-label", "Boîtier " + (model === "a500" ? "Amiga 500" : model === "cd32" ? "Amiga CD32" : "Amiga 1200"));
   const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.content = model === "a500" ? "#0b3a73" : "#2b303b";
 }
 /* Le modèle qui tourne (réglages effectifs, profil compris), sinon celui choisi pour le prochain allumage */
-const themeNow = () => applyModelTheme(running || starting ? modelOf(E) : S.model);
+const themeNow = () => applyModelTheme(running || starting ? (E._cd ? "cd32" : modelOf(E)) : S.model);
 { const _r = renderLauncher; renderLauncher = async () => { await _r(); themeNow(); decorateLauncher(); }; }
 { const _s = onStarted; onStarted = (...a) => { _s(...a); themeNow(); }; }
 $$('#winSettings input[name="model"]').forEach(i => i.addEventListener("change", () => setTimeout(themeNow)));
@@ -3071,6 +3099,8 @@ const CD32_LABEL = { main: "Kickstart CD32 (40.060)", ext: "Extension CD32 (40.0
     if (guessKind(name, u8) === "rom") {
       const role = await cd32Role(name, u8);
       if (role) {
+        /* Les ROM CD32 déjà rangées (fichier identique) ne sont pas dupliquées */
+        if ((await DB.all()).some(r => r.kind === "rom" && r.crc === crc32u8(u8))) { if (!quiet) toast(name + " est déjà dans la Bibliothèque."); return null; }
         const rec = { id: newId(), kind: "rom", name, size: u8.length, blob: new Blob([u8]), crc: crc32u8(u8), added: Date.now(), label: CD32_LABEL[role], cd32: role };
         await DB.put(rec);
         if (!quiet) toast(CD32_LABEL[role] + " ajoutée : elle servira aux CD de CD32.");
@@ -3093,6 +3123,24 @@ async function cd32Roms() {
   if (by.main && by.ext) return { id: by.main.id, main: await bytes(by.main), ext: await bytes(by.ext) };
   return null;
 }
+
+/* État des ROM pour l'accueil : { ok, label } */
+async function cd32RomStatus(all) {
+  const roms = (all || await DB.all()).filter(r => r.kind === "rom" && r.cd32);
+  const has = k => roms.some(r => r.cd32 === k);
+  if (has("combined")) return { ok: true, label: CD32_LABEL.combined };
+  if (has("main") && has("ext")) return { ok: true, label: "Kickstart CD32 + extension (40.060)" };
+  if (has("main")) return { ok: false, label: "Kickstart CD32 seul (il manque l'extension)" };
+  if (has("ext")) return { ok: false, label: "extension seule (il manque le Kickstart CD32)" };
+  return { ok: false, label: "" };
+}
+function pickFiles(accept, cb) {
+  const inp = $("#filePick"); inp.value = ""; inp.multiple = true; inp.accept = accept;
+  inp.onchange = () => { if (inp.files.length) cb([...inp.files]); };
+  inp.click();
+}
+/* Les ROM importées à l'accueil le rafraîchissent */
+{ const _ib = importBytes; importBytes = async (...a) => { const r = await _ib(...a); renderLauncherSoon(); return r; }; }
 
 /* ---- Images de CD : .iso, ou .cue avec ses pistes .bin ---- */
 let importBatch = [];

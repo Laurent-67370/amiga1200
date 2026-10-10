@@ -3,9 +3,13 @@
    ========================================================= */
 let machine = null;
 let running = false, paused = false, starting = false;
-const mounted = { df0: null, df1: null, dh0: null }; /* {id, name} des médias en place */
+const mounted = { df0: null, df1: null, dh0: null, dh1: null, dh2: null, dh3: null }; /* {id, name} des médias en place */
+/* Disques durs : DH0: et DH1: sur le contrôleur IDE de l'A1200 (maître, esclave). Ni le Kickstart 3.1 ni AROS ne voient
+   d'autres unités IDE : DH2: et DH3: passent par le pilote de disque d'UAE (uaehf.device), lisible par tout Kickstart */
+const HD_TAGS = ["dh0", "dh1", "dh2", "dh3"];
+const isHd = tag => /^dh/.test(tag);
 /* Où chaque média vit dans le système de fichiers du cœur pendant la session */
-const fsPath = { df0: null, df1: null, dh0: null };
+const fsPath = { df0: null, df1: null, dh0: null, dh1: null, dh2: null, dh3: null };
 const DRIVE_NUM = { df0: 0, df1: 1 };
 
 /* Empreintes connues des Kickstart A1200 (CRC32 du fichier) */
@@ -122,7 +126,7 @@ async function powerOn() {
     /* Reprise d'une sauvegarde : mêmes disques, même Kickstart, mêmes réglages qu'au moment de la sauvegarde */
     const resume = pendingResume; pendingResume = null;
     if (resume) {
-      for (const t of ["df0", "df1", "dh0"]) setMounted(t, resume.ctx[t] ? await DB.get(resume.ctx[t]) : null);
+      for (const t of ["df0", "df1", ...HD_TAGS]) setMounted(t, resume.ctx[t] ? await DB.get(resume.ctx[t]) : null);
       whdGame = resume.ctx.whd ? await DB.get(resume.ctx.whd) : null;
       E = Object.assign({}, S, { accel: "none", model: "a1200" }, resume.settings, { _profile: "" });
     } else E = whdGame ? Object.assign({}, S) : await effectiveSettings(); /* les profils de disques ne s'appliquent pas à un jeu WHDLoad */
@@ -165,19 +169,27 @@ async function powerOn() {
       machine.writeFile(fsPath[tag], new Uint8Array(await r.blob.arrayBuffer()));
       lines.push(`floppy${DRIVE_NUM[tag]}=${fsPath[tag]}`);
     }
-    fsPath.dh0 = null;
-    if (mounted.dh0 && whd) toast("Le disque dur n'est pas branché pendant un jeu WHDLoad.");
-    else if (mounted.dh0 && a500) toast("Mode Amiga 500 : le disque dur n'est pas branché (l'A500 n'a pas de contrôleur IDE).");
-    if (mounted.dh0 && !a500 && !whd) {
-      const r = await DB.get(mounted.dh0.id);
-      if (r) {
-        fsPath.dh0 = "/media/dh0/" + safeName(r.name);
-        machine.writeFile(fsPath.dh0, await recBytes(r));
-        hdDirty.clear(); machine.trackWrites(fsPath.dh0, hdWrite); /* pour ne réenregistrer que les morceaux modifiés */
-        /* Disque IDE brut sur le contrôleur Gayle : géométrie lue sur le disque, comme un vrai A1200 */
-        lines.push(`hardfile2=rw,DH0:${fsPath.dh0},0,0,0,512,0,,ide0_mainboard,0`);
-      } else setMounted("dh0", null);
+    const anyHd = HD_TAGS.some(t => mounted[t]);
+    if (anyHd && whd) toast("Les disques durs ne sont pas branchés pendant un jeu WHDLoad.");
+    else if (anyHd && a500) toast("Mode Amiga 500 : les disques durs ne sont pas branchés (l'A500 n'a pas de contrôleur IDE).");
+    const partNames = new Set();
+    for (const [unit, tag] of HD_TAGS.entries()) {
+      fsPath[tag] = null;
+      if (!mounted[tag] || a500 || whd) continue;
+      const r = await DB.get(mounted[tag].id);
+      if (!r) { setMounted(tag, null); continue; }
+      fsPath[tag] = "/media/" + tag + "/" + safeName(r.name);
+      const bytes = await recBytes(r);
+      /* Deux disques avec une partition du même nom (DH0: souvent) : celle du second est renommée (le nouveau nom reste sur le disque si l'Amiga réécrit son début) */
+      for (const x of uniquePartitionNames(bytes, partNames)) toast(r.name + " : partition " + x.from + ": montée comme " + x.to + ":");
+      machine.writeFile(fsPath[tag], bytes);
+      hdDirty[tag].clear(); machine.trackWrites(fsPath[tag], (pos, len) => hdWrite(tag, pos, len)); /* pour ne réenregistrer que les morceaux modifiés */
+      /* DH0:, DH1: : disque IDE brut sur le contrôleur Gayle, géométrie lue sur le disque, comme un vrai A1200 */
+      if (unit < 2) lines.push(`hardfile2=rw,${tag.toUpperCase()}:${fsPath[tag]},0,0,0,512,0,,ide${unit}_mainboard,0`);
+      else lines.push(`hardfile2=rw,${tag.toUpperCase()}:${fsPath[tag]},0,0,0,512,0,,uae${unit - 2}`);
     }
+    /* uaehf.device a besoin de la ROM de démarrage d'UAE : seulement si DH2: ou DH3: est branché (voir plus haut) */
+    if (fsPath.dh2 || fsPath.dh3) lines.splice(0, lines.length, ...lines.filter(l => !/^(boot_rom_uae|uaeboard)=/.test(l)));
     let content = "/cfg/a1200.uae", options = coreOptions();
     if (whd) {
       /* Le cœur reçoit l'archive elle-même : il la monte en DH0: et démarre sur son volume WHDLoad:. Nos lignes
@@ -237,7 +249,7 @@ function onLeds(l) {
   const p = $("#ledPower"); p.classList.toggle("on", !!l.power); p.classList.toggle("dim", !l.power && running);
   $("#ledDf").classList.toggle("on", !!(l.df0 || l.df1));
   $("#ledHd").classList.toggle("on", !!l.hd);
-  for (const [tag, on] of [["df0", l.df0], ["df1", l.df1], ["dh0", l.hd]]) {
+  for (const [tag, on] of [["df0", l.df0], ["df1", l.df1], ...HD_TAGS.filter(t => fsPath[t]).map(t => [t, l.hd])]) {
     const el = $("#trk-" + tag);
     if (on) { el.textContent = "lecture ou écriture…"; lastActivity[tag] = Date.now(); }
     else if (el.textContent === "lecture ou écriture…") el.textContent = driveLabel(tag);
@@ -264,5 +276,5 @@ function setPowerUi(st) {
 window.__a1200 = {
   get machine() { return machine; }, get running() { return running; },
   fsPath, mounted, DB, get dirty() { return dirty; }, get settings() { return E; },
-  recBlob: r => recBlob(r), download: (d, n) => download(d, n), get hdDirty() { return [...hdDirty]; }
+  recBlob: r => recBlob(r), download: (d, n) => download(d, n), get hdDirty() { return Object.fromEntries(HD_TAGS.map(t => [t, [...hdDirty[t]]])); }
 };

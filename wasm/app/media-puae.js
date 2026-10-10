@@ -39,8 +39,8 @@ async function recBytes(rec) {
     return _del(id);
   }; }
 /* Morceaux du disque dur touchés par l'Amiga depuis le dernier enregistrement */
-const hdDirty = new Set();
-function hdWrite(pos, len) { if (len > 0) for (let i = Math.floor(pos / CHUNK), e = Math.floor((pos + len - 1) / CHUNK); i <= e; i++) hdDirty.add(i); }
+const hdDirty = Object.fromEntries(HD_TAGS.map(t => [t, new Set()]));
+function hdWrite(tag, pos, len) { if (len > 0) for (let i = Math.floor(pos / CHUNK), e = Math.floor((pos + len - 1) / CHUNK); i <= e; i++) hdDirty[tag].add(i); }
 
 /* ---- Import d'un disque dur : lu directement depuis le fichier, sans tout charger ;
         une image de partition seule (sans RDB) reçoit une table de partitions pour démarrer comme un vrai disque ---- */
@@ -75,16 +75,18 @@ async function importHdf(name, blob, mount) {
     for (let i = 0; i < Math.ceil(blob.size / CHUNK); i++) try { await DB.del(chunkId(rec, i)); } catch (x) {}
     toast(name + " : enregistrement impossible (" + (e && e.name === "QuotaExceededError" ? "plus de place pour ce site dans le navigateur" : e.message || e) + ").", true); return;
   }
-  if (mount) await mountMedia("dh0", rec);
+  if (mount) await mountMedia(isHd(mount) ? mount : "dh0", rec);
   toast(name + " ajouté à la Bibliothèque" + note + ".");
   return rec;
 }
 
 async function mountMedia(tag, rec) {
-  if (tag === "dh0") {
-    setMounted("dh0", rec);
+  if (isHd(tag)) {
+    /* Un même disque ne se branche qu'à un endroit : il quitte son ancienne unité */
+    for (const t of HD_TAGS) if (t !== tag && mounted[t] && mounted[t].id === rec.id) setMounted(t, null);
+    setMounted(tag, rec);
     if (running) toast("Disque dur prêt : il sera branché au prochain allumage.");
-    else toast(rec.name + " branché sur DH0:");
+    else toast(rec.name + " branché sur " + tag.toUpperCase() + ":");
     return;
   }
   if (running) {
@@ -100,9 +102,9 @@ async function mountMedia(tag, rec) {
 
 async function ejectMedia(tag, silent) {
   if (!mounted[tag]) return;
-  if (tag === "dh0") {
+  if (isHd(tag)) {
     if (running) { toast("Éteignez l'Amiga avant de retirer le disque dur.", true); return; }
-    setMounted("dh0", null); return;
+    setMounted(tag, null); return;
   }
   if (running && fsPath[tag]) {
     if (S.autosave) await saveDisk(tag, true, true);
@@ -115,12 +117,14 @@ async function ejectMedia(tag, silent) {
 }
 
 /* ---- Écritures de l'Amiga : on surveille la date de modification des fichiers du cœur ---- */
-const dirty = { df0: false, df1: false, dh0: false };
-const dirtySince = { df0: 0, df1: 0, dh0: 0 };     /* première écriture non enregistrée */
-const seen = { df0: 0, df1: 0, dh0: 0 };       /* date du fichier lors du dernier enregistrement */
-const lastActivity = { df0: 0, df1: 0, dh0: 0 }; /* dernier allumage de la LED du lecteur */
-const savedAt = { df0: null, df1: null, dh0: null };
-const BASE_LABEL = { df0: "lecteur interne", df1: "lecteur externe", dh0: "IDE interne 2,5\"" };
+const DRIVE_TAGS = ["df0", "df1", ...HD_TAGS];
+const perDrive = v => Object.fromEntries(DRIVE_TAGS.map(t => [t, v]));
+const dirty = perDrive(false);
+const dirtySince = perDrive(0);     /* première écriture non enregistrée */
+const seen = perDrive(0);           /* date du fichier lors du dernier enregistrement */
+const lastActivity = perDrive(0);   /* dernier allumage de la LED du lecteur */
+const savedAt = perDrive(null);
+const BASE_LABEL = { df0: "lecteur interne", df1: "lecteur externe", dh0: "IDE interne 2,5\"", dh1: "IDE, esclave", dh2: "disque UAE", dh3: "disque UAE" };
 function driveLabel(tag) {
   if (dirty[tag]) return "modifié, enregistrement…";
   if (savedAt[tag]) return "enregistré à " + savedAt[tag].toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
@@ -130,7 +134,7 @@ function refreshDriveLabel(tag) { const el = $("#trk-" + tag); if (el) el.textCo
 function checkDirty() {
   if (!running) return;
   machine.flush(); /* les dernières écritures du cœur passent dans les fichiers */
-  for (const t of ["df0", "df1", "dh0"]) {
+  for (const t of DRIVE_TAGS) {
     if (!fsPath[t]) continue;
     const m = machine.fileMtime(fsPath[t]);
     if (m && m !== seen[t] && !dirty[t]) { dirty[t] = true; dirtySince[t] = Date.now(); refreshDriveLabel(t); }
@@ -146,11 +150,11 @@ async function saveDisk(tag, quiet, force) {
   if (mtime === seen[tag]) { dirty[tag] = false; refreshDriveLabel(tag); return false; }
   const rec = await DB.get(m.id); if (!rec) return false;
   if (!/\.(adf|hdf)$/i.test(rec.name)) { dirty[tag] = false; seen[tag] = mtime; return false; } /* DMS, ADF étendus : lecture seule */
-  if (tag === "dh0") {
+  if (isHd(tag)) {
     /* Seuls les morceaux modifiés sont copiés (tous d'un coup, pour un disque cohérent), puis réécrits */
     machine.flush();
     const all = !rec.chunks, n = Math.ceil(rec.size / CHUNK);
-    const list = all ? [...Array(n).keys()] : [...hdDirty]; hdDirty.clear();
+    const list = all ? [...Array(n).keys()] : [...hdDirty[tag]]; hdDirty[tag].clear();
     const parts = new Map(list.map(i => [i, machine.readRange(fsPath[tag], i * CHUNK, CHUNK)]));
     if (all) await storeChunks(rec, new Blob(list.map(i => parts.get(i))));
     else for (const [i, d] of parts) await DB.put({ id: chunkId(rec, i), kind: "chunk", owner: rec.id, blob: new Blob([d]) });
@@ -169,7 +173,7 @@ async function saveDisk(tag, quiet, force) {
 async function saveAllDisks(quiet) {
   if (saving) return; saving = true;
   let n = 0;
-  try { for (const t of ["df0", "df1", "dh0"]) if (await saveDisk(t, true)) n++; }
+  try { for (const t of DRIVE_TAGS) if (await saveDisk(t, true)) n++; }
   finally { saving = false; }
   if (n && quiet) toast(n === 1 ? "1 disque modifié enregistré" : n + " disques modifiés enregistrés");
 }
@@ -179,7 +183,7 @@ setInterval(async () => {
   if (!running || !S.autosave || saving) return;
   checkDirty();
   const now = Date.now();
-  const ready = ["df0", "df1", "dh0"].filter(t => dirty[t] && (now - lastActivity[t] > 3000 || now - dirtySince[t] > 20000));
+  const ready = DRIVE_TAGS.filter(t => dirty[t] && (now - lastActivity[t] > 3000 || now - dirtySince[t] > 20000));
   if (!ready.length) return;
   saving = true;
   try { for (const t of ready) await saveDisk(t, true); } finally { saving = false; }
@@ -191,9 +195,9 @@ window.addEventListener("pagehide", flushNow);
 
 async function downloadMedia(tag) {
   const m = mounted[tag]; if (!m) return;
-  if (tag === "dh0") {
+  if (isHd(tag)) {
     /* Disque dur : on enregistre ce qui est en attente puis on télécharge la copie de la Bibliothèque */
-    if (running && fsPath.dh0) await saveDisk("dh0", true, true);
+    if (running && fsPath[tag]) await saveDisk(tag, true, true);
     const rec = await DB.get(m.id); download(await recBlob(rec), m.name); return;
   }
   let data = running && fsPath[tag] ? machine.readFile(fsPath[tag]) : null;
@@ -211,17 +215,19 @@ async function blankFloppy(tag) {
   await mountMedia(tag, rec);
 }
 
-/* Disque dur vierge */
-async function blankHd(mb) {
+/* Disque dur vierge, pour l'unité choisie (sa partition porte le même nom : DH1: sur DH1…) */
+let hdTarget = "dh0";
+async function blankHd(mb, tag = hdTarget) {
   const size = mb * 1048576;
   const all = await DB.all();
   let i = 1; while (all.some(r => r.name === "Disque " + mb + " Mo" + (i > 1 ? " " + i : "") + ".hdf")) i++;
   const name = "Disque " + mb + " Mo" + (i > 1 ? " " + i : "") + ".hdf";
   /* Partitionné (RDB) et formaté en FFS, prêt à recevoir le Workbench */
   const rec = { id: newId(), kind: "hdf", name, crc: undefined, added: Date.now() };
-  await storeChunks(rec, new Blob([makeHardDisk(mb, "Travail")]));
+  const unit = HD_TAGS.indexOf(tag);
+  await storeChunks(rec, new Blob([makeHardDisk(mb, unit > 0 ? "Travail " + unit : "Travail", new Date(), tag.toUpperCase(), -unit)]));
   await DB.put(rec);
-  if (running) { toast(name + " créé : il sera branché au prochain allumage."); setMounted("dh0", rec); }
-  else { setMounted("dh0", rec); toast(name + " créé et branché sur DH0:"); }
+  setMounted(tag, rec);
+  toast(name + (running ? " créé : il sera branché au prochain allumage." : " créé et branché sur " + tag.toUpperCase() + ":"));
 }
 

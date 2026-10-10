@@ -13,7 +13,9 @@ function gameKey(m = mounted) { return whdGame ? whdGame.id : m.df0 ? m.df0.id :
 function gameName(m = mounted) { return whdGame ? whdGame.name.replace(/\.(lha|lzh)$/i, "") : m.df0 ? m.df0.name : m.dh0 ? m.dh0.name : "Sans disque"; }
 function stateCtx() {
   if (whdGame) return { df0: null, df1: null, dh0: null, whd: whdGame.id, rom: E._rom || S.romId };
-  return { df0: mounted.df0 && mounted.df0.id, df1: mounted.df1 && mounted.df1.id, dh0: mounted.dh0 && mounted.dh0.id, rom: E._rom || S.romId };
+  const c = { rom: E._rom || S.romId };
+  for (const t of ["df0", "df1", ...HD_TAGS]) c[t] = mounted[t] ? mounted[t].id : null;
+  return c;
 }
 const STATE_SETTINGS = ["compat", "cpu", "fast", "region", "joy", "floppy", "accel", "model"];
 
@@ -50,12 +52,12 @@ async function saveStateSlot(slot) {
 function sameMachine(rec) {
   if (!running) return false;
   const c = stateCtx();
-  if (c.dh0 !== rec.ctx.dh0 || c.rom !== rec.ctx.rom || (c.whd || null) !== (rec.ctx.whd || null)) return false;
+  if (HD_TAGS.some(t => (c[t] || null) !== (rec.ctx[t] || null)) || c.rom !== rec.ctx.rom || (c.whd || null) !== (rec.ctx.whd || null)) return false;
   return STATE_SETTINGS.filter(k => k !== "joy").every(k => String(E[k] ?? (k === "model" ? "a1200" : undefined)) === String(rec.settings[k] ?? (k === "accel" ? "none" : k === "model" ? "a1200" : undefined)));
 }
 async function resumeState(id) {
   const rec = await DB.get(id); if (!rec) return;
-  for (const t of ["df0", "df1", "dh0", "whd"]) {
+  for (const t of ["df0", "df1", ...HD_TAGS, "whd"]) {
     if (rec.ctx[t] && !(await DB.get(rec.ctx[t]))) { toast("Un disque de cette sauvegarde a été supprimé de la Bibliothèque.", true); return; }
   }
   closeWin();

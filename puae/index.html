@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Amiga 1200 · cœur PUAE (essai)</title>
+<link rel="icon" href="data:,">
 <script src="coi.js"></script>
 <style>
   :root { --wb-grey:#aaa; --wb-blue:#6688bb; }
@@ -13,7 +14,8 @@
   h1 { font-size: 20px; margin: 0 0 4px; }
   p.lead { margin: 0 0 14px; color: #b8c0cc; }
   .screen { background: #000; aspect-ratio: 4 / 3; border-radius: 10px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-  canvas { width: 100%; height: 100%; object-fit: contain; image-rendering: auto; display: block; }
+  /* L'Amiga affichait ses pixels étirés en 4:3 : le canvas remplit l'écran 4:3 au lieu de garder ses proportions brutes. */
+  canvas { width: 100%; height: 100%; object-fit: fill; image-rendering: auto; display: block; }
   .bar { margin-top: 12px; background: var(--wb-grey); color: #000; padding: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
          border: 1px solid; border-color: #fff #000 #000 #fff; }
   button, label.file { appearance: none; background: var(--wb-grey); color: #000; font: inherit; font-size: 14px; padding: 5px 10px; cursor: pointer;

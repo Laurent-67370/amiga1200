@@ -21,4 +21,14 @@ la vitesse mesurée dans le résumé de l'exécution.
 Sauvegarde d'état : 2,3 Mo en 4,5 ms, restauration OK. Module navigateur : 3,5 Mo compressé.
 Machine : serveur partagé de GitHub, plus lent qu'un PC de bureau récent.
 
-Étape 1 sur 6 : chaîne de compilation, terminée. Étape suivante : écran, son, clavier et souris dans le navigateur.
+Étape 1 sur 6 : chaîne de compilation, terminée.
+
+## Étape 2 : frontal navigateur (terminée)
+
+- `frontend.c` : pont libretro → fonctions `fe_*` simples (image RGBA, son, clavier, souris, joysticks, LED, disquettes, états).
+- `web/puae-frontend.js` : canvas, AudioWorklet, pointeur capturé, manettes, boucle calée sur les 49,92 images/s du PAL.
+- `web/coi-sw.js` : service worker qui ajoute les en-têtes d'isolation exigés par les fils d'exécution sur GitHub Pages.
+- Page d'essai publiée automatiquement : https://laurent-67370.github.io/amiga1200/puae/
+
+Testé dans Chromium : AROS démarre, 50 images/s au rythme réel, son à 44,1 kHz, sauvegarde d'état 2,2 Mo en 8 ms puis restauration.
+Raccourcis : Inser = Help, Page préc. / Page suiv. = Amiga gauche / droite. Étape suivante : écran, son, clavier et souris dans le navigateur.

@@ -2,7 +2,7 @@ name: Cœur PUAE en WebAssembly
 
 on:
   push:
-    branches: [puae]
+    branches: [puae, puae-exp]
     paths: ["wasm/**", "vendor/puae", ".github/workflows/puae-wasm.yml"]
   workflow_dispatch:
 
@@ -62,15 +62,16 @@ jobs:
         run: |
           git fetch --depth 1 origin main
           git worktree add ../site-main origin/main
-          rm -rf ../site-main/puae && mkdir -p ../site-main/puae
-          cp wasm/dist/site/* ../site-main/puae/
+          DIR="${GITHUB_REF_NAME}"   # puae → /puae/, puae-exp → /puae-exp/ (essais)
+          rm -rf "../site-main/$DIR" && mkdir -p "../site-main/$DIR"
+          cp wasm/dist/site/* "../site-main/$DIR/"
           cd ../site-main
-          git add puae
+          git add "$DIR"
           if git diff --cached --quiet; then echo "rien à publier"; exit 0; fi
           git -c user.name="github-actions[bot]" -c user.email="41898099+github-actions[bot]@users.noreply.github.com" \
-            commit -m "Page d'essai PUAE : ${GITHUB_SHA::7}"
-          git push origin HEAD:main
-          echo "::notice title=Publié::https://laurent-67370.github.io/amiga1200/puae/"
+            commit -m "Page d'essai PUAE ($DIR) : ${GITHUB_SHA::7}"
+          for i in 1 2 3; do git push origin HEAD:main && break; git pull --rebase origin main; done
+          echo "::notice title=Publié::https://laurent-67370.github.io/amiga1200/$DIR/"
 
       - uses: actions/upload-artifact@v4
         with:

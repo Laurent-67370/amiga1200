@@ -550,6 +550,34 @@ rep('''      <h3>Écran tactile</h3>''', '''      <h3>Jouer sur écran tactile</
       <p>Le bouton <b>Joystick</b> (sous l'écran, ou dans la barre du plein écran) pose un joystick sur l'écran : le manche à gauche, <b>FEU</b> et un deuxième bouton à droite ; il commande le port joystick de l'Amiga, même en plein écran. En plein écran, une barre en haut à gauche donne aussi le <b>Clavier</b> complet, Espace, Entrée, Échap, F1 et F2, souvent demandés pour lancer un jeu.</p>
       <h3>Écran tactile</h3>''')
 
+# Joystick tactile : zone morte réglable, disposition gaucher, transparence, vibration
+rep('''      <p class="hint">Avec « Flèches », les flèches pilotent aussi le joystick : choisissez « Aucun » pour un usage bureautique.</p>''',
+    '''      <p class="hint">Avec « Flèches », les flèches pilotent aussi le joystick : choisissez « Aucun » pour un usage bureautique.</p>
+
+      <div class="vj-opts">
+        <h3>Joystick tactile</h3>
+        <div class="opt vj-range"><label for="vjDead">Zone morte</label><input type="range" id="vjDead" min="10" max="60" step="5"><output id="vjDeadV"></output></div>
+        <p class="hint">Distance du centre à partir de laquelle le manche compte une direction : plus grande, moins de mouvements involontaires ; plus petite, plus de réactivité. Le cercle au centre du manche la montre.</p>
+        <div class="opt vj-range"><label for="vjAlpha">Opacité</label><input type="range" id="vjAlpha" min="20" max="100" step="5"><output id="vjAlphaV"></output></div>
+        <div class="opt">
+          <label><input type="checkbox" id="vjLeft"> Gaucher : manche à droite, boutons de tir à gauche</label>
+          <label><input type="checkbox" id="vjVibe"> Vibration au tir et aux changements de direction</label>
+        </div>
+        <p class="hint" id="vjVibeNote" hidden>Ce navigateur ne sait pas faire vibrer l'appareil (c'est le cas sur iPhone et iPad).</p>
+      </div>''')
+rep(".tube > #vkbd{position:absolute;", """.vjoy.left{flex-direction:row-reverse}
+.vjoy.left .vjoy-fire{flex-direction:row-reverse}
+.vjoy-stick::before{content:"";position:absolute;left:50%;top:50%;width:var(--vj-dead,30%);height:var(--vj-dead,30%);transform:translate(-50%,-50%);
+  border-radius:50%;border:1px dashed rgba(255,255,255,.35);pointer-events:none}
+body:not(.is-touch) .vj-opts{display:none}
+.vj-range{display:flex;align-items:center;gap:10px}
+.vj-range label{min-width:7em}
+.vj-range input{flex:1;max-width:260px}
+.vj-range output{min-width:3.5em;font-variant-numeric:tabular-nums}
+.tube > #vkbd{position:absolute;""")
+rep('''      <h3>Écran tactile</h3>''', '''      <p>Dans <b>Réglages</b>, le joystick tactile se règle à votre main : <b>zone morte</b> du manche, disposition <b>gaucher</b> (manche à droite), <b>opacité</b> pour voir le jeu au travers, et <b>vibration</b> au tir et aux changements de direction (pas sur iPhone).</p>
+      <h3>Écran tactile</h3>''')
+
 # Jeux WHDLoad en un geste : une archive .lha, et on joue (sans Workbench ni disque dur)
 rep("/* Profil par disque */", (APP / "whdload-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 rep('''  if (sessionStorage.getItem("a1200.autostart")) { sessionStorage.removeItem("a1200.autostart"); powerOn(); }''',

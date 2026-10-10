@@ -19,7 +19,9 @@ for p in "$ROOT"/wasm/patches/*.patch; do
 done
 
 # 2. Objets du cœur. Les drapeaux passent par CC pour ne pas écraser les CFLAGS du Makefile.
-FLAGS="-pthread -O3 -Wno-error -Wno-incompatible-function-pointer-types -Wno-int-conversion -Wno-implicit-function-declaration"
+# setjmp/longjmp en WebAssembly natif : la boucle du processeur (TRY/CATCH de newcpu.c) appelait chaque instruction
+# à travers JavaScript avec la version par défaut d'Emscripten, près de la moitié du temps d'émulation
+FLAGS="-pthread -O3 -sSUPPORT_LONGJMP=wasm -Wno-error -Wno-incompatible-function-pointer-types -Wno-int-conversion -Wno-implicit-function-declaration"
 # La cible « emscripten » du Makefile s'arrête sur une édition de liens qu'on refait nous-mêmes : on garde les objets.
 emmake make -j"$JOBS" platform=emscripten HAVE_CHD=0 HAVE_MPEG2=0 CC="emcc $FLAGS" AR=emar || true
 find "$SRC/build" -name '*.o' > "$OBJ/objs.txt"
@@ -36,7 +38,7 @@ done
 emcc $FLAGS -c "$ROOT/wasm/stubs.c" -o "$OBJ/stubs.o"
 emcc $FLAGS -I"$LC/include" -c "$ROOT/wasm/frontend.c" -o "$OBJ/frontend.o"
 
-COMMON=(-pthread -O3 -sPTHREAD_POOL_SIZE=8 -sINITIAL_MEMORY=256MB -sSTACK_SIZE=8MB -sALLOW_TABLE_GROWTH=1 \
+COMMON=(-pthread -O3 -sSUPPORT_LONGJMP=wasm -sPTHREAD_POOL_SIZE=8 -sINITIAL_MEMORY=256MB -sSTACK_SIZE=8MB -sALLOW_TABLE_GROWTH=1 \
         "$OBJ"/lc_*.o "$OBJ/stubs.o" @"$OBJ/objs.txt")
 
 # 4. Banc d'essai Node (accès direct aux fichiers)

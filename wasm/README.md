@@ -155,3 +155,20 @@ extinction (reprise au clavier) ; profil cycle exact + 8 Mo Fast + NTSC appliqu�
   processeur accéléré, CLOCK>14 → 68030, CPU_EXACT → cycle exact, BLITTER → `puae_immediate_blits=immediate`, CD32 → manette
   CD32 du cœur sur le port joystick (`retro_set_controller_port_device(0, 517)`). Le choix du .slave et ses options restent
   à l'icône du jeu, comme dans la startup-sequence du cœur.
+- **Performance** (Chromium, machine de test, AROS au démarrage, 8 Mo de Fast, ms par image ; budget PAL 20 ms) :
+
+  | Configuration | Avant | MMU coupée | + setjmp natif |
+  | --- | --- | --- | --- |
+  | A500 | 3,9 | 3,8 | 2,3 |
+  | A500 cycle exact | 5,5 | 6,0 | 4,5 |
+  | A1200 68020 | 5,5 | 5,9 | 3,5 |
+  | A1200 cycle exact | 11,3 | 12,5 | 6,9 |
+  | 68030 | 13,7 | 8,5 | 4,0 |
+  | 68040 | 22,4 | 13,2 | 5,5 |
+  | 68060 | 26,4 | 14,4 | 5,8 |
+
+  Deux causes trouvées au profileur. Le cœur active la MMU dès le 68030 (`mmu_model`) : la page la coupe pour les cartes
+  accélératrices (`mmu_model=0`), comme une Blizzard sous AmigaOS qui ne s'en sert pas. Surtout, la boucle du processeur
+  (TRY/CATCH de `newcpu.c`) repose sur setjmp/longjmp, qu'Emscripten émule par défaut en JavaScript : chaque appel fait
+  depuis cette boucle, donc chaque instruction, passait par JavaScript (`invoke_*`, près de la moitié du temps). Le cœur est
+  compilé avec `-sSUPPORT_LONGJMP=wasm` (exceptions WebAssembly : Chrome 95, Firefox 100, Safari 15.2 et suivants).

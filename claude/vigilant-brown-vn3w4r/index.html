@@ -309,6 +309,79 @@ body:not(.is-touch) .vj-opts{display:none}
   .l-sp{display:none}
   #lOpen{flex:1;justify-content:center}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* =========================================================
+   Habillage selon le modèle : Workbench 3.1 pour l'A1200, Workbench 1.3 pour l'A500,
+   arc-en-ciel du logo Amiga et Boing Ball
+   ========================================================= */
+:root{
+  --rb1:#e4252c; --rb2:#f7931e; --rb3:#ffd400; --rb4:#3aaa35; --rb5:#1a8fd8;
+  --rainbow:linear-gradient(90deg,var(--rb1) 0 20%,var(--rb2) 20% 40%,var(--rb3) 40% 60%,var(--rb4) 60% 80%,var(--rb5) 80%);
+  --accent:var(--wb-blue); --accent-ink:#fff;
+}
+[data-model="a1200"]{--room-top:#2c3552; --room-bot:#121521; --glow:rgba(102,136,187,.22)}
+[data-model="a500"]{
+  --room-top:#0b3a73; --room-bot:#04152d; --glow:rgba(255,136,0,.16);
+  --wb-grey:#0055aa; --wb-blue:#ff8800; --wb-text:#fff; --accent:#ff8800; --accent-ink:#000;
+}
+body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%),radial-gradient(ellipse at 50% 0%,var(--room-top),var(--room-bot) 70%);transition:background .4s}
+
+/* Arc-en-ciel : coche du logo Amiga, liseré de la barre d'outils */
+.amiga-tick{display:inline-block;width:1.7em;height:1em;vertical-align:-.12em;margin-right:.45em;flex:none}
+.toolbar{position:relative}
+.toolbar::before{content:"";position:absolute;left:-1px;right:-1px;top:-5px;height:4px;background:var(--rainbow)}
+.monitor-foot .brand{display:inline-flex;align-items:center}
+.wedge .name{display:inline-flex;align-items:center}
+
+/* Accueil : Boing Ball, titre et commandes aux couleurs du modèle */
+.l-head h1{display:flex;align-items:center;gap:.45em}
+.l-head h1::after{content:"";display:block;height:4px;width:2.2em;background:var(--rainbow);border-radius:2px;align-self:flex-end;margin-bottom:.35em}
+.boing{width:1.25em;height:1.25em;flex:none;filter:drop-shadow(0 .25em .2em rgba(0,0,0,.45));animation:boing 1.25s cubic-bezier(.45,.05,.55,.95) infinite alternate}
+@keyframes boing{from{transform:translateY(-.18em) rotate(-8deg)}to{transform:translateY(.12em) rotate(8deg)}}
+@media (prefers-reduced-motion:reduce){.boing{animation:none}}
+.l-seg[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.l-tile{border-top:3px solid #2a323d}
+.l-tile.k-adf{border-top-color:var(--rb5)}
+.l-tile.k-hdf{border-top-color:var(--rb4)}
+.l-tile.k-whd{border-top-color:var(--rb1)}
+.l-tile.in{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.l-steps li::before{background:var(--accent);color:var(--accent-ink)}
+[data-model="a500"] .launch{background:radial-gradient(ellipse at 50% 0%,#0d3f7c,#020c1c 75%)}
+[data-model="a500"] .l-title,[data-model="a500"] .l-kick-lbl{color:#ffb35c}
+[data-model="a500"] .l-tile{background:#0a2546;border-color:#1b4f8c}
+[data-model="a500"] .l-tile.k-adf{border-top-color:var(--rb5)}
+[data-model="a500"] .l-tile.k-hdf{border-top-color:var(--rb4)}
+[data-model="a500"] .l-tile.k-whd{border-top-color:var(--rb1)}
+[data-model="a500"] .l-resume{background:#0f3364;border-top-color:#1b4f8c;color:#ffd3a1}
+
+/* Workbench 1.3 (A500) : fenêtres et boutons bleus, orange pour ce qui est actif */
+[data-model="a500"] .gad{color:#fff}
+[data-model="a500"] .gad:active,[data-model="a500"] .gad[aria-pressed="true"]{background:#ff8800;color:#000}
+[data-model="a500"] .gad[disabled]{color:#86a9d6}
+[data-model="a500"] .gad.primary{background:#ff8800;color:#000}
+[data-model="a500"] .gad.primary:active{background:#d97400}
+[data-model="a500"] .gad.primary[disabled]{color:#7a4a12}
+[data-model="a500"] .gad:focus-visible{outline-color:#fff}
+[data-model="a500"] .drive-head small,[data-model="a500"] .hint,[data-model="a500"] .lib-row .s,[data-model="a500"] .lib-empty,
+[data-model="a500"] .slot-meta span,[data-model="a500"] .keys .lbl{color:#d8e6f6}
+[data-model="a500"] .drive .media.empty{background:#2f6db0;color:#d8e6f6}
+[data-model="a500"] .lib-row,[data-model="a500"] .slot-card{background:#1563b3;color:#fff}
+[data-model="a500"] .titlebar{background:#fff;border-bottom-color:#000}
+[data-model="a500"] .titlebar .t{background:#fff;color:#0055aa}
+[data-model="a500"] .titlebar .stripes{background:repeating-linear-gradient(0deg,#0055aa 0 1px,transparent 1px 3px);opacity:.8}
+[data-model="a500"] .closebox{background:#0055aa}
+[data-model="a500"] .win .body a,[data-model="a500"] .win .body a:visited{color:#ffc27a}
+[data-model="a500"] .opt input,[data-model="a500"] .vj-range input{accent-color:#ff8800}
+[data-model="a500"] .toast{color:#fff}
+[data-model="a500"] .toast.err{background:#e9b7a6;color:#000}
+[data-model="a500"] .kbd{color:#000}
+[data-model="a500"] .files-warn{color:#000}
+[data-model="a500"] .dropzone{background:rgba(255,136,0,.28)}
+
+/* Workbench 3.1 (A1200) : le gris d'origine, un peu de relief en plus */
+[data-model="a1200"] .gad.primary{box-shadow:inset 0 -2px 0 rgba(0,0,0,.18)}
+[data-model="a1200"] .titlebar .t{letter-spacing:.01em}
+[data-model="a500"] .drive .media,[data-model="a500"] .files-log{color:#000}
 </style>
 </head>
 <body>
@@ -2116,7 +2189,7 @@ async function renderLauncher() {
     box.appendChild(lEl("div", "l-title", "Reprendre là où vous en étiez"));
     const grid = lEl("div", "l-grid");
     for (const r of disks.slice(0, LAUNCH_MAX)) {
-      const tile = lEl("div", "l-tile");
+      const tile = lEl("div", "l-tile k-" + r.kind); /* liseré coloré selon le type : disquette, disque dur, jeu WHDLoad */
       const inDrive = ["df0", ...HD_TAGS].some(t => mounted[t] && mounted[t].id === r.id);
       if (inDrive) tile.classList.add("in");
       const pick = lEl("button", "l-pick");
@@ -2651,6 +2724,45 @@ async function importLibrary(file) {
   importFile = async (file, target) => (await isLibraryTar(file)) ? importLibrary(file) : _imp(file, target); }
 $("#libExport").onclick = () => exportLibrary();
 $("#libRestore").onclick = () => pickFile(".tar", f => importLibrary(f));
+
+/* =========================================================
+   Habillage selon le modèle (A1200 : Workbench 3.1, A500 : Workbench 1.3)
+   ========================================================= */
+/* Coche du logo Amiga : cinq bandes parallèles aux couleurs de l'arc-en-ciel */
+const AMIGA_TICK = '<svg class="amiga-tick" viewBox="0 0 34 20" aria-hidden="true">'
+  + ["#e4252c", "#f7931e", "#ffd400", "#3aaa35", "#1a8fd8"].map((c, i) =>
+    `<path d="M${2 + i * 2.2} ${9 - i * 0.6}l${6} ${7}l${16} ${-14}" fill="none" stroke="${c}" stroke-width="2.3" stroke-linejoin="miter"/>`).join("") + "</svg>";
+/* Boing Ball : damier rouge et blanc sur une sphère */
+const BOING = '<svg class="boing" viewBox="0 0 40 40" aria-hidden="true"><defs>'
+  + '<clipPath id="bbClip"><circle cx="20" cy="20" r="18"/></clipPath>'
+  + '<pattern id="bbChk" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="#fff"/><rect width="5" height="5" fill="#e4252c"/><rect x="5" y="5" width="5" height="5" fill="#e4252c"/></pattern>'
+  + '<radialGradient id="bbShade" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></radialGradient></defs>'
+  + '<g clip-path="url(#bbClip)"><rect x="-10" y="-10" width="60" height="60" fill="url(#bbChk)" transform="rotate(-18 20 20) scale(1.05 1)"/>'
+  + '<circle cx="20" cy="20" r="18" fill="url(#bbShade)"/></g><circle cx="20" cy="20" r="18" fill="none" stroke="rgba(0,0,0,.35)"/></svg>';
+
+let themeModel = null;
+function applyModelTheme(model) {
+  model = model === "a500" ? "a500" : "a1200";
+  if (model === themeModel) return;
+  themeModel = model;
+  document.documentElement.dataset.model = model;
+  const label = model === "a500" ? "AMIGA 500" : "AMIGA 1200";
+  const brand = $(".monitor-foot .brand"), name = $(".wedge .name");
+  if (brand) { const led = $("#monLed"); brand.innerHTML = AMIGA_TICK + label; if (led) brand.appendChild(led); }
+  if (name) name.innerHTML = AMIGA_TICK + label;
+  const wedge = $(".wedge"); if (wedge) wedge.setAttribute("aria-label", "Boîtier " + (model === "a500" ? "Amiga 500" : "Amiga 1200"));
+  const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.content = model === "a500" ? "#0b3a73" : "#2b303b";
+}
+/* Le modèle qui tourne (réglages effectifs, profil compris), sinon celui choisi pour le prochain allumage */
+const themeNow = () => applyModelTheme(running || starting ? modelOf(E) : S.model);
+{ const _r = renderLauncher; renderLauncher = async () => { await _r(); themeNow(); decorateLauncher(); }; }
+{ const _s = onStarted; onStarted = (...a) => { _s(...a); themeNow(); }; }
+$$('#winSettings input[name="model"]').forEach(i => i.addEventListener("change", () => setTimeout(themeNow)));
+/* Accueil : Boing Ball devant le titre */
+function decorateLauncher() {
+  const h = $("#lTitle"); if (h && !h.querySelector(".boing")) h.insertAdjacentHTML("afterbegin", BOING);
+}
+themeNow();
 
 /* =========================================================
    Jeux WHDLoad en un geste : une archive .lha, et on joue

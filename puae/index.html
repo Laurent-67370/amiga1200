@@ -327,7 +327,7 @@ button{font:inherit}
 
   <p class="footnote">
     Cœur d'émulation : <a href="https://github.com/libretro/libretro-uae" rel="noopener">PUAE</a> (libretro-uae, licence GPL v2), le moteur de WinUAE compilé en WebAssembly.
-    Kickstart de secours : AROS (AROS Public License), intégré au cœur. Les ROM Kickstart et disquettes Workbench d'origine ne sont pas fournies : importez les vôtres.
+    Kickstart de secours : AROS, version d'août 2026 (AROS Public License). Les ROM Kickstart et disquettes Workbench d'origine ne sont pas fournies : importez les vôtres.
     Vos fichiers restent dans ce navigateur (stockage local) et ne sont envoyés nulle part.
   </p>
 </main>
@@ -432,7 +432,7 @@ button{font:inherit}
   <div class="win wb" style="width:min(460px,100%)">
     <div class="titlebar"><button class="closebox" data-close aria-label="Fermer"></button><span class="t" id="tHd">Nouveau disque dur</span><span class="stripes"></span></div>
     <div class="body">
-      <p>Un disque vierge, comme sorti de sa boîte. Partitionnez-le ensuite avec HDToolBox (disquette Install) puis formatez-le depuis le Workbench.</p>
+      <p>Un disque prêt à l'emploi : partitionné comme avec HDToolBox (une partition DH0: amorçable) et formaté en FFS, nommé « Travail ». Vous pouvez y installer le Workbench directement.</p>
       <div class="opt" id="hdSizes">
         <label><input type="radio" name="hdsize" value="64"> 64 Mo</label>
         <label><input type="radio" name="hdsize" value="128" checked> 128 Mo</label>
@@ -485,7 +485,7 @@ button{font:inherit}
       <h3>Installer sur disque dur</h3>
       <ol class="help-list">
         <li>Sous DH0:, cliquez sur <b>Nouveau</b> et choisissez une taille.</li>
-        <li>Démarrez sur la disquette Install 3.1, lancez HDToolBox, partitionnez, puis formatez DH0: depuis le Workbench.</li>
+        <li>Le disque arrive déjà partitionné et formaté : démarrez sur la disquette Install 3.1.</li>
         <li>Lancez l'installation. À l'extinction, le disque dur est enregistré dans la Bibliothèque.</li>
       </ol>
       <h3>Clavier et souris</h3>
@@ -511,6 +511,7 @@ button{font:inherit}
 <script type="module">
 import { PuaeMachine } from "./puae-frontend.js";
 import { makeBlankAdf } from "./adf.js";
+import { makeHardDisk } from "./hdf.js";
 
 /* =========================================================
    Petits utilitaires
@@ -641,6 +642,11 @@ const skip = {
 };
 
 function safeName(n) { return n.replace(/[\/\\:,]/g, "_"); }
+async function fetchGz(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("fichier " + url + " introuvable (" + r.status + ")");
+  return new Uint8Array(await new Response(r.body.pipeThrough(new DecompressionStream("gzip"))).arrayBuffer());
+}
 
 /* Options du cœur d'après les réglages effectifs */
 function coreOptions() {
@@ -671,15 +677,17 @@ async function powerOn() {
       onLog: t => { if (/error|erreur|fail/i.test(t)) console.warn(t); },
       onStats: onStats, onFrame: onLeds
     });
-    /* Kickstart */
-    let kick = null, key = null;
+    /* Kickstart : le vôtre, sinon AROS d'août 2026 (celui intégré à PUAE ne démarre pas avec un disque dur) */
+    let kick = null, key = null, arosExt = null;
     if (S.romId !== "aros") {
       const r = await DB.get(S.romId);
       if (r) kick = new Uint8Array(await r.blob.arrayBuffer()); else { S.romId = "aros"; saveSettings(); }
       if (kick && S.keyId) { const k = await DB.get(S.keyId); if (k) key = new Uint8Array(await k.blob.arrayBuffer()); }
     }
+    if (!kick) [kick, arosExt] = await Promise.all([fetchGz("aros-rom.bin.gz"), fetchGz("aros-ext.bin.gz")]);
     /* Médias écrits dans le système de fichiers du cœur + configuration au format WinUAE */
     const lines = ["nr_floppies=2", "floppy1type=0"];
+    if (arosExt) { machine.writeFile("/sys/aros-ext.bin", arosExt); lines.push("kickstart_ext_rom_file=/sys/aros-ext.bin"); }
     for (const tag of ["df0", "df1"]) {
       fsPath[tag] = null;
       if (!mounted[tag]) continue;
@@ -830,6 +838,7 @@ function driveLabel(tag) {
 function refreshDriveLabel(tag) { const el = $("#trk-" + tag); if (el) el.textContent = driveLabel(tag); }
 function checkDirty() {
   if (!running) return;
+  machine.flush(); /* les dernières écritures du cœur passent dans les fichiers */
   for (const t of ["df0", "df1", "dh0"]) {
     if (!fsPath[t]) continue;
     const m = machine.fileMtime(fsPath[t]);
@@ -900,7 +909,8 @@ async function blankHd(mb) {
   const all = await DB.all();
   let i = 1; while (all.some(r => r.name === "Disque " + mb + " Mo" + (i > 1 ? " " + i : "") + ".hdf")) i++;
   const name = "Disque " + mb + " Mo" + (i > 1 ? " " + i : "") + ".hdf";
-  const rec = { id: newId(), kind: "hdf", name, size, blob: new Blob([new Uint8Array(size)]), crc: undefined, added: Date.now() };
+  /* Partitionné (RDB) et formaté en FFS, prêt à recevoir le Workbench */
+  const rec = { id: newId(), kind: "hdf", name, size, blob: new Blob([makeHardDisk(mb, "Travail")]), crc: undefined, added: Date.now() };
   await DB.put(rec);
   if (running) { toast(name + " créé : il sera branché au prochain allumage."); setMounted("dh0", rec); }
   else { setMounted("dh0", rec); toast(name + " créé et branché sur DH0:"); }

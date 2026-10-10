@@ -13,7 +13,8 @@ function checksum(dv, base, at) {
 }
 /* Date AmigaDOS : jours depuis le 1er janvier 1978, minutes, ticks (1/50 s). */
 function amigaDate(d) {
-  const ms = d.getTime() - Date.UTC(1978, 0, 1);
+  /* L'Amiga compte en heure locale */
+  const ms = d.getTime() - d.getTimezoneOffset() * 60000 - Date.UTC(1978, 0, 1);
   const days = Math.floor(ms / 86400000), rest = ms - days * 86400000;
   return [days, Math.floor(rest / 60000), Math.floor((rest % 60000) / 20)];
 }

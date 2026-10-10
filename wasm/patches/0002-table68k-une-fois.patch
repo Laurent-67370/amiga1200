@@ -1,0 +1,15 @@
+diff --git a/sources/src/readcpu.c b/sources/src/readcpu.c
+index d2689cf..c22099d 100644
+--- a/sources/src/readcpu.c
++++ b/sources/src/readcpu.c
+@@ -962,7 +962,9 @@ void init_table68k(void)
+ {
+ 	int i;
+ 
+-	free(table68k);
++	/* La table ne dépend d'aucun réglage : on la garde (la reprise d'un état passait 11 ms à la refaire) */
++	if (table68k)
++		return;
+ 	table68k = xmalloc(struct instr, 65536);
+ 	for (i = 0; i < 65536; i++) {
+ 		table68k[i].mnemo = i_ILLG;

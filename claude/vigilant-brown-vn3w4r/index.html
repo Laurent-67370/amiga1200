@@ -280,6 +280,7 @@ body:not(.is-touch) .vj-opts{display:none}
 .vj-range label{min-width:7em}
 .vj-range input{flex:1;max-width:260px}
 .vj-range output{min-width:3.5em;font-variant-numeric:tabular-nums}
+.hd-extra [data-act="profile"]{display:none}
 .tube > #vkbd{position:absolute;left:0;right:0;bottom:0;z-index:7;margin:0;opacity:.94}
 .tube:fullscreen .fs-exit,.tube:-webkit-full-screen .fs-exit{display:flex}
 .fs-exit.hide{opacity:0;pointer-events:none}
@@ -426,6 +427,42 @@ body:not(.is-touch) .vj-opts{display:none}
     <div class="drive wb" id="drive-dh0" data-unit="dh0">
       <div class="drive-head"><b>DH0:</b><small id="trk-dh0">IDE interne 2,5"</small></div>
       <div class="media empty" id="name-dh0">Aucun disque dur</div>
+      <div class="acts">
+        <button class="gad small" data-act="insert">Choisir…</button>
+        <button class="gad small" data-act="eject" disabled>Retirer</button>
+        <button class="gad small" data-act="blank">Nouveau</button>
+        <button class="gad small" data-act="files" disabled title="Copier des fichiers, un dossier ou un jeu WHDLoad (.lha) sur ce disque">Fichiers…</button>
+        <button class="gad small" data-act="download" disabled>Télécharger</button>
+        <button class="gad small" data-act="profile" disabled title="Réglages propres à ce disque">Profil</button>
+      </div>
+    </div>
+    <div class="drive wb hd-extra" hidden id="drive-dh1" data-unit="dh1">
+      <div class="drive-head"><b>DH1:</b><small id="trk-dh1">IDE, esclave</small></div>
+      <div class="media empty" id="name-dh1">Aucun disque dur</div>
+      <div class="acts">
+        <button class="gad small" data-act="insert">Choisir…</button>
+        <button class="gad small" data-act="eject" disabled>Retirer</button>
+        <button class="gad small" data-act="blank">Nouveau</button>
+        <button class="gad small" data-act="files" disabled title="Copier des fichiers, un dossier ou un jeu WHDLoad (.lha) sur ce disque">Fichiers…</button>
+        <button class="gad small" data-act="download" disabled>Télécharger</button>
+        <button class="gad small" data-act="profile" disabled title="Réglages propres à ce disque">Profil</button>
+      </div>
+    </div>
+    <div class="drive wb hd-extra" hidden id="drive-dh2" data-unit="dh2">
+      <div class="drive-head"><b>DH2:</b><small id="trk-dh2">disque UAE</small></div>
+      <div class="media empty" id="name-dh2">Aucun disque dur</div>
+      <div class="acts">
+        <button class="gad small" data-act="insert">Choisir…</button>
+        <button class="gad small" data-act="eject" disabled>Retirer</button>
+        <button class="gad small" data-act="blank">Nouveau</button>
+        <button class="gad small" data-act="files" disabled title="Copier des fichiers, un dossier ou un jeu WHDLoad (.lha) sur ce disque">Fichiers…</button>
+        <button class="gad small" data-act="download" disabled>Télécharger</button>
+        <button class="gad small" data-act="profile" disabled title="Réglages propres à ce disque">Profil</button>
+      </div>
+    </div>
+    <div class="drive wb hd-extra" hidden id="drive-dh3" data-unit="dh3">
+      <div class="drive-head"><b>DH3:</b><small id="trk-dh3">disque UAE</small></div>
+      <div class="media empty" id="name-dh3">Aucun disque dur</div>
       <div class="acts">
         <button class="gad small" data-act="insert">Choisir…</button>
         <button class="gad small" data-act="eject" disabled>Retirer</button>
@@ -583,6 +620,8 @@ body:not(.is-touch) .vj-opts{display:none}
     <div class="body" id="libBody"></div>
     <div class="actions">
       <button class="gad" id="libImport">Ajouter des fichiers…</button>
+      <button class="gad" id="libExport" title="Tout enregistrer dans un seul fichier, pour un autre appareil ou une sauvegarde">Exporter tout…</button>
+      <button class="gad" id="libRestore" title="Reprendre une Bibliothèque exportée (fichier .tar)">Importer…</button>
       <button class="gad primary" data-close>Fermer</button>
     </div>
   </div>
@@ -687,6 +726,10 @@ body:not(.is-touch) .vj-opts{display:none}
       <b>iPhone, iPad</b> : dans Safari, bouton Partager → « Sur l'écran d'accueil ». Les mises à jour arrivent seules, au lancement suivant une connexion.</p>
       <h3>Amiga 500</h3>
       <p>Certains jeux A500 ne fonctionnent pas sur l'A1200. Choisissez <b>Amiga 500</b> sur l'écran d'accueil ou dans Réglages (68000, chipset OCS, 512 Ko de Chip + 512 Ko de Slow), ou seulement pour une disquette dans son <b>Profil</b>. Importez le Kickstart 1.3 dans Réglages : il est choisi automatiquement pour l'A500. Les jeux A500 installés sur disque dur se lancent, eux, avec WHDLoad sur l'A1200.</p>
+      <h3>Plusieurs disques durs</h3>
+      <p>Jusqu'à quatre disques : <b>DH0:</b> et <b>DH1:</b> sur le contrôleur IDE de l'A1200 (maître et esclave), <b>DH2:</b> et <b>DH3:</b> par le pilote de disque d'UAE (uaehf.device), reconnu par tous les Kickstart. Dès qu'un disque est branché, le panneau de l'unité suivante apparaît ; la Bibliothèque a un bouton par unité. L'Amiga démarre sur DH0:. Si deux disques ont une partition du même nom (souvent DH0), celle du second est renommée au démarrage.</p>
+      <h3>Changer d'appareil</h3>
+      <p>Dans la Bibliothèque, <b>Exporter tout…</b> enregistre tout dans un seul fichier .tar : disquettes, disques durs, Kickstart, jeux WHDLoad, sauvegardes d'état et de jeux. Sur l'autre appareil, <b>Importer…</b> (ou glissez le fichier sur la page) les ajoute ; ce qui y est déjà et plus récent est gardé. Le fichier reste lisible par 7-Zip ou tar.</p>
       <h3>Jeux WHDLoad en un geste</h3>
       <p>Ouvrez une archive <b>.lha</b> de jeu WHDLoad (bouton <b>Ouvrir un fichier…</b> de l'accueil, ou glissez-la sur la page) : elle rejoint la Bibliothèque et sa vignette lance le jeu directement, sans Workbench ni disque dur à préparer. WHDLoad est fourni ; l'Amiga 1200 démarre avec 8 Mo de Fast. Importez vos Kickstart 3.1 (A1200) et 1.3 (A500) : WHDLoad les trouve tout seul, beaucoup de jeux en ont besoin. Les sauvegardes des jeux (WHDSaves) sont gardées d'une partie à l'autre. <span class="kbd">F10</span> quitte le jeu (touche habituelle des installations WHDLoad).</p>
       <h3>Copier des fichiers sur le disque dur</h3>
@@ -713,7 +756,7 @@ import { PuaeMachine } from "./puae-frontend.js";
 import { makeBlankAdf } from "./adf.js";
 import { readLha } from "./lha.js";
 import { listPartitions, AmigaVolume, amigaName } from "./ffs.js";
-import { makeHardDisk, inspectHdf, rdbHeaderFor, rootCandidate, isRootBlock } from "./hdf.js";
+import { makeHardDisk, inspectHdf, rdbHeaderFor, rootCandidate, isRootBlock, uniquePartitionNames } from "./hdf.js";
 
 /* =========================================================
    Petits utilitaires
@@ -791,7 +834,7 @@ function newId() { return Date.now().toString(36) + Math.random().toString(36).s
    Réglages persistants
    ========================================================= */
 const DEFAULTS = { fast: "0", cpu: "orig", region: "pal", res: "hires", joy: "none", floppy: "orig",
-  crt: true, sharp: false, autosave: true, center: true, kbd: "azerty", kbdOpen: false, compat: "normal", accel: "none", model: "a1200", romId500: "auto", floppySound: false, autoskip: true, romId: "aros", keyId: null, df0: null, df1: null, dh0: null, muted: false };
+  crt: true, sharp: false, autosave: true, center: true, kbd: "azerty", kbdOpen: false, compat: "normal", accel: "none", model: "a1200", romId500: "auto", floppySound: false, autoskip: true, romId: "aros", keyId: null, df0: null, df1: null, dh0: null, dh1: null, dh2: null, dh3: null, muted: false };
 let S = Object.assign({}, DEFAULTS);
 try { Object.assign(S, JSON.parse(localStorage.getItem("a1200.settings") || "{}")); } catch (e) {}
 function saveSettings() { try { localStorage.setItem("a1200.settings", JSON.stringify(S)); } catch (e) {} }
@@ -801,9 +844,13 @@ function saveSettings() { try { localStorage.setItem("a1200.settings", JSON.stri
    ========================================================= */
 let machine = null;
 let running = false, paused = false, starting = false;
-const mounted = { df0: null, df1: null, dh0: null }; /* {id, name} des médias en place */
+const mounted = { df0: null, df1: null, dh0: null, dh1: null, dh2: null, dh3: null }; /* {id, name} des médias en place */
+/* Disques durs : DH0: et DH1: sur le contrôleur IDE de l'A1200 (maître, esclave). Ni le Kickstart 3.1 ni AROS ne voient
+   d'autres unités IDE : DH2: et DH3: passent par le pilote de disque d'UAE (uaehf.device), lisible par tout Kickstart */
+const HD_TAGS = ["dh0", "dh1", "dh2", "dh3"];
+const isHd = tag => /^dh/.test(tag);
 /* Où chaque média vit dans le système de fichiers du cœur pendant la session */
-const fsPath = { df0: null, df1: null, dh0: null };
+const fsPath = { df0: null, df1: null, dh0: null, dh1: null, dh2: null, dh3: null };
 const DRIVE_NUM = { df0: 0, df1: 1 };
 
 /* Empreintes connues des Kickstart A1200 (CRC32 du fichier) */
@@ -920,7 +967,7 @@ async function powerOn() {
     /* Reprise d'une sauvegarde : mêmes disques, même Kickstart, mêmes réglages qu'au moment de la sauvegarde */
     const resume = pendingResume; pendingResume = null;
     if (resume) {
-      for (const t of ["df0", "df1", "dh0"]) setMounted(t, resume.ctx[t] ? await DB.get(resume.ctx[t]) : null);
+      for (const t of ["df0", "df1", ...HD_TAGS]) setMounted(t, resume.ctx[t] ? await DB.get(resume.ctx[t]) : null);
       whdGame = resume.ctx.whd ? await DB.get(resume.ctx.whd) : null;
       E = Object.assign({}, S, { accel: "none", model: "a1200" }, resume.settings, { _profile: "" });
     } else E = whdGame ? Object.assign({}, S) : await effectiveSettings(); /* les profils de disques ne s'appliquent pas à un jeu WHDLoad */
@@ -963,19 +1010,27 @@ async function powerOn() {
       machine.writeFile(fsPath[tag], new Uint8Array(await r.blob.arrayBuffer()));
       lines.push(`floppy${DRIVE_NUM[tag]}=${fsPath[tag]}`);
     }
-    fsPath.dh0 = null;
-    if (mounted.dh0 && whd) toast("Le disque dur n'est pas branché pendant un jeu WHDLoad.");
-    else if (mounted.dh0 && a500) toast("Mode Amiga 500 : le disque dur n'est pas branché (l'A500 n'a pas de contrôleur IDE).");
-    if (mounted.dh0 && !a500 && !whd) {
-      const r = await DB.get(mounted.dh0.id);
-      if (r) {
-        fsPath.dh0 = "/media/dh0/" + safeName(r.name);
-        machine.writeFile(fsPath.dh0, await recBytes(r));
-        hdDirty.clear(); machine.trackWrites(fsPath.dh0, hdWrite); /* pour ne réenregistrer que les morceaux modifiés */
-        /* Disque IDE brut sur le contrôleur Gayle : géométrie lue sur le disque, comme un vrai A1200 */
-        lines.push(`hardfile2=rw,DH0:${fsPath.dh0},0,0,0,512,0,,ide0_mainboard,0`);
-      } else setMounted("dh0", null);
+    const anyHd = HD_TAGS.some(t => mounted[t]);
+    if (anyHd && whd) toast("Les disques durs ne sont pas branchés pendant un jeu WHDLoad.");
+    else if (anyHd && a500) toast("Mode Amiga 500 : les disques durs ne sont pas branchés (l'A500 n'a pas de contrôleur IDE).");
+    const partNames = new Set();
+    for (const [unit, tag] of HD_TAGS.entries()) {
+      fsPath[tag] = null;
+      if (!mounted[tag] || a500 || whd) continue;
+      const r = await DB.get(mounted[tag].id);
+      if (!r) { setMounted(tag, null); continue; }
+      fsPath[tag] = "/media/" + tag + "/" + safeName(r.name);
+      const bytes = await recBytes(r);
+      /* Deux disques avec une partition du même nom (DH0: souvent) : celle du second est renommée (le nouveau nom reste sur le disque si l'Amiga réécrit son début) */
+      for (const x of uniquePartitionNames(bytes, partNames)) toast(r.name + " : partition " + x.from + ": montée comme " + x.to + ":");
+      machine.writeFile(fsPath[tag], bytes);
+      hdDirty[tag].clear(); machine.trackWrites(fsPath[tag], (pos, len) => hdWrite(tag, pos, len)); /* pour ne réenregistrer que les morceaux modifiés */
+      /* DH0:, DH1: : disque IDE brut sur le contrôleur Gayle, géométrie lue sur le disque, comme un vrai A1200 */
+      if (unit < 2) lines.push(`hardfile2=rw,${tag.toUpperCase()}:${fsPath[tag]},0,0,0,512,0,,ide${unit}_mainboard,0`);
+      else lines.push(`hardfile2=rw,${tag.toUpperCase()}:${fsPath[tag]},0,0,0,512,0,,uae${unit - 2}`);
     }
+    /* uaehf.device a besoin de la ROM de démarrage d'UAE : seulement si DH2: ou DH3: est branché (voir plus haut) */
+    if (fsPath.dh2 || fsPath.dh3) lines.splice(0, lines.length, ...lines.filter(l => !/^(boot_rom_uae|uaeboard)=/.test(l)));
     let content = "/cfg/a1200.uae", options = coreOptions();
     if (whd) {
       /* Le cœur reçoit l'archive elle-même : il la monte en DH0: et démarre sur son volume WHDLoad:. Nos lignes
@@ -1035,7 +1090,7 @@ function onLeds(l) {
   const p = $("#ledPower"); p.classList.toggle("on", !!l.power); p.classList.toggle("dim", !l.power && running);
   $("#ledDf").classList.toggle("on", !!(l.df0 || l.df1));
   $("#ledHd").classList.toggle("on", !!l.hd);
-  for (const [tag, on] of [["df0", l.df0], ["df1", l.df1], ["dh0", l.hd]]) {
+  for (const [tag, on] of [["df0", l.df0], ["df1", l.df1], ...HD_TAGS.filter(t => fsPath[t]).map(t => [t, l.hd])]) {
     const el = $("#trk-" + tag);
     if (on) { el.textContent = "lecture ou écriture…"; lastActivity[tag] = Date.now(); }
     else if (el.textContent === "lecture ou écriture…") el.textContent = driveLabel(tag);
@@ -1062,7 +1117,7 @@ function setPowerUi(st) {
 window.__a1200 = {
   get machine() { return machine; }, get running() { return running; },
   fsPath, mounted, DB, get dirty() { return dirty; }, get settings() { return E; },
-  recBlob: r => recBlob(r), download: (d, n) => download(d, n), get hdDirty() { return [...hdDirty]; }
+  recBlob: r => recBlob(r), download: (d, n) => download(d, n), get hdDirty() { return Object.fromEntries(HD_TAGS.map(t => [t, [...hdDirty[t]]])); }
 };
 /* =========================================================
    Médias : insertion, éjection, sauvegarde
@@ -1072,7 +1127,7 @@ function setMounted(tag, rec) {
   S[tag] = rec ? rec.id : null; saveSettings();
   dirty[tag] = false; savedAt[tag] = null; refreshDriveLabel(tag);
   const n = $("#name-" + tag);
-  n.textContent = rec ? rec.name : (tag === "dh0" ? "Aucun disque dur" : "Aucune disquette");
+  n.textContent = rec ? rec.name : (/^dh/.test(tag) ? "Aucun disque dur" : "Aucune disquette");
   n.classList.toggle("empty", !rec); n.title = rec ? rec.name : "";
   const card = $("#drive-" + tag);
   card.querySelector('[data-act="eject"]').disabled = !rec;
@@ -1121,8 +1176,8 @@ async function recBytes(rec) {
     return _del(id);
   }; }
 /* Morceaux du disque dur touchés par l'Amiga depuis le dernier enregistrement */
-const hdDirty = new Set();
-function hdWrite(pos, len) { if (len > 0) for (let i = Math.floor(pos / CHUNK), e = Math.floor((pos + len - 1) / CHUNK); i <= e; i++) hdDirty.add(i); }
+const hdDirty = Object.fromEntries(HD_TAGS.map(t => [t, new Set()]));
+function hdWrite(tag, pos, len) { if (len > 0) for (let i = Math.floor(pos / CHUNK), e = Math.floor((pos + len - 1) / CHUNK); i <= e; i++) hdDirty[tag].add(i); }
 
 /* ---- Import d'un disque dur : lu directement depuis le fichier, sans tout charger ;
         une image de partition seule (sans RDB) reçoit une table de partitions pour démarrer comme un vrai disque ---- */
@@ -1157,16 +1212,18 @@ async function importHdf(name, blob, mount) {
     for (let i = 0; i < Math.ceil(blob.size / CHUNK); i++) try { await DB.del(chunkId(rec, i)); } catch (x) {}
     toast(name + " : enregistrement impossible (" + (e && e.name === "QuotaExceededError" ? "plus de place pour ce site dans le navigateur" : e.message || e) + ").", true); return;
   }
-  if (mount) await mountMedia("dh0", rec);
+  if (mount) await mountMedia(isHd(mount) ? mount : "dh0", rec);
   toast(name + " ajouté à la Bibliothèque" + note + ".");
   return rec;
 }
 
 async function mountMedia(tag, rec) {
-  if (tag === "dh0") {
-    setMounted("dh0", rec);
+  if (isHd(tag)) {
+    /* Un même disque ne se branche qu'à un endroit : il quitte son ancienne unité */
+    for (const t of HD_TAGS) if (t !== tag && mounted[t] && mounted[t].id === rec.id) setMounted(t, null);
+    setMounted(tag, rec);
     if (running) toast("Disque dur prêt : il sera branché au prochain allumage.");
-    else toast(rec.name + " branché sur DH0:");
+    else toast(rec.name + " branché sur " + tag.toUpperCase() + ":");
     return;
   }
   if (running) {
@@ -1182,9 +1239,9 @@ async function mountMedia(tag, rec) {
 
 async function ejectMedia(tag, silent) {
   if (!mounted[tag]) return;
-  if (tag === "dh0") {
+  if (isHd(tag)) {
     if (running) { toast("Éteignez l'Amiga avant de retirer le disque dur.", true); return; }
-    setMounted("dh0", null); return;
+    setMounted(tag, null); return;
   }
   if (running && fsPath[tag]) {
     if (S.autosave) await saveDisk(tag, true, true);
@@ -1197,12 +1254,14 @@ async function ejectMedia(tag, silent) {
 }
 
 /* ---- Écritures de l'Amiga : on surveille la date de modification des fichiers du cœur ---- */
-const dirty = { df0: false, df1: false, dh0: false };
-const dirtySince = { df0: 0, df1: 0, dh0: 0 };     /* première écriture non enregistrée */
-const seen = { df0: 0, df1: 0, dh0: 0 };       /* date du fichier lors du dernier enregistrement */
-const lastActivity = { df0: 0, df1: 0, dh0: 0 }; /* dernier allumage de la LED du lecteur */
-const savedAt = { df0: null, df1: null, dh0: null };
-const BASE_LABEL = { df0: "lecteur interne", df1: "lecteur externe", dh0: "IDE interne 2,5\"" };
+const DRIVE_TAGS = ["df0", "df1", ...HD_TAGS];
+const perDrive = v => Object.fromEntries(DRIVE_TAGS.map(t => [t, v]));
+const dirty = perDrive(false);
+const dirtySince = perDrive(0);     /* première écriture non enregistrée */
+const seen = perDrive(0);           /* date du fichier lors du dernier enregistrement */
+const lastActivity = perDrive(0);   /* dernier allumage de la LED du lecteur */
+const savedAt = perDrive(null);
+const BASE_LABEL = { df0: "lecteur interne", df1: "lecteur externe", dh0: "IDE interne 2,5\"", dh1: "IDE, esclave", dh2: "disque UAE", dh3: "disque UAE" };
 function driveLabel(tag) {
   if (dirty[tag]) return "modifié, enregistrement…";
   if (savedAt[tag]) return "enregistré à " + savedAt[tag].toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
@@ -1212,7 +1271,7 @@ function refreshDriveLabel(tag) { const el = $("#trk-" + tag); if (el) el.textCo
 function checkDirty() {
   if (!running) return;
   machine.flush(); /* les dernières écritures du cœur passent dans les fichiers */
-  for (const t of ["df0", "df1", "dh0"]) {
+  for (const t of DRIVE_TAGS) {
     if (!fsPath[t]) continue;
     const m = machine.fileMtime(fsPath[t]);
     if (m && m !== seen[t] && !dirty[t]) { dirty[t] = true; dirtySince[t] = Date.now(); refreshDriveLabel(t); }
@@ -1228,11 +1287,11 @@ async function saveDisk(tag, quiet, force) {
   if (mtime === seen[tag]) { dirty[tag] = false; refreshDriveLabel(tag); return false; }
   const rec = await DB.get(m.id); if (!rec) return false;
   if (!/\.(adf|hdf)$/i.test(rec.name)) { dirty[tag] = false; seen[tag] = mtime; return false; } /* DMS, ADF étendus : lecture seule */
-  if (tag === "dh0") {
+  if (isHd(tag)) {
     /* Seuls les morceaux modifiés sont copiés (tous d'un coup, pour un disque cohérent), puis réécrits */
     machine.flush();
     const all = !rec.chunks, n = Math.ceil(rec.size / CHUNK);
-    const list = all ? [...Array(n).keys()] : [...hdDirty]; hdDirty.clear();
+    const list = all ? [...Array(n).keys()] : [...hdDirty[tag]]; hdDirty[tag].clear();
     const parts = new Map(list.map(i => [i, machine.readRange(fsPath[tag], i * CHUNK, CHUNK)]));
     if (all) await storeChunks(rec, new Blob(list.map(i => parts.get(i))));
     else for (const [i, d] of parts) await DB.put({ id: chunkId(rec, i), kind: "chunk", owner: rec.id, blob: new Blob([d]) });
@@ -1251,7 +1310,7 @@ async function saveDisk(tag, quiet, force) {
 async function saveAllDisks(quiet) {
   if (saving) return; saving = true;
   let n = 0;
-  try { for (const t of ["df0", "df1", "dh0"]) if (await saveDisk(t, true)) n++; }
+  try { for (const t of DRIVE_TAGS) if (await saveDisk(t, true)) n++; }
   finally { saving = false; }
   if (n && quiet) toast(n === 1 ? "1 disque modifié enregistré" : n + " disques modifiés enregistrés");
 }
@@ -1261,7 +1320,7 @@ setInterval(async () => {
   if (!running || !S.autosave || saving) return;
   checkDirty();
   const now = Date.now();
-  const ready = ["df0", "df1", "dh0"].filter(t => dirty[t] && (now - lastActivity[t] > 3000 || now - dirtySince[t] > 20000));
+  const ready = DRIVE_TAGS.filter(t => dirty[t] && (now - lastActivity[t] > 3000 || now - dirtySince[t] > 20000));
   if (!ready.length) return;
   saving = true;
   try { for (const t of ready) await saveDisk(t, true); } finally { saving = false; }
@@ -1273,9 +1332,9 @@ window.addEventListener("pagehide", flushNow);
 
 async function downloadMedia(tag) {
   const m = mounted[tag]; if (!m) return;
-  if (tag === "dh0") {
+  if (isHd(tag)) {
     /* Disque dur : on enregistre ce qui est en attente puis on télécharge la copie de la Bibliothèque */
-    if (running && fsPath.dh0) await saveDisk("dh0", true, true);
+    if (running && fsPath[tag]) await saveDisk(tag, true, true);
     const rec = await DB.get(m.id); download(await recBlob(rec), m.name); return;
   }
   let data = running && fsPath[tag] ? machine.readFile(fsPath[tag]) : null;
@@ -1293,18 +1352,20 @@ async function blankFloppy(tag) {
   await mountMedia(tag, rec);
 }
 
-/* Disque dur vierge */
-async function blankHd(mb) {
+/* Disque dur vierge, pour l'unité choisie (sa partition porte le même nom : DH1: sur DH1…) */
+let hdTarget = "dh0";
+async function blankHd(mb, tag = hdTarget) {
   const size = mb * 1048576;
   const all = await DB.all();
   let i = 1; while (all.some(r => r.name === "Disque " + mb + " Mo" + (i > 1 ? " " + i : "") + ".hdf")) i++;
   const name = "Disque " + mb + " Mo" + (i > 1 ? " " + i : "") + ".hdf";
   /* Partitionné (RDB) et formaté en FFS, prêt à recevoir le Workbench */
   const rec = { id: newId(), kind: "hdf", name, crc: undefined, added: Date.now() };
-  await storeChunks(rec, new Blob([makeHardDisk(mb, "Travail")]));
+  const unit = HD_TAGS.indexOf(tag);
+  await storeChunks(rec, new Blob([makeHardDisk(mb, unit > 0 ? "Travail " + unit : "Travail", new Date(), tag.toUpperCase(), -unit)]));
   await DB.put(rec);
-  if (running) { toast(name + " créé : il sera branché au prochain allumage."); setMounted("dh0", rec); }
-  else { setMounted("dh0", rec); toast(name + " créé et branché sur DH0:"); }
+  setMounted(tag, rec);
+  toast(name + (running ? " créé : il sera branché au prochain allumage." : " créé et branché sur " + tag.toUpperCase() + ":"));
 }
 
 /* =========================================================
@@ -1381,7 +1442,7 @@ async function expandFile(name, u8) {
 async function importFile(file, target) {
   /* Disque dur : lu directement depuis le fichier, sans le charger entier en mémoire */
   if (/\.hdf$/i.test(file.name) || (file.size > 64 * 1048576 && !/\.(zip|gz|adz|hdz|lha|lzh|lzx|rar|7z|rom|bin|adf|dms)$/i.test(file.name)))
-    return importHdf(file.name, file, true);
+    return importHdf(file.name, file, isHd(target || "") ? target : true);
   let items;
   try { items = await expandFile(file.name, new Uint8Array(await file.arrayBuffer())); }
   catch (e) { toast(e.message || String(e), true); return; }
@@ -1404,7 +1465,7 @@ async function importBytes(name, u8, target, mount, quiet) {
   const file = { name };
   const kind = guessKind(name, u8);
   if (!kind) { toast("Format de " + name + " non reconnu.", true); return; }
-  if (kind === "hdf") return importHdf(name, new Blob([u8]), mount);
+  if (kind === "hdf") return importHdf(name, new Blob([u8]), mount && isHd(target || "") ? target : mount);
   const rec = { id: newId(), kind, name: file.name, size: u8.length, blob: new Blob([u8]), crc: crc32u8(u8), added: Date.now() };
   if (kind === "rom" && quiet) { await loadKeyForExamine(); rec.label = describeRom(rec.name, u8).label; await DB.put(rec); return; }
   if (kind === "key" && quiet) { await DB.put(rec); if (!S.keyId) { S.keyId = rec.id; saveSettings(); } return; }
@@ -1539,7 +1600,7 @@ async function renderLib() {
         btn("DF0:", async () => { await mountMedia("df0", r); renderLib(); }, inUse);
         btn("DF1:", async () => { await mountMedia("df1", r); renderLib(); }, inUse);
       } else if (kind === "hdf") {
-        btn("DH0:", async () => { if (running) { toast("Éteignez l'Amiga pour changer de disque dur.", true); return; } await mountMedia("dh0", r); renderLib(); }, inUse);
+        for (const t of HD_TAGS) btn(t.toUpperCase() + ":", async () => { if (running) { toast("Éteignez l'Amiga pour changer de disque dur.", true); return; } await mountMedia(t, r); renderLib(); }, inUse === t);
         btn("Fichiers…", () => openFiles(r));
       } else if (kind === "whd") {
         btn("Jouer", () => { if (running) { toast("Éteignez d'abord l'Amiga.", true); return; } closeWin(); launchWhd(r); });
@@ -1764,7 +1825,7 @@ $("#btnSettings").onclick = () => { syncSettingsForm(); renderRomChoices(); show
 $("#btnLib").onclick = () => { renderLib(); showWin("winLib"); };
 $("#btnHelp").onclick = () => showWin("winHelp");
 $("#libImport").onclick = () => {
-  const inp = $("#filePick"); inp.value = ""; inp.accept = ".adf,.dms,.adz,.zip,.gz,.lha,.lzh,.hdf,.hdz,.rom,.bin,.key"; inp.multiple = true;
+  const inp = $("#filePick"); inp.value = ""; inp.accept = ".adf,.dms,.adz,.zip,.gz,.lha,.lzh,.hdf,.hdz,.rom,.bin,.key,.tar"; inp.multiple = true;
   inp.onchange = async () => { for (const f of inp.files) await addToLibrary(f); renderLib(); };
   inp.click();
 };
@@ -1789,12 +1850,12 @@ $$(".drive").forEach(card => {
   card.addEventListener("click", async e => {
     const b = e.target.closest("[data-act]"); if (!b) return;
     const act = b.dataset.act;
-    if (act === "insert") pickFile(tag === "dh0" ? ".hdf,.hdz,.zip,.gz" : ".adf,.dms,.adz,.zip,.gz", f => importFile(f, tag));
+    if (act === "insert") pickFile(/^dh/.test(tag) ? ".hdf,.hdz,.zip,.gz" : ".adf,.dms,.adz,.zip,.gz", f => importFile(f, tag));
     else if (act === "eject") ejectMedia(tag);
     else if (act === "download") downloadMedia(tag);
     else if (act === "profile") openProfile(tag);
     else if (act === "blank") {
-      if (tag === "dh0") { if (running) { toast("Éteignez l'Amiga pour brancher un nouveau disque dur.", true); return; } showWin("winHd"); }
+      if (/^dh/.test(tag)) { if (running) { toast("Éteignez l'Amiga pour brancher un nouveau disque dur.", true); return; } hdTarget = tag; showWin("winHd"); }
       else blankFloppy(tag);
     }
   });
@@ -1816,7 +1877,9 @@ function gameKey(m = mounted) { return whdGame ? whdGame.id : m.df0 ? m.df0.id :
 function gameName(m = mounted) { return whdGame ? whdGame.name.replace(/\.(lha|lzh)$/i, "") : m.df0 ? m.df0.name : m.dh0 ? m.dh0.name : "Sans disque"; }
 function stateCtx() {
   if (whdGame) return { df0: null, df1: null, dh0: null, whd: whdGame.id, rom: E._rom || S.romId };
-  return { df0: mounted.df0 && mounted.df0.id, df1: mounted.df1 && mounted.df1.id, dh0: mounted.dh0 && mounted.dh0.id, rom: E._rom || S.romId };
+  const c = { rom: E._rom || S.romId };
+  for (const t of ["df0", "df1", ...HD_TAGS]) c[t] = mounted[t] ? mounted[t].id : null;
+  return c;
 }
 const STATE_SETTINGS = ["compat", "cpu", "fast", "region", "joy", "floppy", "accel", "model"];
 
@@ -1853,12 +1916,12 @@ async function saveStateSlot(slot) {
 function sameMachine(rec) {
   if (!running) return false;
   const c = stateCtx();
-  if (c.dh0 !== rec.ctx.dh0 || c.rom !== rec.ctx.rom || (c.whd || null) !== (rec.ctx.whd || null)) return false;
+  if (HD_TAGS.some(t => (c[t] || null) !== (rec.ctx[t] || null)) || c.rom !== rec.ctx.rom || (c.whd || null) !== (rec.ctx.whd || null)) return false;
   return STATE_SETTINGS.filter(k => k !== "joy").every(k => String(E[k] ?? (k === "model" ? "a1200" : undefined)) === String(rec.settings[k] ?? (k === "accel" ? "none" : k === "model" ? "a1200" : undefined)));
 }
 async function resumeState(id) {
   const rec = await DB.get(id); if (!rec) return;
-  for (const t of ["df0", "df1", "dh0", "whd"]) {
+  for (const t of ["df0", "df1", ...HD_TAGS, "whd"]) {
     if (rec.ctx[t] && !(await DB.get(rec.ctx[t]))) { toast("Un disque de cette sauvegarde a été supprimé de la Bibliothèque.", true); return; }
   }
   closeWin();
@@ -1996,7 +2059,7 @@ async function launchWith(rec) {
   if (rec.kind === "hdf") {
     /* Démarrer sur le disque dur : on libère DF0: (une disquette amorçable passerait devant) */
     if (mounted.df0) await ejectMedia("df0", true);
-    if (!mounted.dh0 || mounted.dh0.id !== rec.id) await mountMedia("dh0", rec);
+    if (!mounted.dh0 || mounted.dh0.id !== rec.id) await mountMedia("dh0", rec); /* quitte son autre unité s'il y était */
   } else if (!mounted.df0 || mounted.df0.id !== rec.id) await mountMedia("df0", rec);
   await markUsed(); powerOn();
 }
@@ -2052,7 +2115,7 @@ async function renderLauncher() {
     const grid = lEl("div", "l-grid");
     for (const r of disks.slice(0, LAUNCH_MAX)) {
       const tile = lEl("div", "l-tile");
-      const inDrive = (mounted.df0 && mounted.df0.id === r.id) || (mounted.dh0 && mounted.dh0.id === r.id);
+      const inDrive = ["df0", ...HD_TAGS].some(t => mounted[t] && mounted[t].id === r.id);
       if (inDrive) tile.classList.add("in");
       const pick = lEl("button", "l-pick");
       pick.title = (r.kind === "whd" ? "Jouer : " : "Insérer et allumer : ") + r.name;
@@ -2080,12 +2143,13 @@ async function renderLauncher() {
   /* Ce qui démarrera avec le bouton Allumer */
   const what = [];
   if (mounted.df0) what.push(mounted.df0.name.replace(/\.(adf|adz|dms)$/i, ""));
-  if (mounted.dh0) what.push((mounted.df0 ? "+ disque dur " : "disque dur ") + mounted.dh0.name.replace(/\.hdf$/i, ""));
+  const hds = HD_TAGS.filter(t => mounted[t]).map(t => mounted[t].name.replace(/\.hdf$/i, ""));
+  if (hds.length) what.push((mounted.df0 ? "+ " : "") + (hds.length > 1 ? "disques durs " : "disque dur ") + hds.join(", "));
   $("#lWhat").textContent = what.length ? "avec " + what.join(" ") : "sans disque";
 }
 
 /* Le bouton « Ouvrir un fichier » : disquette, archive, disque dur ou Kickstart */
-$("#lOpen").onclick = () => pickFile(".adf,.adz,.dms,.zip,.gz,.lha,.lzh,.hdf,.rom,.bin,.key", f => importFile(f));
+$("#lOpen").onclick = () => pickFile(".adf,.adz,.dms,.zip,.gz,.lha,.lzh,.hdf,.rom,.bin,.key,.tar", f => importFile(f));
 /* Allumer depuis l'accueil ou la barre d'outils : les disques en place remontent en tête */
 $("#idlePower").onclick = async () => { await markUsed(); powerOn(); };
 { const b = $("#btnPower"), prev = b.onclick; b.onclick = async e => { if (!running) await markUsed(); prev(e); }; }
@@ -2299,8 +2363,8 @@ for (const id of ["#filesPick", "#dirPick"]) {
     await copyToHd(items, $("#filesDest").value, problems);
   };
 }
-$('#drive-dh0 [data-act="files"]').onclick = async () => openFiles(mounted.dh0 && await DB.get(mounted.dh0.id));
-{ const _sm = setMounted; setMounted = (t, r) => { _sm(t, r); if (t === "dh0") $('#drive-dh0 [data-act="files"]').disabled = !r; }; }
+for (const t of HD_TAGS) $('#drive-' + t + ' [data-act="files"]').onclick = async () => openFiles(mounted[t] && await DB.get(mounted[t].id));
+{ const _sm = setMounted; setMounted = (t, r) => { _sm(t, r); if (isHd(t)) $('#drive-' + t + ' [data-act="files"]').disabled = !r; }; }
 
 /* Kickstart de l'Amiga 500 : automatique (un 1.x de la Bibliothèque), AROS, ou une ROM précise */
 async function renderRom500() {
@@ -2442,6 +2506,155 @@ function sendJoy() { if (running && machine) machine.setJoy(0, joyKeys | joyTouc
   }
   document.addEventListener("fullscreenchange", placeKeyboard); document.addEventListener("webkitfullscreenchange", placeKeyboard);
 })();
+
+/* Disques durs supplémentaires : chaque unité occupée a son panneau, plus la suivante, libre, pour en ajouter une */
+function refreshHdPanels() {
+  HD_TAGS.forEach((t, i) => { if (i) $("#drive-" + t).hidden = !mounted[t] && !mounted[HD_TAGS[i - 1]]; });
+}
+{ const _sm = setMounted; setMounted = (t, r) => { _sm(t, r); refreshHdPanels(); }; }
+
+/* =========================================================
+   Export et import de la Bibliothèque : tout passer d'un appareil à l'autre
+   =========================================================
+   Un seul fichier .tar (format standard, lisible par 7-Zip ou tar) : bibliotheque.json décrit chaque élément
+   (disquettes, disques durs, Kickstart, jeux WHDLoad, sauvegardes d'état et de jeux) et chaque contenu suit
+   comme un fichier ordinaire, un disque dur en une seule image .hdf. Rien n'est chargé en entier en mémoire :
+   l'export assemble des Blob, l'import lit le fichier par tranches. */
+const LIB_FORMAT = "amiga1200-bibliotheque";
+const TAR_BLOCK = 512;
+
+function tarHeader(name, size, mtime) {
+  const h = new Uint8Array(TAR_BLOCK), enc = new TextEncoder();
+  const put = (off, len, s) => h.set(enc.encode(s).subarray(0, len), off);
+  const oct = (off, len, v) => put(off, len, v.toString(8).padStart(len - 1, "0") + "\0");
+  put(0, 100, name);
+  oct(100, 8, 0o644); oct(108, 8, 0); oct(116, 8, 0);
+  oct(124, 12, size); oct(136, 12, Math.floor(mtime / 1000));
+  put(148, 8, "        "); h[156] = 0x30; /* fichier ordinaire */
+  put(257, 6, "ustar\0"); put(263, 2, "00");
+  let sum = 0; for (const b of h) sum += b;
+  put(148, 8, sum.toString(8).padStart(6, "0") + "\0 ");
+  return h;
+}
+/* Nom de fichier sûr dans l'archive (ASCII, moins de 100 octets) */
+function tarName(i, name) {
+  const slug = name.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9._ -]/g, "_").slice(0, 70);
+  return "fichiers/" + String(i).padStart(4, "0") + "-" + slug;
+}
+
+async function exportLibrary() {
+  if (running && S.autosave) await saveAllDisks(true); /* les disques en cours sont à jour dans l'export */
+  const all = (await DB.all()).filter(r => r.kind !== "chunk");
+  if (!all.length) { toast("La Bibliothèque est vide : rien à exporter.", true); return; }
+  toast("Préparation de l'export…");
+  const parts = [], records = [];
+  let n = 0, total = 0;
+  const addFile = (name, blob, mtime) => {
+    parts.push(tarHeader(name, blob.size, mtime || Date.now()), blob);
+    const pad = (TAR_BLOCK - blob.size % TAR_BLOCK) % TAR_BLOCK;
+    if (pad) parts.push(new Uint8Array(pad));
+    total += blob.size;
+  };
+  for (const r of all) {
+    const m = Object.assign({}, r), when = r.updated || r.added;
+    if (r.kind === "hdf" && r.chunks) {
+      const path = tarName(n++, r.name); addFile(path, await recBlob(r), when);
+      delete m.chunks; m.$hd = path;
+    } else if (r.blob) {
+      const path = tarName(n++, r.name || r.id); addFile(path, r.blob, when);
+      m.blob = { $file: path };
+    }
+    if (Array.isArray(r.files)) m.files = r.files.map(f => {
+      if (!f.blob) return f;
+      const path = tarName(n++, f.path || "fichier"); addFile(path, f.blob, when);
+      return Object.assign({}, f, { blob: { $file: path } });
+    });
+    records.push(m);
+  }
+  const manifest = new TextEncoder().encode(JSON.stringify({
+    format: LIB_FORMAT, version: 1, exported: new Date().toISOString(),
+    settings: { romId: S.romId, romId500: S.romId500, keyId: S.keyId }, records
+  }, null, 1));
+  const head = [tarHeader("bibliotheque.json", manifest.length, Date.now()), manifest, new Uint8Array((TAR_BLOCK - manifest.length % TAR_BLOCK) % TAR_BLOCK)];
+  const tar = new Blob([...head, ...parts, new Uint8Array(TAR_BLOCK * 2)], { type: "application/x-tar" });
+  const d = new Date(), day = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  download(tar, "Bibliotheque Amiga " + day + ".tar");
+  toast("Export : " + records.length + " éléments, " + fmtSize(tar.size) + ". Ouvrez ce fichier sur l'autre appareil (Bibliothèque → Importer).");
+}
+
+/* Sommaire d'une archive tar : nom → position et taille du contenu */
+async function readTarIndex(file) {
+  const idx = new Map(), dec = new TextDecoder();
+  const str = (u8, off, len) => { const s = u8.subarray(off, off + len), z = s.indexOf(0); return dec.decode(z >= 0 ? s.subarray(0, z) : s); };
+  for (let off = 0; off + TAR_BLOCK <= file.size;) {
+    const h = new Uint8Array(await file.slice(off, off + TAR_BLOCK).arrayBuffer());
+    if (h.every(b => b === 0)) break;
+    const prefix = str(h, 345, 155), name = (prefix ? prefix + "/" : "") + str(h, 0, 100);
+    const size = parseInt(str(h, 124, 12).trim() || "0", 8);
+    if (!Number.isFinite(size)) throw new Error("archive tar endommagée");
+    if (h[156] === 0x30 || h[156] === 0) idx.set(name, { off: off + TAR_BLOCK, size });
+    off += TAR_BLOCK + Math.ceil(size / TAR_BLOCK) * TAR_BLOCK;
+  }
+  return idx;
+}
+async function isLibraryTar(file) {
+  if (!/\.tar$/i.test(file.name)) return false;
+  try { const h = new Uint8Array(await file.slice(0, 100).arrayBuffer()); return new TextDecoder().decode(h).startsWith("bibliotheque.json"); }
+  catch (e) { return false; }
+}
+
+async function importLibrary(file) {
+  if (running || starting) { toast("Éteignez d'abord l'Amiga pour importer une Bibliothèque.", true); return; }
+  let idx, man;
+  try {
+    idx = await readTarIndex(file);
+    const mf = idx.get("bibliotheque.json");
+    if (!mf) throw new Error("bibliotheque.json absent");
+    man = JSON.parse(await file.slice(mf.off, mf.off + mf.size).text());
+    if (man.format !== LIB_FORMAT) throw new Error("ce n'est pas un export de la Bibliothèque");
+  } catch (e) { toast(file.name + " : " + (e.message || e), true); return; }
+  const slice = ref => { const e = ref && idx.get(ref.$file || ref); if (!e) throw new Error("contenu manquant dans l'archive"); return file.slice(e.off, e.off + e.size); };
+  const recs = man.records || [];
+  if (!confirm("Importer " + recs.length + " éléments (" + fmtSize(file.size) + ") exportés le "
+    + new Date(man.exported).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })
+    + " ?\nCe qui est déjà ici et plus récent est gardé ; le reste est ajouté ou remplacé.")) return;
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+  let added = 0, replaced = 0, kept = 0, done = 0;
+  const t0 = Date.now();
+  try {
+    for (const m of recs) {
+      done++;
+      if (Date.now() - t0 > 1500) toast("Import : " + done + " / " + recs.length + "…");
+      const old = await DB.get(m.id);
+      if (old && (old.updated || old.added || 0) > (m.updated || m.added || 0)) { kept++; continue; }
+      const r = Object.assign({}, m);
+      if (r.blob && r.blob.$file) r.blob = slice(r.blob);
+      if (Array.isArray(r.files)) r.files = r.files.map(f => f.blob && f.blob.$file ? Object.assign({}, f, { blob: slice(f.blob) }) : f);
+      if (r.$hd) { const blob = slice(r.$hd); delete r.$hd; await storeChunks(r, blob); }
+      /* Morceaux de l'ancien disque qui dépassent le nouveau */
+      if (old && old.chunks) for (let i = r.chunks || 0; i < old.chunks; i++) await DB.del(chunkId(old, i));
+      await DB.put(r);
+      old ? replaced++ : added++;
+    }
+  } catch (e) {
+    toast("Import interrompu après " + (added + replaced) + " éléments : " + (e && e.name === "QuotaExceededError" ? "plus de place pour ce site dans le navigateur" : e.message || e), true);
+    return;
+  }
+  /* Kickstart choisis sur l'autre appareil, s'il n'y en a pas encore ici */
+  const st = man.settings || {};
+  if (S.romId === "aros" && st.romId && st.romId !== "aros" && await DB.get(st.romId)) S.romId = st.romId;
+  if ((!S.romId500 || S.romId500 === "auto") && st.romId500 && st.romId500 !== "auto" && (st.romId500 === "aros" || await DB.get(st.romId500))) S.romId500 = st.romId500;
+  if (!S.keyId && st.keyId && await DB.get(st.keyId)) S.keyId = st.keyId;
+  saveSettings(); refreshIdleRom(); renderRomChoices();
+  toast("Bibliothèque importée : " + added + " ajoutés, " + replaced + " remplacés" + (kept ? ", " + kept + " gardés (plus récents ici)" : "") + ".");
+  if ($("#winLib").classList.contains("open")) renderLib();
+}
+
+/* Un export déposé ou ouvert comme n'importe quel fichier est reconnu */
+{ const _imp = importFile;
+  importFile = async (file, target) => (await isLibraryTar(file)) ? importLibrary(file) : _imp(file, target); }
+$("#libExport").onclick = () => exportLibrary();
+$("#libRestore").onclick = () => pickFile(".tar", f => importLibrary(f));
 
 /* =========================================================
    Jeux WHDLoad en un geste : une archive .lha, et on joue
@@ -2604,7 +2817,7 @@ window.addEventListener("beforeunload", e => {
   $("#btnMute span").textContent = S.muted ? "Muet" : "Son";
   try {
     await DB.open();
-    for (const t of ["df0", "df1", "dh0"]) {
+    for (const t of ["df0", "df1", ...HD_TAGS]) {
       if (S[t]) { const r = await DB.get(S[t]); setMounted(t, r || null); }
     }
   } catch (e) {
@@ -2615,6 +2828,7 @@ window.addEventListener("beforeunload", e => {
   setKeyboardOpen(!!S.kbdOpen);
   const resumeId = sessionStorage.getItem("a1200.resume");
   if (resumeId) { sessionStorage.removeItem("a1200.resume"); pendingResume = await DB.get(resumeId) || null; }
+  refreshHdPanels();
   const whdId = sessionStorage.getItem("a1200.whd");
   if (whdId) { sessionStorage.removeItem("a1200.whd"); whdGame = await DB.get(whdId) || null; }
   if (sessionStorage.getItem("a1200.autostart")) { sessionStorage.removeItem("a1200.autostart"); powerOn(); }

@@ -63,3 +63,17 @@ puis rallumage (la page se recharge).
 Vérifié dans Chromium : démarrage depuis DH0:, fichier écrit par un script de démarrage puis retrouvé dans la
 Bibliothèque (relu avec amitools), commande tapée au clavier qui écrit sur DH0: avec l'enregistrement automatique
 actif, disque créé par « Nouveau » amorçable.
+
+## Étape 5 : sauvegardes d'état et profils (terminée)
+
+- `app/states-puae.js` : bouton **Sauvegardes**, 4 emplacements par jeu (disquette de DF0:, sinon disque dur),
+  vignette de l'écran, date, taille ; raccourcis Ctrl+Maj+S / Ctrl+Maj+R pour l'emplacement 1.
+- Un état PUAE note les chemins des disques mais pas leur contenu : chaque sauvegarde garde la liste des disques,
+  le Kickstart et les réglages. « Reprendre » s'applique à chaud si la machine est déjà dans cette configuration,
+  sinon l'Amiga se rallume avec elle puis charge l'état. Les disques modifiés sont enregistrés au même moment.
+- Supprimer un disque de la Bibliothèque supprime ses sauvegardes.
+- Profils par disque transmis au cœur : cycle exact, vitesse, mémoire Fast, PAL/NTSC, vitesse des lecteurs
+  (vérifié : `fastmem_size=8` et `cpu_cycle_exact=true` dans la configuration générée, état de 11 Mo avec 8 Mo de Fast).
+
+Vérifié dans Chromium : « echo AAA », sauvegarde, « echo BBB », reprise → seul AAA à l'écran, à chaud comme après
+extinction (reprise au clavier) ; profil cycle exact + 8 Mo Fast + NTSC appliqué au démarrage.

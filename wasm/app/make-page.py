@@ -129,6 +129,42 @@ rep('<label><input type="radio" name="compat" value="max"> Maximale</label>',
 rep("Maximale : prélecture et caches du 68020, blitter au cycle près. Plus fidèle pour les démos et jeux capricieux, mais plus gourmand.",
     "Cycle exact : processeur et puces émulés au cycle près, comme WinUAE. Le plus fidèle pour les démos et jeux capricieux, mais plus gourmand.")
 
+# Sauvegardes d'état : bouton, fenêtre, styles, module
+rep('''      Capture</button>
+    <span class="sep"></span>''', '''      Capture</button>
+    <button class="gad" id="btnStates" title="Sauvegarder ou reprendre une partie (Ctrl+Maj+S / Ctrl+Maj+R)">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1.5v8M4.8 6.5 8 9.7l3.2-3.2"/><path d="M2 11v3.5h12V11"/></svg>
+      Sauvegardes</button>
+    <span class="sep"></span>''')
+rep("<!-- Fenêtre : Aide -->", '''<!-- Fenêtre : Sauvegardes d'état -->
+<div class="veil" id="winStates" role="dialog" aria-modal="true" aria-labelledby="tStates">
+  <div class="win wb">
+    <div class="titlebar"><button class="closebox" data-close aria-label="Fermer"></button><span class="t" id="tStates">Sauvegardes</span><span class="stripes"></span></div>
+    <div class="body" id="statesBody"></div>
+    <div class="actions"><span class="hint">Ctrl+Maj+S sauvegarde dans l'emplacement 1, Ctrl+Maj+R le reprend</span><button class="gad primary" data-close>Fermer</button></div>
+  </div>
+</div>
+
+<!-- Fenêtre : Aide -->''')
+rep(".footnote{margin-top:18px", '''.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0 12px}
+.slot-card{background:#bbb;border:1px solid;border-color:#fff #000 #000 #fff;padding:8px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.slot-img{width:100%;aspect-ratio:4/3;object-fit:cover;background:#222;color:#999;display:flex;align-items:center;justify-content:center;font-size:13px;
+  border:1px solid;border-color:#000 #fff #fff #000}
+.slot-meta{display:flex;flex-direction:column;gap:1px;font-size:13px}
+.slot-meta span{color:#222;font-variant-numeric:tabular-nums}
+.slot-acts{display:flex;flex-wrap:wrap;gap:5px}
+@media (max-width:640px){.slots{grid-template-columns:repeat(2,1fr)}}
+.is-touch #winStates .actions .hint{display:none}
+.footnote{margin-top:18px''')
+rep("/* Profil par disque */", (APP / "states-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+rep('''  if (sessionStorage.getItem("a1200.autostart")) { sessionStorage.removeItem("a1200.autostart"); powerOn(); }''',
+    '''  const resumeId = sessionStorage.getItem("a1200.resume");
+  if (resumeId) { sessionStorage.removeItem("a1200.resume"); pendingResume = await DB.get(resumeId) || null; }
+  if (sessionStorage.getItem("a1200.autostart")) { sessionStorage.removeItem("a1200.autostart"); powerOn(); }''')
+rep('''      <h3>Compatibilité et vitesse</h3>''', '''      <h3>Sauvegardes d'état</h3>
+      <p>Le bouton <b>Sauvegardes</b> fige la machine entière dans l'un des 4 emplacements du jeu en cours (la disquette de DF0:, ou le disque dur). <b>Reprendre</b> la remet exactement dans cet état, avec les mêmes disques et réglages ; si besoin l'Amiga se rallume tout seul. Raccourcis : <span class="kbd">Ctrl</span>+<span class="kbd">Maj</span>+<span class="kbd">S</span> sauvegarde dans l'emplacement 1, <span class="kbd">Ctrl</span>+<span class="kbd">Maj</span>+<span class="kbd">R</span> le reprend.</p>
+      <h3>Compatibilité et vitesse</h3>''')
+
 # Disque dur : désormais livré partitionné et formaté
 rep("<p>Un disque vierge, comme sorti de sa boîte. Partitionnez-le ensuite avec HDToolBox (disquette Install) puis formatez-le depuis le Workbench.</p>",
     "<p>Un disque prêt à l'emploi : partitionné comme avec HDToolBox (une partition DH0: amorçable) et formaté en FFS, nommé « Travail ». Vous pouvez y installer le Workbench directement.</p>")

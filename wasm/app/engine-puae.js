@@ -71,11 +71,21 @@ function coreOptions() {
 async function powerOn() {
   if (running || starting) return;
   /* Le cœur ne se rallume pas dans la même page : on recharge et on rallume aussitôt. */
-  if (machine) { sessionStorage.setItem("a1200.autostart", "1"); location.reload(); return; }
+  if (machine) {
+    sessionStorage.setItem("a1200.autostart", "1");
+    if (pendingResume) sessionStorage.setItem("a1200.resume", pendingResume.id);
+    location.reload(); return;
+  }
   if (!window.crossOriginIsolated) { toast("La page doit être rechargée une fois pour activer l'émulateur (isolation du navigateur).", true); return; }
   starting = true; setPowerUi("starting");
   try {
-    E = await effectiveSettings();
+    /* Reprise d'une sauvegarde : mêmes disques, même Kickstart, mêmes réglages qu'au moment de la sauvegarde */
+    const resume = pendingResume; pendingResume = null;
+    if (resume) {
+      for (const t of ["df0", "df1", "dh0"]) setMounted(t, resume.ctx[t] ? await DB.get(resume.ctx[t]) : null);
+      E = Object.assign({}, S, resume.settings, { _profile: "" });
+    } else E = await effectiveSettings();
+    const romId = resume ? resume.ctx.rom : S.romId;
     skip.reset();
     machine = await PuaeMachine.create({
       canvas: $("#amigaScreen"), factory: window.createPuae,
@@ -84,9 +94,11 @@ async function powerOn() {
     });
     /* Kickstart : le vôtre, sinon AROS d'août 2026 (celui intégré à PUAE ne démarre pas avec un disque dur) */
     let kick = null, key = null, arosExt = null;
-    if (S.romId !== "aros") {
-      const r = await DB.get(S.romId);
-      if (r) kick = new Uint8Array(await r.blob.arrayBuffer()); else { S.romId = "aros"; saveSettings(); }
+    if (romId !== "aros") {
+      const r = await DB.get(romId);
+      if (r) kick = new Uint8Array(await r.blob.arrayBuffer());
+      else if (resume) throw new Error("le Kickstart de cette sauvegarde n'est plus dans la Bibliothèque");
+      else { S.romId = "aros"; saveSettings(); }
       if (kick && S.keyId) { const k = await DB.get(S.keyId); if (k) key = new Uint8Array(await k.blob.arrayBuffer()); }
     }
     if (!kick) [kick, arosExt] = await Promise.all([fetchGz("aros-rom.bin.gz"), fetchGz("aros-ext.bin.gz")]);
@@ -121,7 +133,9 @@ async function powerOn() {
     await machine.start({ model: "A1200OG", kickstart: kick, romKey: key, content: "/cfg/a1200.uae", options: coreOptions() });
     machine.setMuted(!!S.muted);
     machine.inputBlocked = false;
+    E._rom = romId;
     onStarted();
+    if (resume) await applyState(resume, true);
   } catch (e) {
     console.error(e); starting = false; setPowerUi("off");
     toast("Démarrage impossible : " + (e && e.message ? e.message : e), true);

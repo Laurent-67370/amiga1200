@@ -75,7 +75,7 @@ export class PuaeMachine {
     return r;
   }
 
-  setOption(key, value) { this._call("fe_set_option", key, String(value)); }
+  setOption(key, value) { (this.options || (this.options = {}))[key] = String(value); this._call("fe_set_option", key, String(value)); }
   writeFile(path, bytes) {
     const dir = path.slice(0, path.lastIndexOf("/"));
     if (dir) this.M.FS.mkdirTree(dir);

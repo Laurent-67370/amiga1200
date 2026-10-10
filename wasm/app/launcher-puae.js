@@ -23,6 +23,8 @@ async function markUsed() {
 }
 async function launchWith(rec) {
   if (running || starting) return;
+  if (rec.kind === "whd") return launchWhd(rec);
+  whdGame = null;
   if (rec.kind === "hdf") {
     /* Démarrer sur le disque dur : on libère DF0: (une disquette amorçable passerait devant) */
     if (mounted.df0) await ejectMedia("df0", true);
@@ -59,7 +61,7 @@ async function renderLauncher() {
   kick.appendChild(kBtn);
 
   /* Disques : les plus récemment utilisés d'abord */
-  const disks = all.filter(r => r.kind === "adf" || r.kind === "hdf").sort((a, b) => (b.used || b.added) - (a.used || a.added));
+  const disks = all.filter(r => r.kind === "adf" || r.kind === "hdf" || r.kind === "whd").sort((a, b) => (b.used || b.added) - (a.used || a.added));
   const thumbs = {};
   for (const s of all.filter(r => r.kind === "state").sort((a, b) => a.updated - b.updated)) thumbs[s.game] = s;
   box.innerHTML = "";
@@ -70,9 +72,9 @@ async function renderLauncher() {
     s1.querySelector("span").textContent = romRec ? "Le vôtre est prêt : " + (romRec.label || romRec.name) + "."
       : is500 ? "Le mode Amiga 500 demande le Kickstart 1.3 : importez-le (bouton ci-dessus)."
       : "AROS, un Kickstart libre, est fourni. Pour l'A1200 d'origine, importez votre ROM Kickstart 3.1 (bouton ci-dessus).";
-    const s2 = lEl("li", null, "<b>Une disquette</b><span>Un jeu, une démo ou le Workbench au format .adf, ou une archive .zip. Elle sera rangée dans la Bibliothèque pour les prochaines fois.</span>");
+    const s2 = lEl("li", null, "<b>Une disquette ou un jeu WHDLoad</b><span>Un jeu, une démo ou le Workbench au format .adf, une archive .zip, ou un jeu WHDLoad en .lha qui se lance directement, sans rien installer. Ils seront rangés dans la Bibliothèque pour les prochaines fois.</span>");
     const acts = lEl("div", "l-acts");
-    const o = lEl("button", "gad"); o.textContent = "Ouvrir une disquette…"; o.onclick = () => $("#lOpen").click();
+    const o = lEl("button", "gad"); o.textContent = "Ouvrir un fichier…"; o.onclick = () => $("#lOpen").click();
     const h = lEl("button", "gad"); h.textContent = "Créer un disque dur"; h.onclick = () => $('#drive-dh0 [data-act="blank"]').click();
     acts.append(o, h); s2.appendChild(acts);
     const s3 = lEl("li", null, "<b>Allumer</b><span>L'Amiga démarre sur la disquette. " + (isTouch ? "Ensuite, l'écran sert de pavé tactile : un doigt pour la souris, deux doigts pour les menus." : "Cliquez dans l'écran pour prendre la souris, Échap pour la rendre.") + "</span>");
@@ -85,13 +87,13 @@ async function renderLauncher() {
       const inDrive = (mounted.df0 && mounted.df0.id === r.id) || (mounted.dh0 && mounted.dh0.id === r.id);
       if (inDrive) tile.classList.add("in");
       const pick = lEl("button", "l-pick");
-      pick.title = "Insérer et allumer : " + r.name;
+      pick.title = (r.kind === "whd" ? "Jouer : " : "Insérer et allumer : ") + r.name;
       const img = lEl("span", "l-img");
       const st = thumbs[r.id];
       if (st && st.thumb) { const i = new Image(); i.src = st.thumb; i.alt = ""; img.appendChild(i); }
-      else img.innerHTML = r.kind === "hdf" ? ICON_HD : ICON_FLOPPY;
-      const nm = lEl("span", "l-name"); nm.textContent = r.name.replace(/\.(adf|adz|dms|hdf)$/i, "");
-      const sub = lEl("span", "l-sub"); sub.textContent = (inDrive ? (r.kind === "hdf" ? "branché" : "dans le lecteur") : r.kind === "hdf" ? "disque dur" : "disquette") + (r.used ? " · " + whenUsed(r.used) : "");
+      else img.innerHTML = r.kind === "whd" ? ICON_WHD : r.kind === "hdf" ? ICON_HD : ICON_FLOPPY;
+      const nm = lEl("span", "l-name"); nm.textContent = r.name.replace(/\.(adf|adz|dms|hdf|lha|lzh)$/i, "");
+      const sub = lEl("span", "l-sub"); sub.textContent = (r.kind === "whd" ? "jeu WHDLoad" : inDrive ? (r.kind === "hdf" ? "branché" : "dans le lecteur") : r.kind === "hdf" ? "disque dur" : "disquette") + (r.used ? " · " + whenUsed(r.used) : "");
       pick.append(img, nm, sub);
       pick.onclick = () => launchWith(r);
       tile.appendChild(pick);
@@ -115,7 +117,7 @@ async function renderLauncher() {
 }
 
 /* Le bouton « Ouvrir un fichier » : disquette, archive, disque dur ou Kickstart */
-$("#lOpen").onclick = () => pickFile(".adf,.adz,.dms,.zip,.gz,.hdf,.rom,.bin,.key", f => importFile(f));
+$("#lOpen").onclick = () => pickFile(".adf,.adz,.dms,.zip,.gz,.lha,.lzh,.hdf,.rom,.bin,.key", f => importFile(f));
 /* Allumer depuis l'accueil ou la barre d'outils : les disques en place remontent en tête */
 $("#idlePower").onclick = async () => { await markUsed(); powerOn(); };
 { const b = $("#btnPower"), prev = b.onclick; b.onclick = async e => { if (!running) await markUsed(); prev(e); }; }

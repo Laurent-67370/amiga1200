@@ -131,9 +131,10 @@ function dosDate(t) {
 /**
  * Liste et décompresse le contenu d'une archive LhA.
  * @param {Uint8Array} u8
+ * @param {boolean} [namesOnly] liste seulement les noms, sans décompresser
  * @returns {{path:string, dir:boolean, data:Uint8Array|null, date:Date, comment:string, error?:string}[]}
  */
-export function readLha(u8) {
+export function readLha(u8, namesOnly) {
   const out = [];
   let p = 0;
   /* Archive auto-extractible : on cherche le premier en-tête */
@@ -183,7 +184,7 @@ export function readLha(u8) {
     } else throw new Error("en-tête LhA de niveau " + level + " non géré");
     const path = (dir ? dir + "/" : "") + name.replace(/\\/g, "/");
     const entry = { path: path.replace(/^\/+|\/+$/g, ""), dir: method === "-lhd-", data: null, date: date || new Date(), comment };
-    if (!entry.dir) {
+    if (!entry.dir && !namesOnly) {
       const src = u8.subarray(dataAt, dataAt + comp);
       try {
         if (method === "-lh0-" || method === "-lz4-") entry.data = src.slice(0, orig);

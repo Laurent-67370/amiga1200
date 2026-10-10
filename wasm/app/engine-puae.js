@@ -112,6 +112,7 @@ async function powerOn() {
   /* Le cœur ne se rallume pas dans la même page : on recharge et on rallume aussitôt. */
   if (machine) {
     sessionStorage.setItem("a1200.autostart", "1");
+    if (whdGame) sessionStorage.setItem("a1200.whd", whdGame.id);
     if (pendingResume) sessionStorage.setItem("a1200.resume", pendingResume.id);
     location.reload(); return;
   }
@@ -122,8 +123,12 @@ async function powerOn() {
     const resume = pendingResume; pendingResume = null;
     if (resume) {
       for (const t of ["df0", "df1", "dh0"]) setMounted(t, resume.ctx[t] ? await DB.get(resume.ctx[t]) : null);
+      whdGame = resume.ctx.whd ? await DB.get(resume.ctx.whd) : null;
       E = Object.assign({}, S, { accel: "none", model: "a1200" }, resume.settings, { _profile: "" });
-    } else E = await effectiveSettings();
+    } else E = whdGame ? Object.assign({}, S) : await effectiveSettings(); /* les profils de disques ne s'appliquent pas à un jeu WHDLoad */
+    /* Jeu WHDLoad : sur l'A1200, avec de la mémoire Fast (8 Mo si les réglages n'en donnent pas) */
+    const whd = whdGame;
+    if (whd && !resume) { E.model = "a1200"; if (!+E.fast) E.fast = "8"; E._profile = ""; }
     const a500 = modelOf(E) === "a500";
     const romId = resume ? resume.ctx.rom : a500 ? await romFor500() : S.romId;
     if (a500 && romId === "aros" && !resume) toast("Mode Amiga 500 sans Kickstart 1.3 : AROS démarre, mais la plupart des jeux A500 ont besoin du vrai Kickstart (Réglages).", true);
@@ -153,7 +158,7 @@ async function powerOn() {
     if (arosExt) { machine.writeFile("/sys/aros-ext.bin", arosExt); lines.push("kickstart_ext_rom_file=/sys/aros-ext.bin"); }
     for (const tag of ["df0", "df1"]) {
       fsPath[tag] = null;
-      if (!mounted[tag]) continue;
+      if (!mounted[tag] || whd) continue;
       const r = await DB.get(mounted[tag].id);
       if (!r) { setMounted(tag, null); continue; }
       fsPath[tag] = "/media/" + tag + "/" + safeName(r.name);
@@ -161,8 +166,9 @@ async function powerOn() {
       lines.push(`floppy${DRIVE_NUM[tag]}=${fsPath[tag]}`);
     }
     fsPath.dh0 = null;
-    if (mounted.dh0 && a500) toast("Mode Amiga 500 : le disque dur n'est pas branché (l'A500 n'a pas de contrôleur IDE).");
-    if (mounted.dh0 && !a500) {
+    if (mounted.dh0 && whd) toast("Le disque dur n'est pas branché pendant un jeu WHDLoad.");
+    else if (mounted.dh0 && a500) toast("Mode Amiga 500 : le disque dur n'est pas branché (l'A500 n'a pas de contrôleur IDE).");
+    if (mounted.dh0 && !a500 && !whd) {
       const r = await DB.get(mounted.dh0.id);
       if (r) {
         fsPath.dh0 = "/media/dh0/" + safeName(r.name);
@@ -172,10 +178,25 @@ async function powerOn() {
         lines.push(`hardfile2=rw,DH0:${fsPath.dh0},0,0,0,512,0,,ide0_mainboard,0`);
       } else setMounted("dh0", null);
     }
-    machine.writeFile("/cfg/a1200.uae", new TextEncoder().encode(lines.join("\n") + "\n"));
+    let content = "/cfg/a1200.uae", options = coreOptions();
+    if (whd) {
+      /* Le cœur reçoit l'archive elle-même : il la monte en DH0: et démarre sur son volume WHDLoad:. Nos lignes
+         de configuration passent par le fichier .uae propre au contenu, lu après les siennes. Il faut la ROM de
+         démarrage UAE (volumes de fichiers) : pas de disque IDE ici, donc pas d'écritures IDE à protéger. */
+      const r = await DB.get(whd.id);
+      if (!r) throw new Error("ce jeu n'est plus dans la Bibliothèque");
+      const base = safeName(r.name.replace(/\.(lha|lzh)$/i, "")).replace(/["]/g, "_") || "Jeu";
+      content = "/media/whd/" + base + ".lha";
+      machine.writeFile(content, new Uint8Array(await r.blob.arrayBuffer()));
+      machine.writeFile("/save/" + base + ".uae", new TextEncoder().encode(lines.filter(l => !/^(boot_rom_uae|uaeboard|nr_floppies|floppy1type)=/.test(l)).join("\n") + "\n"));
+      const kicks = await whdPrepare(machine);
+      if (!kicks.length && S.romId !== "aros") toast("Aucun Kickstart reconnu par WHDLoad dans la Bibliothèque : les jeux qui en demandent un (kick34005.A500, kick40068.A1200) s'arrêteront.", true);
+      Object.assign(options, { puae_use_whdload: "files", puae_use_whdload_nowritecache: "enabled", puae_use_whdload_prefs: "disabled" });
+      E._whd = base;
+    } else machine.writeFile(content, new TextEncoder().encode(lines.join("\n") + "\n"));
     for (const t in fsPath) seen[t] = fsPath[t] ? machine.fileMtime(fsPath[t]) : 0;
 
-    await machine.start({ model: MODELS[modelOf(E)].core, kickstart: kick, romKey: key, content: "/cfg/a1200.uae", options: coreOptions() });
+    await machine.start({ model: MODELS[modelOf(E)].core, kickstart: kick, romKey: key, content, options });
     machine.setMuted(!!S.muted);
     machine.inputBlocked = false;
     E._rom = romId;
@@ -196,7 +217,7 @@ function onStarted() {
   starting = false; running = true; setPowerUi("on");
   $("#statMode").textContent = (modelOf(E) === "a500" ? "A500, " : "") + (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "")
     + (modelOf(E) !== "a500" && ACCEL[E.accel] && ACCEL[E.accel].label ? ", " + ACCEL[E.accel].label : "")
-    + (E.compat === "max" ? ", cycle exact" : "") + (E._profile ? ", profil " + E._profile : "");
+    + (E.compat === "max" ? ", cycle exact" : "") + (E._profile ? ", profil " + E._profile : "") + (E._whd ? ", WHDLoad" : "");
   showCaptureHint();
 }
 function onStopped() {

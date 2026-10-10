@@ -550,6 +550,25 @@ rep('''      <h3>Écran tactile</h3>''', '''      <h3>Jouer sur écran tactile</
       <p>Le bouton <b>Joystick</b> (sous l'écran, ou dans la barre du plein écran) pose un joystick sur l'écran : le manche à gauche, <b>FEU</b> et un deuxième bouton à droite ; il commande le port joystick de l'Amiga, même en plein écran. En plein écran, une barre en haut à gauche donne aussi le <b>Clavier</b> complet, Espace, Entrée, Échap, F1 et F2, souvent demandés pour lancer un jeu.</p>
       <h3>Écran tactile</h3>''')
 
+# Jeux WHDLoad en un geste : une archive .lha, et on joue (sans Workbench ni disque dur)
+rep("/* Profil par disque */", (APP / "whdload-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+rep('''  if (sessionStorage.getItem("a1200.autostart")) { sessionStorage.removeItem("a1200.autostart"); powerOn(); }''',
+    '''  const whdId = sessionStorage.getItem("a1200.whd");
+  if (whdId) { sessionStorage.removeItem("a1200.whd"); whdGame = await DB.get(whdId) || null; }
+  if (sessionStorage.getItem("a1200.autostart")) { sessionStorage.removeItem("a1200.autostart"); powerOn(); }''')
+rep('const groups = [["adf", "Disquettes"], ["hdf", "Disques durs"],', 'const groups = [["whd", "Jeux WHDLoad"], ["adf", "Disquettes"], ["hdf", "Disques durs"],')
+rep('''      } else if (kind === "rom") {
+        btn(S.romId === r.id''', '''      } else if (kind === "whd") {
+        btn("Jouer", () => { if (running) { toast("Éteignez d'abord l'Amiga.", true); return; } closeWin(); launchWhd(r); });
+      } else if (kind === "rom") {
+        btn(S.romId === r.id''')
+rep('inp.accept = ".adf,.dms,.adz,.zip,.gz,.hdf,.hdz,.rom,.bin,.key";', 'inp.accept = ".adf,.dms,.adz,.zip,.gz,.lha,.lzh,.hdf,.hdz,.rom,.bin,.key";')
+rep("Les archives .lha et .lzx doivent être extraites avant.", "Une archive .lha qui contient un jeu WHDLoad (un fichier .slave) devient un jeu prêt à lancer ; une autre .lha donne les disquettes qu'elle contient. Les archives .lzx doivent être extraites avant.")
+rep('Déposez le fichier : disquette, disque dur ou Kickstart', 'Déposez le fichier : disquette, jeu WHDLoad (.lha), disque dur ou Kickstart')
+rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Jeux WHDLoad en un geste</h3>
+      <p>Ouvrez une archive <b>.lha</b> de jeu WHDLoad (bouton <b>Ouvrir un fichier…</b> de l'accueil, ou glissez-la sur la page) : elle rejoint la Bibliothèque et sa vignette lance le jeu directement, sans Workbench ni disque dur à préparer. WHDLoad est fourni ; l'Amiga 1200 démarre avec 8 Mo de Fast. Importez vos Kickstart 3.1 (A1200) et 1.3 (A500) : WHDLoad les trouve tout seul, beaucoup de jeux en ont besoin. Les sauvegardes des jeux (WHDSaves) sont gardées d'une partie à l'autre. <span class="kbd">F10</span> quitte le jeu (touche habituelle des installations WHDLoad).</p>
+      <h3>Copier des fichiers sur le disque dur</h3>''')
+
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)
 assert not leftovers, f"restes de SAE : {sorted(set(leftovers))[:10]}"
 

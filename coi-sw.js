@@ -4,7 +4,7 @@
    2. garde une copie de tous les fichiers du site pour fonctionner hors ligne (application installée).
    La version est le résumé des fichiers publiés : à chaque publication le navigateur voit un service worker
    différent, télécharge la nouvelle copie, puis efface l'ancienne. */
-const VERSION = "fe1cf27c44c6";
+const VERSION = "71e27b24c6a2";
 const CACHE = "a1200-" + VERSION;
 const FILES = ["./", "index.html", "puae.js", "puae.wasm", "puae-frontend.js", "adf.js", "hdf.js", "coi.js",
   "aros-rom.bin.gz", "aros-ext.bin.gz", "manifest.webmanifest", "icon-192.png", "icon-512.png",

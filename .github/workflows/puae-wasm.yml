@@ -26,7 +26,12 @@ jobs:
       - name: Compiler le cœur
         run: |
           emcc --version | head -1
-          wasm/build.sh 2>&1 | tee build.log | grep -v "warning:" | tail -40
+          if ! wasm/build.sh > build.log 2>&1; then
+            grep -E "error|undefined symbol|Error" build.log | grep -v "Werror\|-Wno-error" | sort | uniq -c | sort -rn | head -25 | while read -r l; do echo "::error title=Compilation::$l"; done
+            tail -5 build.log | while read -r l; do echo "::error title=Fin du journal::$l"; done
+            exit 1
+          fi
+          tail -12 build.log
 
       - uses: actions/setup-node@v4
         with:

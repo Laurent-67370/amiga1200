@@ -202,6 +202,9 @@ function setPowerUi(st) {
   b.classList.toggle("primary", !on);
   ["#btnReset", "#btnPause", "#btnShot", "#kCAA"].forEach(s => $(s).disabled = !on);
   $("#idle").style.display = on || st === "starting" ? "none" : "flex";
+  document.body.classList.toggle("is-off", st === "off");
+  $("#tube").classList.toggle("off", !on && st !== "starting");
+  if (st === "off" && typeof renderLauncherSoon === "function") renderLauncherSoon();
   $("#monLed").classList.toggle("on", on);
 }
 

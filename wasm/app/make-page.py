@@ -264,6 +264,71 @@ rep("/* Profil par disque */", '''/* Application installable : bouton Installer 
 
 rep("button{font:inherit}", "button{font:inherit}\n[hidden]{display:none!important}")
 
+# Écran d'accueil : Kickstart, derniers disques, Allumer
+between('        <div class="idle" id="idle">', '        <div class="glare"></div>', '''        <div class="idle launch" id="idle">
+          <div class="l-head">
+            <h1>Amiga 1200</h1>
+            <div class="l-kick" id="lKick"></div>
+          </div>
+          <div class="l-main" id="lMain"></div>
+          <div class="l-foot">
+            <button class="gad primary l-power" id="idlePower"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 1v6M4.2 3.5a6 6 0 1 0 7.6 0"/></svg><span>Allumer</span></button>
+            <span class="l-what" id="lWhat"></span>
+            <span class="l-sp"></span>
+            <button class="gad" id="lOpen"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 3.5h5l1.5 1.5h6.5v8.5h-13z"/></svg>Ouvrir un fichier…</button>
+          </div>
+        </div>
+''')
+rep(".idle .rom-line{font-size:13px;color:#7c8792}", """.idle .rom-line{font-size:13px;color:#7c8792}
+/* Accueil */
+.launch{justify-content:flex-start;align-items:stretch;text-align:left;gap:14px;padding:clamp(14px,3.5%,30px);overflow:auto;
+  background:radial-gradient(ellipse at 50% 0%,#1d2633,#0d1014 75%);color:#c3cbd4}
+.l-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px}
+.launch h1{font-size:clamp(22px,3.4vw,32px);text-align:left}
+.l-kick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;background:rgba(255,255,255,.05);padding:5px 6px 5px 10px;border:1px solid rgba(255,255,255,.08)}
+.l-kick-lbl{color:#7c8792;text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+.l-kick-name{color:#e3e7eb}
+.l-main{flex:1 0 auto;display:flex;flex-direction:column;gap:10px;min-height:0}
+.l-title{font-size:13px;color:#8e99a4;text-transform:uppercase;letter-spacing:.08em}
+.l-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.l-tile{display:flex;flex-direction:column;background:#161b22;border:1px solid #2a323d;min-width:0}
+.l-tile.in{border-color:var(--wb-blue);box-shadow:0 0 0 1px var(--wb-blue)}
+.l-pick{appearance:none;background:none;border:0;color:inherit;font:inherit;text-align:left;padding:0;cursor:pointer;display:flex;flex-direction:column;min-width:0}
+.l-pick:hover .l-img,.l-pick:focus-visible .l-img{filter:brightness(1.15)}
+.l-pick:focus-visible{outline:2px dashed var(--wb-blue);outline-offset:2px}
+.l-img{aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;background:#0b0e12;overflow:hidden}
+.l-img img{width:100%;height:100%;object-fit:cover;display:block}
+.l-img svg{width:44%;height:auto}
+.l-name{padding:7px 9px 0;font-weight:600;color:#e8ecef;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.l-sub{padding:1px 9px 8px;font-size:12px;color:#7f8a95}
+.l-resume{appearance:none;font:inherit;font-size:12.5px;border:0;border-top:1px solid #2a323d;background:#1d2530;color:#b9c8dc;padding:6px 9px;text-align:left;cursor:pointer}
+.l-resume:hover{background:#26303d}
+.l-more{appearance:none;font:inherit;font-size:13px;background:none;border:0;color:#b9c8dc;text-decoration:underline;cursor:pointer;align-self:flex-start;padding:2px 0}
+.l-steps{margin:0;padding:0;list-style:none;counter-reset:st;display:flex;flex-direction:column;gap:10px;max-width:640px}
+.l-steps li{counter-increment:st;display:grid;grid-template-columns:34px 1fr;column-gap:12px;row-gap:3px;align-items:start}
+.l-steps li::before{content:counter(st);grid-row:span 3;width:30px;height:30px;border-radius:50%;background:var(--wb-blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+.l-steps b{color:#e8ecef}
+.l-steps span{font-size:13.5px;color:#9aa3ad}
+.l-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.l-foot{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px}
+.l-power{font-size:16px;padding:9px 18px}
+.l-power svg{width:18px;height:18px}
+.l-what{font-size:13px;color:#9aa3ad;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:46ch}
+.l-sp{flex:1}
+.tube.off{touch-action:auto}
+.tube.off .glare,.tube.off.crt::after{display:none}
+/* Amiga éteint : on n'affiche que ce qui sert */
+body.is-off #btnPower,body.is-off #btnReset,body.is-off #btnPause,body.is-off #btnShot,body.is-off #kCAA,body.is-off .keys,body.is-off .vkbd,body.is-off .touch-tip{display:none!important}""")
+rep(".idle p,.idle .rom-line{display:none}.idle h1{font-size:22px}}", """.idle p,.idle .rom-line{display:none}.idle h1{font-size:22px}
+  .tube.off{aspect-ratio:auto;min-height:min(520px,calc(100vh - 160px))}
+  .tube.off .launch{position:relative;min-height:inherit}
+  .l-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .l-power{flex:1;justify-content:center}
+  .l-what{order:3;flex-basis:100%;max-width:none}
+  .l-sp{display:none}
+  #lOpen{flex:1;justify-content:center}}""")
+rep("/* Profil par disque */", (APP / "launcher-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)
 assert not leftovers, f"restes de SAE : {sorted(set(leftovers))[:10]}"
 

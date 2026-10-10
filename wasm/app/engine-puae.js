@@ -15,7 +15,14 @@ const KNOWN_ROMS = {
 };
 
 /* ---- Profils par disque : réglages propres à un jeu, appliqués au démarrage ---- */
-const PROFILE_KEYS = ["compat", "cpu", "fast", "region", "joy", "floppy"];
+const PROFILE_KEYS = ["compat", "cpu", "fast", "region", "joy", "floppy", "accel"];
+/* Cartes accélératrices : processeur, FPU et multiplicateur d'horloge (×4 = 14 MHz, ×8 = 28 MHz, ×12 = 42 MHz) */
+const ACCEL = {
+  none: { cpu: "68020", fpu: "0", mult: "0", label: "" },
+  "030": { cpu: "68030", fpu: "68882", mult: "8", label: "68030/68882 28 MHz" },
+  "040": { cpu: "68040", fpu: "cpu", mult: "8", label: "68040 28 MHz" },
+  "060": { cpu: "68060", fpu: "cpu", mult: "12", label: "68060 42 MHz" }
+};
 let E = Object.assign({}, S); /* réglages effectifs de la session en cours */
 async function bootProfileRec() {
   for (const t of ["df0", "dh0"]) {
@@ -64,7 +71,12 @@ function coreOptions() {
     puae_video_resolution: S.res === "lores" ? "lores" : S.res === "shires" ? "superhires" : "hires",
     puae_crop: S.center ? "auto" : "disabled",
     puae_floppy_speed: E.floppy === "turbo" ? "0" : "100",
-    puae_gfx_framerate: "disabled"
+    puae_gfx_framerate: "disabled",
+    puae_cpu_model: (ACCEL[E.accel] || ACCEL.none).cpu,
+    puae_fpu_model: (ACCEL[E.accel] || ACCEL.none).fpu,
+    puae_cpu_multiplier: (ACCEL[E.accel] || ACCEL.none).mult,
+    puae_floppy_sound: S.floppySound ? "75" : "100",
+    puae_floppy_sound_type: "internal"
   };
 }
 
@@ -83,7 +95,7 @@ async function powerOn() {
     const resume = pendingResume; pendingResume = null;
     if (resume) {
       for (const t of ["df0", "df1", "dh0"]) setMounted(t, resume.ctx[t] ? await DB.get(resume.ctx[t]) : null);
-      E = Object.assign({}, S, resume.settings, { _profile: "" });
+      E = Object.assign({}, S, { accel: "none" }, resume.settings, { _profile: "" });
     } else E = await effectiveSettings();
     const romId = resume ? resume.ctx.rom : S.romId;
     skip.reset();
@@ -107,6 +119,8 @@ async function powerOn() {
        de la page dans le navigateur — un blocage de la page (enregistrement d'un gros disque) faisait alors échouer
        les écritures IDE suivantes. */
     const lines = ["nr_floppies=2", "floppy1type=0", "boot_rom_uae=disabled", "uaeboard=disabled"];
+    /* Une extension mémoire A1200 (carte trappe) porte une horloge sauvegardée par pile */
+    if (+E.fast > 0) lines.push("rtc=MSM6242B");
     if (arosExt) { machine.writeFile("/sys/aros-ext.bin", arosExt); lines.push("kickstart_ext_rom_file=/sys/aros-ext.bin"); }
     for (const tag of ["df0", "df1"]) {
       fsPath[tag] = null;
@@ -150,6 +164,7 @@ async function powerOff() {
 function onStarted() {
   starting = false; running = true; setPowerUi("on");
   $("#statMode").textContent = (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "")
+    + (ACCEL[E.accel] && ACCEL[E.accel].label ? ", " + ACCEL[E.accel].label : "")
     + (E.compat === "max" ? ", cycle exact" : "") + (E._profile ? ", profil " + E._profile : "");
   showCaptureHint();
 }

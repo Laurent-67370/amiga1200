@@ -26,7 +26,9 @@ la page se recharge une fois au premier passage pour activer l'isolation nécess
 - Disque dur IDE `.hdf` jusqu'à 512 Mo ; **Nouveau** crée un disque partitionné (RDB) et formaté (FFS), prêt pour le Workbench
 - Enregistrement automatique des disques modifiés dans la Bibliothèque, téléchargement
 - **Sauvegardes d'état** : 4 emplacements par jeu, avec vignette ; Ctrl+Maj+S / Ctrl+Maj+R
-- **Profils par disque** : cycle exact, vitesse, mémoire Fast, PAL/NTSC, joystick, lecteurs
+- **Profils par disque** : cycle exact, vitesse, carte accélératrice, mémoire Fast, PAL/NTSC, joystick, lecteurs
+- **Carte accélératrice** au choix : 68030 + FPU 68882 (28 MHz), 68040 (28 MHz) ou 68060 (42 MHz)
+- Horloge sauvegardée (MSM6242B) avec la mémoire Fast, comme une carte trappe ; bruit des lecteurs en option
 - Kickstart Amiga Forever chiffrés avec `rom.key`
 - Clavier A1200 à l'écran (AZERTY ou QWERTY), souris tactile, manette USB, touches Amiga
 - Saut d'images automatique, centrage de l'image, effet moniteur, plein écran, capture

@@ -175,6 +175,36 @@ rep("<li>Démarrez sur la disquette Install 3.1, lancez HDToolBox, partitionnez,
 note = "Vos fichiers restent dans ce navigateur (stockage local) et ne sont envoyés nulle part."
 rep(note, note + '\n    <br><a href="sae/">Ancienne version (cœur SAE)</a>, conservée pour comparer : elle partage la même Bibliothèque.')
 
+# Carte accélératrice, horloge et bruit des lecteurs (version PUAE)
+rep('compat: "normal", autoskip: true,', 'compat: "normal", accel: "none", floppySound: false, autoskip: true,')
+rep("""      <h3>Affichage</h3>
+      <div class="opt" data-setting="region">""", """      <h3>Carte accélératrice</h3>
+      <div class="opt" data-setting="accel">
+        <label><input type="radio" name="accel" value="none"> Aucune (68EC020 d'origine)</label>
+        <label><input type="radio" name="accel" value="030"> 68030 + FPU 68882, 28 MHz</label>
+        <label><input type="radio" name="accel" value="040"> 68040, 28 MHz</label>
+        <label><input type="radio" name="accel" value="060"> 68060, 42 MHz</label>
+      </div>
+      <p class="hint">Comme une Blizzard dans la trappe. 68040 et 68060 demandent beaucoup plus de calcul à l'ordinateur et certains jeux anciens ne les supportent pas. Avec la mémoire Fast, l'Amiga a aussi une horloge sauvegardée.</p>
+
+      <h3>Affichage</h3>
+      <div class="opt" data-setting="region">""")
+rep("""        <label><input type="checkbox" id="optAutosave"> Enregistrer les disques modifiés à l'extinction</label>""",
+    """        <label><input type="checkbox" id="optAutosave"> Enregistrer les disques modifiés à l'extinction</label>
+        <label><input type="checkbox" id="optFloppySound"> Bruit des lecteurs (clics de la tête)</label>""")
+rep("""        <h3>Mémoire</h3>
+        <div class="opt"><label><input type="radio" name="p_fast\"""", """        <h3>Carte accélératrice</h3>
+        <div class="opt"><label><input type="radio" name="p_accel" value="none"> Aucune</label><label><input type="radio" name="p_accel" value="030"> 68030</label><label><input type="radio" name="p_accel" value="040"> 68040</label><label><input type="radio" name="p_accel" value="060"> 68060</label></div>
+        <h3>Mémoire</h3>
+        <div class="opt"><label><input type="radio" name="p_fast\"""")
+lst = '["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat"]'
+assert page.count(lst) == 2
+page = page.replace(lst, '["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel"]')
+rep('$("#optAutosave").checked = S.autosave;', '$("#optAutosave").checked = S.autosave; $("#optFloppySound").checked = !!S.floppySound;')
+rep('$("#optAutosave").onchange = e => { S.autosave = e.target.checked; saveSettings(); };',
+    '$("#optAutosave").onchange = e => { S.autosave = e.target.checked; saveSettings(); };\n'
+    '$("#optFloppySound").onchange = e => { S.floppySound = e.target.checked; saveSettings(); if (running) machine.setOption("puae_floppy_sound", S.floppySound ? "75" : "100"); };')
+
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)
 assert not leftovers, f"restes de SAE : {sorted(set(leftovers))[:10]}"
 

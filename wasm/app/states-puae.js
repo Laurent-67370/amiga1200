@@ -14,7 +14,7 @@ function gameName(m = mounted) { return m.df0 ? m.df0.name : m.dh0 ? m.dh0.name 
 function stateCtx() {
   return { df0: mounted.df0 && mounted.df0.id, df1: mounted.df1 && mounted.df1.id, dh0: mounted.dh0 && mounted.dh0.id, rom: E._rom || S.romId };
 }
-const STATE_SETTINGS = ["compat", "cpu", "fast", "region", "joy", "floppy"];
+const STATE_SETTINGS = ["compat", "cpu", "fast", "region", "joy", "floppy", "accel"];
 
 async function statesFor(key) {
   return (await DB.all()).filter(r => r.kind === "state" && r.game === key).sort((a, b) => a.slot - b.slot);
@@ -50,7 +50,7 @@ function sameMachine(rec) {
   if (!running) return false;
   const c = stateCtx();
   if (c.dh0 !== rec.ctx.dh0 || c.rom !== rec.ctx.rom) return false;
-  return STATE_SETTINGS.filter(k => k !== "joy").every(k => String(E[k]) === String(rec.settings[k]));
+  return STATE_SETTINGS.filter(k => k !== "joy").every(k => String(E[k]) === String(rec.settings[k] ?? (k === "accel" ? "none" : undefined)));
 }
 async function resumeState(id) {
   const rec = await DB.get(id); if (!rec) return;

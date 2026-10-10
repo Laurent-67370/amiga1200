@@ -344,6 +344,40 @@ rep('btn("Télécharger", async () => download(new Uint8Array(await r.blob.array
 
 rep("Disques durs .hdf ou .hdz (jusqu'à 512 Mo).", "Disques durs .hdf ou .hdz jusqu'à 2 Go (512 Mo sur téléphone et tablette), avec table de partitions (RDB) ou image d'une seule partition FFS/OFS, que l'émulateur complète d'une table de partitions pour qu'elle démarre. Seules les parties modifiées par l'Amiga sont réenregistrées. Pour les jeux WHDLoad, activez 8 Mo de Fast et copiez les Kickstart demandés dans Devs:Kickstarts du disque.")
 
+# Plein écran : bouton pour en sortir, visible au mouvement de la souris ou au toucher
+rep('''        <div class="glare"></div>''', '''        <div class="glare"></div>
+        <button class="fs-exit" id="fsExit" type="button"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5.5 1.5v4h-4M10.5 1.5v4h4M14.5 10.5h-4v4M1.5 10.5h4v4"/></svg>Quitter le plein écran</button>''')
+rep(".tube:fullscreen canvas{object-fit:contain}", """.tube:fullscreen canvas{object-fit:contain}
+.fs-exit{display:none;position:absolute;top:12px;right:12px;z-index:5;align-items:center;gap:8px;padding:9px 14px;font:inherit;font-size:14px;
+  color:#fff;background:rgba(20,24,30,.78);border:1px solid rgba(255,255,255,.25);border-radius:6px;cursor:pointer;transition:opacity .3s}
+.fs-exit svg{width:16px;height:16px}
+.tube:fullscreen .fs-exit,.tube:-webkit-full-screen .fs-exit{display:flex}
+.fs-exit.hide{opacity:0;pointer-events:none}""")
+rep('''$("#btnShot").onclick = () => {''', '''(function fullscreenExit() {
+  const t = $("#tube"), b = $("#fsExit"); let timer = 0;
+  const isFs = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  /* iPhone : pas de plein écran pour une page (seulement pour les vidéos) ; l'application installée l'est déjà */
+  if (!t.requestFullscreen && !t.webkitRequestFullscreen) $("#btnFull").hidden = true;
+  const exit = () => { if (isFs()) (document.exitFullscreen || document.webkitExitFullscreen).call(document); };
+  const show = () => { if (!isFs()) return; b.classList.remove("hide"); clearTimeout(timer); timer = setTimeout(() => b.classList.add("hide"), 3000); };
+  const onChange = () => {
+    if (!isFs()) { b.classList.add("hide"); return; }
+    show();
+    toast(isTouch ? "Pour quitter le plein écran : touchez l'écran puis le bouton en haut à droite, ou faites le geste retour."
+                  : "Pour quitter le plein écran : Échap (deux fois si la souris est capturée), ou le bouton en haut à droite.");
+  };
+  document.addEventListener("fullscreenchange", onChange); document.addEventListener("webkitfullscreenchange", onChange);
+  /* Le bouton réapparaît quand on bouge la souris (non capturée) ou qu'on touche l'écran */
+  t.addEventListener("mousemove", () => { if (!document.pointerLockElement) show(); });
+  t.addEventListener("touchstart", show, { passive: true, capture: true });
+  /* Le toucher ne doit pas partir vers la souris de l'Amiga */
+  b.addEventListener("touchstart", e => { e.stopPropagation(); }, { passive: true });
+  b.addEventListener("touchend", e => { e.stopPropagation(); e.preventDefault(); exit(); });
+  b.addEventListener("mousedown", e => e.stopPropagation());
+  b.onclick = e => { e.stopPropagation(); exit(); };
+})();
+$("#btnShot").onclick = () => {''')
+
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)
 assert not leftovers, f"restes de SAE : {sorted(set(leftovers))[:10]}"
 

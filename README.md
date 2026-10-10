@@ -53,7 +53,8 @@ La Bibliothèque est propre à chaque navigateur : importez votre Kickstart et v
 - Horloge sauvegardée (MSM6242B) avec la mémoire Fast, comme une carte trappe ; bruit des lecteurs en option
 - Kickstart Amiga Forever chiffrés avec `rom.key`
 - Clavier A1200 à l'écran (AZERTY ou QWERTY), souris tactile, manette USB, touches Amiga
-- Saut d'images automatique, centrage de l'image, effet moniteur, plein écran, capture
+- Saut d'images automatique, centrage de l'image, effet moniteur, capture
+- Plein écran : on en sort avec Échap (deux fois si la souris est capturée), le bouton *Quitter le plein écran* qui apparaît en haut à droite quand on bouge la souris ou touche l'écran, ou le geste retour sur téléphone
 
 ## Clavier et souris
 

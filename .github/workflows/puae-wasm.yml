@@ -74,7 +74,8 @@ jobs:
           SITE=../site-main
           if [ "$GITHUB_REF_NAME" = "main" ]; then
             # Version principale à la racine
-            for f in index.html essai.html puae.js puae.wasm puae-frontend.js adf.js hdf.js coi.js coi-sw.js aros-rom.bin.gz aros-ext.bin.gz; do
+            for f in index.html essai.html puae.js puae.wasm puae-frontend.js adf.js hdf.js coi.js coi-sw.js aros-rom.bin.gz aros-ext.bin.gz \
+                     manifest.webmanifest icon-192.png icon-512.png icon-maskable-512.png apple-touch-icon.png; do
               cp "wasm/dist/site/$f" "$SITE/$f"
             done
             mkdir -p "$SITE/sae" && cp sae/index.html "$SITE/sae/index.html"

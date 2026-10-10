@@ -22,6 +22,7 @@ la page se recharge une fois au premier passage pour activer l'isolation nécess
 
 ## Fonctions
 
+- **Application installable, hors ligne** : bouton *Installer* (Chrome, Edge, Android) ou, sur iPhone/iPad, Safari → Partager → « Sur l'écran d'accueil ». Tout le site est copié sur l'appareil ; les mises à jour arrivent au lancement suivant une connexion.
 - Disquettes `.adf`, `.dms`, `.adz`, archives `.zip` et `.gz` ; DF0: et DF1:, insertion à chaud, disquettes vierges formatées
 - Disque dur IDE `.hdf` jusqu'à 512 Mo ; **Nouveau** crée un disque partitionné (RDB) et formaté (FFS), prêt pour le Workbench
 - Enregistrement automatique des disques modifiés dans la Bibliothèque, téléchargement

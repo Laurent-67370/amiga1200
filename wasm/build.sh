@@ -63,5 +63,9 @@ python3 "$ROOT/wasm/app/make-page.py" "$OUT/site/index.html"
 # Kickstart de secours : AROS d'août 2026, compressé (décompressé par la page)
 gzip -9 -n -c "$ROOT/vendor/aros/aros-20260820-rom.bin" > "$OUT/site/aros-rom.bin.gz"
 gzip -9 -n -c "$ROOT/vendor/aros/aros-20260820-ext.bin" > "$OUT/site/aros-ext.bin.gz"
+# Version du service worker = résumé des fichiers publiés : chaque publication renouvelle la copie hors ligne
+VER=$(cd "$OUT/site" && ls | grep -v '^coi-sw.js$' | sort | xargs cat | sha256sum | cut -c1-12)
+sed -i "s/__VERSION__/$VER/" "$OUT/site/coi-sw.js"
+echo "version hors ligne : $VER"
 ls -la "$OUT" "$OUT/site"
 for f in "$OUT"/*.wasm; do echo "$(basename "$f") compressé : $(gzip -9 -c "$f" | wc -c) octets"; done

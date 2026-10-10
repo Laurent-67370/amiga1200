@@ -210,6 +210,60 @@ rep('$("#optAutosave").onchange = e => { S.autosave = e.target.checked; saveSett
 rep("Cliquez dans l'écran pour capturer la souris, <span class=\"kbd\">Échap</span> pour la libérer.</p>",
     "Cliquez dans l'écran pour capturer la souris, <span class=\"kbd\">Échap</span> pour la libérer. Une fois capturée, le bouton gauche sélectionne et le bouton droit (gardé enfoncé) ouvre la barre de menus, comme sur l'Amiga ; sur un pavé tactile, cliquez à deux doigts. Sans souris : <span class=\"kbd\">Page préc.</span> (Amiga gauche) + <span class=\"kbd\">Alt</span> gauche = bouton gauche, + <span class=\"kbd\">Alt Gr</span> = bouton droit.</p>")
 
+# Application installable (PWA) et hors ligne
+rep('<link rel="icon" href="data:,">', '''<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2b303b">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Amiga 1200">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">''')
+rep('''    <button class="gad" id="btnHelp" aria-label="Aide">?</button>''',
+    '''    <button class="gad" id="btnInstall" hidden title="Installer l'émulateur comme une application, utilisable hors ligne">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="1.5" width="8" height="13" rx="1.2"/><path d="M8 4.5v5M5.8 7.5 8 9.7l2.2-2.2"/></svg>
+      Installer</button>
+    <button class="gad" id="btnHelp" aria-label="Aide">?</button>''')
+rep('''      <h3>Sauvegardes d'état</h3>''', '''      <h3>Installer l'application</h3>
+      <p>L'émulateur s'installe comme une application et fonctionne ensuite <b>sans connexion</b>, avec votre Bibliothèque et vos réglages.
+      <b>Android, ordinateur (Chrome, Edge)</b> : bouton <b>Installer</b> de la barre d'outils, ou menu du navigateur → « Installer l'application ».
+      <b>iPhone, iPad</b> : dans Safari, bouton Partager → « Sur l'écran d'accueil ». Les mises à jour arrivent seules, au lancement suivant une connexion.</p>
+      <h3>Sauvegardes d'état</h3>''')
+rep("/* Profil par disque */", '''/* Application installable : bouton Installer (Chrome, Edge, Android) et état de la copie hors ligne */
+(function pwa() {
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  let deferred = null; const b = $("#btnInstall");
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferred = e; if (!standalone) b.hidden = false; });
+  window.addEventListener("appinstalled", () => { b.hidden = true; deferred = null; toast("Amiga 1200 est installé : il fonctionne aussi hors ligne."); });
+  b.onclick = async () => { if (!deferred) return; deferred.prompt(); try { await deferred.userChoice; } catch (x) {} deferred = null; b.hidden = true; };
+  if (!("serviceWorker" in navigator) || !window.caches) return;
+  /* Premier passage : prévenir quand tout est copié pour le hors ligne */
+  navigator.serviceWorker.ready.then(async () => {
+    let said = false; try { said = localStorage.getItem("a1200.offline") === "1"; } catch (x) {}
+    if (said) return;
+    for (let i = 0; i < 60; i++) {
+      for (const k of await caches.keys()) {
+        if (k.startsWith("a1200-") && await (await caches.open(k)).match("puae.wasm")) {
+          try { localStorage.setItem("a1200.offline", "1"); } catch (x) {}
+          if (!running) toast("L'émulateur est prêt à fonctionner hors ligne.");
+          return;
+        }
+      }
+      await new Promise(r => setTimeout(r, 2000));
+    }
+  });
+  /* Nouvelle version publiée : elle prend effet au prochain lancement */
+  let had = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (had) toast("Une nouvelle version de l'émulateur est prête : elle sera utilisée au prochain lancement.");
+    had = true;
+  });
+})();
+
+/* Profil par disque */''')
+
+rep("button{font:inherit}", "button{font:inherit}\n[hidden]{display:none!important}")
+
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)
 assert not leftovers, f"restes de SAE : {sorted(set(leftovers))[:10]}"
 

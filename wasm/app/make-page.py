@@ -508,6 +508,48 @@ $$('#winProfile input[name="p_model"]').forEach(i => i.addEventListener("change"
 
 /* Profil par disque */''')
 
+# Commandes tactiles : joystick virtuel, barre de touches et clavier en plein écran
+rep('''  machine.setJoy(0, joyKeys);
+}''', '''  sendJoy(); /* avec le joystick virtuel */
+}''')
+rep('''<button class="fs-exit" id="fsExit" type="button">''', '''<div class="fs-bar" id="fsBar">
+          <button class="fsb" id="fsKbd" type="button" aria-pressed="false">Clavier</button>
+          <button class="fsb" data-vjoy type="button" aria-pressed="false">Joystick</button>
+          <button class="fsb" data-tap="Space" type="button">Espace</button>
+          <button class="fsb" data-tap="Enter" type="button">Entrée</button>
+          <button class="fsb" data-tap="Escape" type="button">Échap</button>
+          <button class="fsb" data-tap="F1" type="button">F1</button>
+          <button class="fsb" data-tap="F2" type="button">F2</button>
+        </div>
+        <div class="vjoy" id="vjoy" hidden>
+          <div class="vjoy-stick" id="vjoyStick" aria-label="Manche du joystick"><div class="vjoy-knob" id="vjoyKnob"></div></div>
+          <div class="vjoy-fire"><button type="button" data-fire="8" class="vf2" aria-label="Deuxième bouton">2</button><button type="button" data-fire="0" class="vf1">FEU</button></div>
+        </div>
+        <button class="fs-exit" id="fsExit" type="button">''')
+rep('''      Clavier</button>
+    <button class="gad small" data-latch="MetaLeft"''', '''      Clavier</button>
+    <button class="gad small" data-vjoy aria-pressed="false" title="Joystick tactile sur l'écran (port 2)">Joystick</button>
+    <button class="gad small" data-latch="MetaLeft"''')
+rep(".fs-exit svg{width:16px;height:16px}", """.fs-exit svg{width:16px;height:16px}
+.fs-bar{display:none;position:absolute;top:12px;left:12px;z-index:5;gap:6px;flex-wrap:wrap;max-width:calc(100% - 250px)}
+.tube:fullscreen .fs-bar,.tube:-webkit-full-screen .fs-bar{display:flex}
+.fsb{font:inherit;font-size:13px;color:#fff;background:rgba(20,24,30,.65);border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:8px 11px;cursor:pointer}
+.fsb[aria-pressed="true"]{background:var(--wb-blue)}
+body:not(.is-touch) [data-vjoy]{display:none}
+.vjoy{position:absolute;left:0;right:0;bottom:0;z-index:5;display:flex;justify-content:space-between;align-items:flex-end;padding:14px 16px;pointer-events:none}
+.vjoy[hidden],body.is-off .vjoy,body.is-off .fs-bar{display:none}
+.vjoy-stick{pointer-events:auto;position:relative;width:min(34vmin,150px);aspect-ratio:1;border-radius:50%;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.35);touch-action:none}
+.vjoy-knob{position:absolute;left:29%;top:29%;width:42%;height:42%;border-radius:50%;background:rgba(255,255,255,.45);pointer-events:none}
+.vjoy-fire{pointer-events:auto;display:flex;gap:12px;align-items:flex-end}
+.vjoy-fire button{width:min(21vmin,88px);aspect-ratio:1;border-radius:50%;border:2px solid rgba(255,255,255,.4);background:rgba(220,60,60,.45);color:#fff;font:inherit;font-weight:700;touch-action:none;padding:0}
+.vjoy-fire .vf2{width:min(15vmin,62px);background:rgba(80,120,200,.45)}
+.vjoy-fire button.down{filter:brightness(1.7)}
+.tube > #vkbd{position:absolute;left:0;right:0;bottom:0;z-index:7;margin:0;opacity:.94}""")
+rep("/* Profil par disque */", (APP / "touchctl-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+rep('''      <h3>Écran tactile</h3>''', '''      <h3>Jouer sur écran tactile</h3>
+      <p>Le bouton <b>Joystick</b> (sous l'écran, ou dans la barre du plein écran) pose un joystick sur l'écran : le manche à gauche, <b>FEU</b> et un deuxième bouton à droite ; il commande le port joystick de l'Amiga, même en plein écran. En plein écran, une barre en haut à gauche donne aussi le <b>Clavier</b> complet, Espace, Entrée, Échap, F1 et F2, souvent demandés pour lancer un jeu.</p>
+      <h3>Écran tactile</h3>''')
+
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)
 assert not leftovers, f"restes de SAE : {sorted(set(leftovers))[:10]}"
 

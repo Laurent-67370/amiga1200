@@ -80,6 +80,8 @@ Inser = Help, Page préc. / Page suiv. = touches Amiga.
 - **Souris** : cliquez dans l'écran pour la capturer, Échap pour la libérer. Bouton gauche pour sélectionner,
   bouton droit maintenu pour la barre de menus, comme sur l'Amiga ; sur un pavé tactile, clic à deux doigts.
 - **Sans souris** (fonction du Kickstart) : Amiga gauche + Alt gauche = bouton gauche, + Alt droite = bouton droit.
+- **Joystick tactile** : bouton *Joystick* sous l'écran ou dans le plein écran ; manche à gauche, FEU et 2e bouton à droite.
+- **Plein écran sur téléphone** : barre en haut à gauche avec le clavier complet, le joystick, Espace, Entrée, Échap, F1, F2.
 - **Écran tactile** : un doigt déplace la souris, une touche clique, deux touches puis glisser déplace une fenêtre,
   deux doigts posés = bouton droit (glissez jusqu'à l'option du menu et relevez).
 

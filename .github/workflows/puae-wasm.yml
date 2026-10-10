@@ -43,7 +43,9 @@ jobs:
             node puae-bench.js 150 500 exact frame-exact.ppm | grep -E "images|sauvegarde"
             for f in puae.wasm puae-bench.wasm; do echo "$f : $(stat -c %s $f) octets, $(gzip -9 -c $f | wc -c) compressé"; done
             echo '```'
-          } | tee -a "$GITHUB_STEP_SUMMARY"
+          } | tee -a "$GITHUB_STEP_SUMMARY" | tee bench.txt
+          # Résultats aussi en annotations, lisibles par l'API GitHub
+          grep -E "images|sauvegarde|octets" bench.txt | while read -r l; do echo "::notice title=Banc d'essai::$l"; done
 
       - uses: actions/upload-artifact@v4
         with:

@@ -116,3 +116,14 @@ extinction (reprise au clavier) ; profil cycle exact + 8 Mo Fast + NTSC appliqu�
   pas AROS), processeur laissé au modèle, pas de disque IDE. Kickstart de l'A500 choisi à part (`romId500`) :
   automatiquement un 1.x/2.0x de la Bibliothèque, reconnu par la version écrite dans l'en-tête de la ROM.
 
+- **WHDLoad en un geste** (`app/whdload-puae.js`) : une archive `.lha` qui contient un `.slave` devient un jeu (`kind: "whd"`)
+  au lieu d'être fouillée pour ses disquettes (`readLha(u8, true)` liste sans décompresser). Au lancement, le cœur reçoit
+  l'archive elle-même comme contenu, avec `puae_use_whdload=files` : il la monte en lecture seule (`filesystem2=ro,DH0:`),
+  démarre sur le volume `WHDLoad:` qu'il extrait de son `WHDLoad_files.zip` intégré (WHDLoad 20.0 et une startup-sequence
+  qui trouve le `.slave`) et ajoute `WHDSaves:`. Nos lignes de configuration (horloge, extension AROS) passent par le fichier
+  `.uae` propre au contenu (`/save/<nom>.uae`), lu après celles du cœur ; la ROM de démarrage UAE reste active (volumes de
+  fichiers, pas de disque IDE). Les Kickstart reconnus sont écrits dans `WHDLoad:Devs/Kickstarts`, `WHDSaves:` est relu et
+  réenregistré dans IndexedDB (toutes les 5 s quand il change, et à l'extinction), `NoWriteCache` pour qu'une sauvegarde
+  soit écrite tout de suite. Vérifié dans Chromium avec une archive d'essai (un `.slave` minimal) : WHDLoad 20.0 démarre
+  depuis l'archive et trouve le slave ; avec AROS il s'arrête sur « Couldn't find VCL instruction » (il cherche la liste
+  Copper du vrai Kickstart), d'où l'exigence d'un Kickstart d'origine.

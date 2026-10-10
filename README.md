@@ -52,6 +52,7 @@ La Bibliothèque est propre à chaque navigateur : importez votre Kickstart et v
   Partitions OFS et FFS (DOS\0 à DOS\3) ; PFS, SFS et FFS à cache de dossiers ne sont pas modifiables
 - **Mode Amiga 500** (68000, OCS, 512 Ko Chip + 512 Ko Slow) pour les jeux A500 qui refusent l'A1200 : bascule sur l'accueil,
   dans Réglages ou dans le profil d'une disquette ; Kickstart 1.3 choisi automatiquement dans la Bibliothèque
+- **Jeux WHDLoad en un geste** : une archive `.lha` de jeu WHDLoad se lance directement depuis sa vignette, sans Workbench ni disque dur
 - Archives `.lha` acceptées aussi pour les disquettes qu'elles contiennent
 - Enregistrement automatique des disques modifiés dans la Bibliothèque, téléchargement
 - **Sauvegardes d'état** : 4 emplacements par jeu, avec vignette ; Ctrl+Maj+S / Ctrl+Maj+R
@@ -64,6 +65,17 @@ La Bibliothèque est propre à chaque navigateur : importez votre Kickstart et v
 - Plein écran : on en sort avec Échap (deux fois si la souris est capturée), le bouton *Quitter le plein écran* qui apparaît en haut à droite quand on bouge la souris ou touche l'écran, ou le geste retour sur téléphone
 
 ## Jeux WHDLoad
+
+**En un geste** : ouvrez l'archive `.lha` du jeu (**Ouvrir un fichier…** sur l'accueil, ou glissez-la sur la page).
+Elle rejoint la Bibliothèque (*Jeux WHDLoad*) et sa vignette lance le jeu : l'Amiga 1200 démarre avec 8 Mo de Fast
+sur un petit volume qui contient WHDLoad, monte l'archive en lecture seule et lance son `.slave`. Rien à installer.
+
+- Il faut votre **Kickstart 3.1** de l'A1200 (WHDLoad ne fonctionne pas avec AROS). Les Kickstart 1.3 et 3.1 de la
+  Bibliothèque sont donnés à WHDLoad sous les noms qu'il attend : beaucoup de jeux en ont besoin.
+- Les sauvegardes des jeux (`WHDSaves:`) sont gardées d'une partie à l'autre ; les sauvegardes d'état marchent aussi.
+- F10 quitte le jeu (touche habituelle des installations).
+
+**Sur un disque dur**, pour garder vos jeux dans un Workbench :
 
 1. Créez un disque dur (**Nouveau**) ou branchez le vôtre, Amiga éteint.
 2. **Fichiers…** → dossier `C` : copiez-y le programme `WHDLoad` (archive de whdload.de).

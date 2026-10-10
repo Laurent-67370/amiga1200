@@ -283,6 +283,8 @@ body:not(.is-touch) .vj-opts{display:none}
 .hd-extra [data-act="profile"]{display:none}
 /* Sur téléphone, un disque dur supplémentaire libre se réduit à son titre et à ses deux boutons utiles */
 @media (max-width:760px){.hd-extra:has(.media.empty) .media,.hd-extra:has(.media.empty) button:disabled{display:none}.hd-extra:has(.media.empty){gap:6px;padding:8px 12px}}
+.vjoy-fire .vf3{display:none;width:min(12vmin,50px);background:rgba(90,90,90,.5);font-size:18px}
+[data-cd32] .vjoy-fire .vf3{display:block}
 .tube > #vkbd{position:absolute;left:0;right:0;bottom:0;z-index:7;margin:0;opacity:.94}
 .tube:fullscreen .fs-exit,.tube:-webkit-full-screen .fs-exit{display:flex}
 .fs-exit.hide{opacity:0;pointer-events:none}
@@ -344,6 +346,7 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
 .l-tile.k-adf{border-top-color:var(--rb5)}
 .l-tile.k-hdf{border-top-color:var(--rb4)}
 .l-tile.k-whd{border-top-color:var(--rb1)}
+.l-tile.k-cd{border-top-color:var(--rb3)}
 .l-tile.in{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .l-steps li::before{background:var(--accent);color:var(--accent-ink)}
 [data-model="a500"] .launch{background:radial-gradient(ellipse at 50% 0%,#0d3f7c,#020c1c 75%)}
@@ -416,7 +419,7 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
         </div>
         <div class="vjoy" id="vjoy" hidden>
           <div class="vjoy-stick" id="vjoyStick" aria-label="Manche du joystick"><div class="vjoy-knob" id="vjoyKnob"></div></div>
-          <div class="vjoy-fire"><button type="button" data-fire="8" class="vf2" aria-label="Deuxième bouton">2</button><button type="button" data-fire="0" class="vf1">FEU</button></div>
+          <div class="vjoy-fire"><button type="button" data-fire="3" class="vf3" aria-label="Play (manette CD32)">▶</button><button type="button" data-fire="8" class="vf2" aria-label="Deuxième bouton">2</button><button type="button" data-fire="0" class="vf1">FEU</button></div>
         </div>
         <button class="fs-exit" id="fsExit" type="button"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5.5 1.5v4h-4M10.5 1.5v4h4M14.5 10.5h-4v4M1.5 10.5h4v4"/></svg>Quitter le plein écran</button>
         <div class="capture-hint" id="captureHint" style="opacity:0">Cliquez dans l'écran pour utiliser la souris. Échap pour la libérer.</div>
@@ -813,6 +816,8 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
       <p>Ouvrez une archive <b>.lha</b> de jeu WHDLoad (bouton <b>Ouvrir un fichier…</b> de l'accueil, ou glissez-la sur la page) : elle rejoint la Bibliothèque et sa vignette lance le jeu directement, sans Workbench ni disque dur à préparer. WHDLoad est fourni ; l'Amiga 1200 démarre avec 8 Mo de Fast. Importez vos Kickstart 3.1 (A1200) et 1.3 (A500) : WHDLoad les trouve tout seul, beaucoup de jeux en ont besoin. Les sauvegardes des jeux (WHDSaves) sont gardées d'une partie à l'autre. <span class="kbd">F10</span> quitte le jeu (touche habituelle des installations WHDLoad).</p>
       <h3>Réglages par jeu WHDLoad</h3>
       <p>Au lancement d'un jeu WHDLoad, l'émulateur consulte la base de réglages de l'émulateur Amiberry (plus de 11 000 jeux des collections WHDLoad, projet Amiberry-XML-Builder) : NTSC, processeur plus rapide, cycle exact, blitter immédiat, souris ou manette CD32 sont appliqués tout seuls. Le jeu est reconnu par le nom de son archive (gardez le nom d'origine), sinon par son empreinte. Ce que la base indique s'affiche sous la vignette du jeu. La base est téléchargée depuis GitHub au premier jeu, puis rafraîchie tous les 30 jours ou depuis les Réglages.</p>
+      <h3>CD32</h3>
+      <p>Ouvrez l'image d'un CD de CD32 : un fichier <b>.iso</b>, ou un <b>.cue</b> choisi ou glissé <i>en même temps que ses pistes .bin</i> (CD audio compris). Le CD rejoint la Bibliothèque et sa vignette lance la console : 68EC020, AGA, 2 Mo, lecteur CD et manette CD32 à 7 boutons (une manette USB y correspond, avec ses gâchettes ; sur écran tactile, le bouton ▶ est Play). Importez d'abord les ROM de la console dans Réglages → Kickstart : le Kickstart CD32 40.060 et sa ROM d'extension, ou la ROM CD32 complète d'1 Mo ; elles ne remplacent pas le Kickstart de l'A1200.</p>
       <h3>Copier des fichiers sur le disque dur</h3>
       <p>Amiga éteint, le bouton <b>Fichiers…</b> du disque dur (ou de la Bibliothèque) copie des fichiers, un dossier entier ou des archives .lha et .zip, décompressées au passage, dans le dossier de votre choix. C'est la façon d'installer des jeux <b>WHDLoad</b> : copiez WHDLoad dans C:, vos jeux .lha dans Jeux, et vos Kickstart dans Devs:Kickstarts avec le bouton prévu (1.3 pour l'A500, 3.1 pour l'A1200). Disques OFS et FFS ; PFS, SFS et FFS à cache de dossiers ne sont pas modifiables ici.</p>
       <h3>Sauvegardes d'état</h3>
@@ -822,7 +827,7 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
       <h3>Enregistrement des disques</h3>
       <p>Quand l'Amiga écrit sur une disquette ou le disque dur, la copie de la Bibliothèque est mise à jour quelques secondes après la fin de l'écriture, ainsi qu'à l'extinction et quand vous quittez l'onglet. L'heure du dernier enregistrement s'affiche sur le lecteur.</p>
       <h3>Formats acceptés</h3>
-      <p>Disquettes .adf, .dms, .adz et ADF étendus. Disques durs .hdf ou .hdz jusqu'à 2 Go (512 Mo sur téléphone et tablette), avec table de partitions (RDB) ou image d'une seule partition FFS/OFS, que l'émulateur complète d'une table de partitions pour qu'elle démarre. Seules les parties modifiées par l'Amiga sont réenregistrées. Pour les jeux WHDLoad, activez 8 Mo de Fast et copiez les Kickstart demandés dans Devs:Kickstarts du disque. Kickstart .rom, y compris les ROM Amiga Forever accompagnées de rom.key. Les archives .zip et .gz sont ouvertes directement ; si un .zip contient plusieurs disquettes, la première est insérée et les autres vont dans la Bibliothèque. Une archive .lha qui contient un jeu WHDLoad (un fichier .slave) devient un jeu prêt à lancer ; une autre .lha donne les disquettes qu'elle contient. Les archives .lzx doivent être extraites avant.</p>
+      <p>Disquettes .adf, .dms, .adz et ADF étendus. Disques durs .hdf ou .hdz jusqu'à 2 Go (512 Mo sur téléphone et tablette), avec table de partitions (RDB) ou image d'une seule partition FFS/OFS, que l'émulateur complète d'une table de partitions pour qu'elle démarre. Seules les parties modifiées par l'Amiga sont réenregistrées. Pour les jeux WHDLoad, activez 8 Mo de Fast et copiez les Kickstart demandés dans Devs:Kickstarts du disque. Kickstart .rom, y compris les ROM Amiga Forever accompagnées de rom.key. Les archives .zip et .gz sont ouvertes directement ; si un .zip contient plusieurs disquettes, la première est insérée et les autres vont dans la Bibliothèque. Une archive .lha qui contient un jeu WHDLoad (un fichier .slave) devient un jeu prêt à lancer ; une autre .lha donne les disquettes qu'elle contient. Images de CD de CD32 : .iso, ou .cue avec ses pistes .bin. Les archives .lzx doivent être extraites avant.</p>
     </div>
     <div class="actions"><span></span><button class="gad primary" data-close>Compris</button></div>
   </div>
@@ -1039,6 +1044,7 @@ async function powerOn() {
   if (machine) {
     sessionStorage.setItem("a1200.autostart", "1");
     if (whdGame) sessionStorage.setItem("a1200.whd", whdGame.id);
+    if (cdGame) sessionStorage.setItem("a1200.cd", cdGame.id);
     if (pendingResume) sessionStorage.setItem("a1200.resume", pendingResume.id);
     location.reload(); return;
   }
@@ -1050,16 +1056,22 @@ async function powerOn() {
     if (resume) {
       for (const t of ["df0", "df1", ...HD_TAGS]) setMounted(t, resume.ctx[t] ? await DB.get(resume.ctx[t]) : null);
       whdGame = resume.ctx.whd ? await DB.get(resume.ctx.whd) : null;
+      cdGame = resume.ctx.cd ? await DB.get(resume.ctx.cd) : null;
       E = Object.assign({}, S, { accel: "none", model: "a1200" }, resume.settings, { _profile: "" });
-    } else E = whdGame ? Object.assign({}, S) : await effectiveSettings(); /* les profils de disques ne s'appliquent pas à un jeu WHDLoad */
+    } else E = whdGame || cdGame ? Object.assign({}, S) : await effectiveSettings(); /* les profils de disques ne s'appliquent pas à un jeu WHDLoad */
     /* Jeu WHDLoad : sur l'A1200, avec de la mémoire Fast (8 Mo si les réglages n'en donnent pas) */
     const whd = whdGame;
     if (whd && !resume) {
       E.model = "a1200"; if (!+E.fast) E.fast = "8"; E._profile = "";
       if (whd.whdCfg) Object.assign(E, whd.whdCfg.e); /* réglages de la base WHDLoad pour ce jeu */
     }
+    /* CD32 : la console telle qu'elle est (2 Mo de Chip, 68EC020), ses propres ROM */
+    const cd = cdGame;
+    if (cd && !resume) Object.assign(E, { model: "a1200", fast: "0", accel: "none", _profile: "" });
+    const cdRoms = cd ? await cd32Roms() : null;
+    if (cd && !cdRoms) throw new Error("ROM de la CD32 absentes de la Bibliothèque");
     const a500 = modelOf(E) === "a500";
-    const romId = resume ? resume.ctx.rom : a500 ? await romFor500() : S.romId;
+    const romId = cd ? cdRoms.id : resume ? resume.ctx.rom : a500 ? await romFor500() : S.romId;
     if (a500 && romId === "aros" && !resume) toast("Mode Amiga 500 sans Kickstart 1.3 : AROS démarre, mais la plupart des jeux A500 ont besoin du vrai Kickstart (Réglages).", true);
     skip.reset();
     machine = await PuaeMachine.create({
@@ -1071,7 +1083,8 @@ async function powerOn() {
     let kick = null, key = null, arosExt = null;
     if (romId !== "aros") {
       const r = await DB.get(romId);
-      if (r) kick = new Uint8Array(await r.blob.arrayBuffer());
+      if (cd) kick = cdRoms.main;
+      else if (r) kick = new Uint8Array(await r.blob.arrayBuffer());
       else if (resume) throw new Error("le Kickstart de cette sauvegarde n'est plus dans la Bibliothèque");
       else if (!a500) { S.romId = "aros"; saveSettings(); }
       if (kick && S.keyId) { const k = await DB.get(S.keyId); if (k) key = new Uint8Array(await k.blob.arrayBuffer()); }
@@ -1090,7 +1103,7 @@ async function powerOn() {
     if (arosExt) { machine.writeFile("/sys/aros-ext.bin", arosExt); lines.push("kickstart_ext_rom_file=/sys/aros-ext.bin"); }
     for (const tag of ["df0", "df1"]) {
       fsPath[tag] = null;
-      if (!mounted[tag] || whd) continue;
+      if (!mounted[tag] || whd || cd) continue;
       const r = await DB.get(mounted[tag].id);
       if (!r) { setMounted(tag, null); continue; }
       fsPath[tag] = "/media/" + tag + "/" + safeName(r.name);
@@ -1098,12 +1111,13 @@ async function powerOn() {
       lines.push(`floppy${DRIVE_NUM[tag]}=${fsPath[tag]}`);
     }
     const anyHd = HD_TAGS.some(t => mounted[t]);
-    if (anyHd && whd) toast("Les disques durs ne sont pas branchés pendant un jeu WHDLoad.");
+    if (anyHd && cd) toast("Les disques durs ne sont pas branchés sur la CD32.");
+    else if (anyHd && whd) toast("Les disques durs ne sont pas branchés pendant un jeu WHDLoad.");
     else if (anyHd && a500) toast("Mode Amiga 500 : les disques durs ne sont pas branchés (l'A500 n'a pas de contrôleur IDE).");
     const partNames = new Set();
     for (const [unit, tag] of HD_TAGS.entries()) {
       fsPath[tag] = null;
-      if (!mounted[tag] || a500 || whd) continue;
+      if (!mounted[tag] || a500 || whd || cd) continue;
       const r = await DB.get(mounted[tag].id);
       if (!r) { setMounted(tag, null); continue; }
       fsPath[tag] = "/media/" + tag + "/" + safeName(r.name);
@@ -1119,6 +1133,14 @@ async function powerOn() {
     /* uaehf.device a besoin de la ROM de démarrage d'UAE : seulement si DH2: ou DH3: est branché (voir plus haut) */
     if (fsPath.dh2 || fsPath.dh3) lines.splice(0, lines.length, ...lines.filter(l => !/^(boot_rom_uae|uaeboard)=/.test(l)));
     let content = "/cfg/a1200.uae", options = coreOptions();
+    if (cd) {
+      /* Modèle CD32 du cœur ; l'extension est cherchée sous le nom kick40060.CD32.ext (inutile avec la ROM complète) */
+      if (cdRoms.ext) machine.writeFile("/sys/kick40060.CD32.ext", cdRoms.ext);
+      lines.splice(0, lines.length, ...lines.filter(l => !/^(nr_floppies|floppy1type)=/.test(l))); /* pas de lecteur de disquettes */
+      lines.push(`cdimage0=${await writeCd(machine, cd)},`);
+      options.puae_model = "CD32"; options.puae_fastmem_size = "0";
+      E._cd = true;
+    }
     if (whd) {
       /* Le cœur reçoit l'archive elle-même : il la monte en DH0: et démarre sur son volume WHDLoad:. Nos lignes
          de configuration passent par le fichier .uae propre au contenu, lu après les siennes. Il faut la ROM de
@@ -1136,10 +1158,11 @@ async function powerOn() {
     } else machine.writeFile(content, new TextEncoder().encode(lines.join("\n") + "\n"));
     for (const t in fsPath) seen[t] = fsPath[t] ? machine.fileMtime(fsPath[t]) : 0;
 
-    await machine.start({ model: MODELS[modelOf(E)].core, kickstart: kick, romKey: key, content, options });
+    await machine.start({ model: cd ? "CD32" : MODELS[modelOf(E)].core, kickstart: kick, romKey: cd ? null : key, content, options });
     machine.setMuted(!!S.muted);
     /* Jeu WHDLoad prévu pour la manette CD32 (7 boutons) : la manette du port joystick en devient une */
-    if (whd && whd.whdCfg && whd.whdCfg.cd32) machine.M._retro_set_controller_port_device(0, CD32PAD);
+    if ((whd && whd.whdCfg && whd.whdCfg.cd32) || cd) machine.M._retro_set_controller_port_device(0, CD32PAD);
+    if (cd) document.documentElement.dataset.cd32 = "1";
     if (whd && whd.whdCfg && whd.whdCfg.mouse && isTouch) toast("Ce jeu se joue à la souris : un doigt la déplace, une touche clique.");
     machine.inputBlocked = false;
     E._rom = romId;
@@ -1158,7 +1181,7 @@ async function powerOff() {
 }
 function onStarted() {
   starting = false; running = true; setPowerUi("on");
-  $("#statMode").textContent = (modelOf(E) === "a500" ? "A500, " : "") + (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "")
+  $("#statMode").textContent = (E._cd ? "CD32, " : modelOf(E) === "a500" ? "A500, " : "") + (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "")
     + (modelOf(E) !== "a500" && ACCEL[E.accel] && ACCEL[E.accel].label ? ", " + ACCEL[E.accel].label : "")
     + (E.compat === "max" ? ", cycle exact" : "") + (E._profile ? ", profil " + E._profile : "") + (E._whd ? ", WHDLoad" + (whdGame && whdGame.whdCfg ? " (réglages de la base)" : "") : "");
   showCaptureHint();
@@ -1669,7 +1692,7 @@ function applyLook() { $("#tube").classList.toggle("crt", S.crt); $("#tube").cla
 async function renderLib() {
   const body = $("#libBody");
   const all = (await DB.all()).sort((a, b) => b.added - a.added);
-  const groups = [["whd", "Jeux WHDLoad"], ["adf", "Disquettes"], ["hdf", "Disques durs"], ["rom", "Kickstart"], ["key", "Clés Amiga Forever"]];
+  const groups = [["whd", "Jeux WHDLoad"], ["cd", "CD (CD32)"], ["adf", "Disquettes"], ["hdf", "Disques durs"], ["rom", "Kickstart"], ["key", "Clés Amiga Forever"]];
   body.innerHTML = "";
   if (!all.length) {
     body.innerHTML = '<p class="lib-empty">La bibliothèque est vide. Ajoutez des disquettes .adf, des disques .hdf ou votre Kickstart : ils restent dans ce navigateur pour les prochaines fois.</p>';
@@ -1692,13 +1715,16 @@ async function renderLib() {
       } else if (kind === "hdf") {
         for (const t of HD_TAGS) btn(t.toUpperCase() + ":", async () => { if (running) { toast("Éteignez l'Amiga pour changer de disque dur.", true); return; } await mountMedia(t, r); renderLib(); }, inUse === t);
         btn("Fichiers…", () => openFiles(r));
+      } else if (kind === "cd") {
+        btn("Jouer", () => { if (running) { toast("Éteignez d'abord l'Amiga.", true); return; } closeWin(); launchCd(r); });
       } else if (kind === "whd") {
         if (whdTags(r)) row.querySelector(".n").textContent += " — " + whdTags(r);
         btn("Jouer", () => { if (running) { toast("Éteignez d'abord l'Amiga.", true); return; } closeWin(); launchWhd(r); });
       } else if (kind === "rom") {
         btn(S.romId === r.id ? "Utilisé" : "Utiliser", async () => { S.romId = r.id; saveSettings(); refreshIdleRom(); renderLib(); toast("Kickstart choisi" + (running ? " : il servira au prochain allumage." : ".")); }, S.romId === r.id);
       }
-      btn("Télécharger", async () => download(r.kind === "hdf" ? await recBlob(r) : new Uint8Array(await r.blob.arrayBuffer()), r.name));
+      if (kind === "cd") { if (r.cue) btn("Télécharger", async () => { download(new TextEncoder().encode(r.cue), r.name); for (const [k, f] of r.files.entries()) download(await recBlob(cdFileRec(r, k)), f.name); }); }
+      else btn("Télécharger", async () => download(r.kind === "hdf" ? await recBlob(r) : new Uint8Array(await r.blob.arrayBuffer()), r.name));
       btn("Supprimer", async () => {
         if (inUse) { toast("Éjectez d'abord ce média.", true); return; }
         if (!confirm("Supprimer « " + r.name + " » de la bibliothèque ?")) return;
@@ -1964,10 +1990,11 @@ const SLOTS = 4;
 let pendingResume = null; /* état à appliquer au prochain allumage */
 
 /* Le « jeu » courant : le jeu WHDLoad lancé, sinon la disquette de DF0:, sinon le disque dur, sinon la machine nue */
-function gameKey(m = mounted) { return whdGame ? whdGame.id : m.df0 ? m.df0.id : m.dh0 ? m.dh0.id : "aucun"; }
-function gameName(m = mounted) { return whdGame ? whdGame.name.replace(/\.(lha|lzh)$/i, "") : m.df0 ? m.df0.name : m.dh0 ? m.dh0.name : "Sans disque"; }
+function gameKey(m = mounted) { return cdGame ? cdGame.id : whdGame ? whdGame.id : m.df0 ? m.df0.id : m.dh0 ? m.dh0.id : "aucun"; }
+function gameName(m = mounted) { return cdGame ? cdGame.name.replace(/\.(cue|iso)$/i, "") : whdGame ? whdGame.name.replace(/\.(lha|lzh)$/i, "") : m.df0 ? m.df0.name : m.dh0 ? m.dh0.name : "Sans disque"; }
 function stateCtx() {
   if (whdGame) return { df0: null, df1: null, dh0: null, whd: whdGame.id, rom: E._rom || S.romId };
+  if (cdGame) return { df0: null, df1: null, dh0: null, cd: cdGame.id, rom: E._rom || S.romId };
   const c = { rom: E._rom || S.romId };
   for (const t of ["df0", "df1", ...HD_TAGS]) c[t] = mounted[t] ? mounted[t].id : null;
   return c;
@@ -2007,12 +2034,12 @@ async function saveStateSlot(slot) {
 function sameMachine(rec) {
   if (!running) return false;
   const c = stateCtx();
-  if (HD_TAGS.some(t => (c[t] || null) !== (rec.ctx[t] || null)) || c.rom !== rec.ctx.rom || (c.whd || null) !== (rec.ctx.whd || null)) return false;
+  if (HD_TAGS.some(t => (c[t] || null) !== (rec.ctx[t] || null)) || c.rom !== rec.ctx.rom || (c.whd || null) !== (rec.ctx.whd || null) || (c.cd || null) !== (rec.ctx.cd || null)) return false;
   return STATE_SETTINGS.filter(k => k !== "joy").every(k => String(E[k] ?? (k === "model" ? "a1200" : undefined)) === String(rec.settings[k] ?? (k === "accel" ? "none" : k === "model" ? "a1200" : undefined)));
 }
 async function resumeState(id) {
   const rec = await DB.get(id); if (!rec) return;
-  for (const t of ["df0", "df1", ...HD_TAGS, "whd"]) {
+  for (const t of ["df0", "df1", ...HD_TAGS, "whd", "cd"]) {
     if (rec.ctx[t] && !(await DB.get(rec.ctx[t]))) { toast("Un disque de cette sauvegarde a été supprimé de la Bibliothèque.", true); return; }
   }
   closeWin();
@@ -2024,7 +2051,7 @@ async function resumeState(id) {
 }
 /* Remet les disquettes de la sauvegarde là où le cœur les attend, puis charge l'état */
 async function applyState(rec, cold) {
-  for (const tag of rec.ctx.whd ? [] : ["df0", "df1"]) {
+  for (const tag of rec.ctx.whd || rec.ctx.cd ? [] : ["df0", "df1"]) {
     const want = rec.ctx[tag] || null, have = mounted[tag] && mounted[tag].id;
     if (want === have) continue;
     if (want) await mountMedia(tag, await DB.get(want));
@@ -2183,7 +2210,7 @@ async function renderLauncher() {
   kick.appendChild(kBtn);
 
   /* Disques : les plus récemment utilisés d'abord */
-  const disks = all.filter(r => r.kind === "adf" || r.kind === "hdf" || r.kind === "whd").sort((a, b) => (b.used || b.added) - (a.used || a.added));
+  const disks = all.filter(r => r.kind === "adf" || r.kind === "hdf" || r.kind === "whd" || r.kind === "cd").sort((a, b) => (b.used || b.added) - (a.used || a.added));
   const thumbs = {};
   for (const s of all.filter(r => r.kind === "state").sort((a, b) => a.updated - b.updated)) thumbs[s.game] = s;
   box.innerHTML = "";
@@ -2209,13 +2236,13 @@ async function renderLauncher() {
       const inDrive = ["df0", ...HD_TAGS].some(t => mounted[t] && mounted[t].id === r.id);
       if (inDrive) tile.classList.add("in");
       const pick = lEl("button", "l-pick");
-      pick.title = (r.kind === "whd" ? "Jouer : " : "Insérer et allumer : ") + r.name;
+      pick.title = (r.kind === "whd" || r.kind === "cd" ? "Jouer : " : "Insérer et allumer : ") + r.name;
       const img = lEl("span", "l-img");
       const st = thumbs[r.id];
       if (st && st.thumb) { const i = new Image(); i.src = st.thumb; i.alt = ""; img.appendChild(i); }
-      else img.innerHTML = r.kind === "whd" ? ICON_WHD : r.kind === "hdf" ? ICON_HD : ICON_FLOPPY;
-      const nm = lEl("span", "l-name"); nm.textContent = r.name.replace(/\.(adf|adz|dms|hdf|lha|lzh)$/i, "");
-      const sub = lEl("span", "l-sub"); sub.textContent = (r.kind === "whd" ? "jeu WHDLoad" + (whdTags(r) ? " · " + whdTags(r) : "") : inDrive ? (r.kind === "hdf" ? "branché" : "dans le lecteur") : r.kind === "hdf" ? "disque dur" : "disquette") + (r.used ? " · " + whenUsed(r.used) : "");
+      else img.innerHTML = r.kind === "cd" ? ICON_CD : r.kind === "whd" ? ICON_WHD : r.kind === "hdf" ? ICON_HD : ICON_FLOPPY;
+      const nm = lEl("span", "l-name"); nm.textContent = r.name.replace(/\.(adf|adz|dms|hdf|lha|lzh|cue|iso)$/i, "");
+      const sub = lEl("span", "l-sub"); sub.textContent = (r.kind === "cd" ? "CD32" : r.kind === "whd" ? "jeu WHDLoad" + (whdTags(r) ? " · " + whdTags(r) : "") : inDrive ? (r.kind === "hdf" ? "branché" : "dans le lecteur") : r.kind === "hdf" ? "disque dur" : "disquette") + (r.used ? " · " + whenUsed(r.used) : "");
       pick.append(img, nm, sub);
       pick.onclick = () => launchWith(r);
       tile.appendChild(pick);
@@ -2649,7 +2676,13 @@ async function exportLibrary() {
       const path = tarName(n++, r.name || r.id); addFile(path, r.blob, when);
       m.blob = { $file: path };
     }
-    if (Array.isArray(r.files)) m.files = r.files.map(f => {
+    if (r.kind === "cd") m.files = [];
+    if (r.kind === "cd") for (const [k, f] of r.files.entries()) {
+      /* Pistes d'un CD : chacune en un seul fichier, rangée par morceaux à l'import */
+      const path = tarName(n++, f.name); addFile(path, await recBlob(cdFileRec(r, k)), when);
+      m.files.push({ name: f.name, size: f.size, $hd: path });
+    }
+    else if (Array.isArray(r.files)) m.files = r.files.map(f => {
       if (!f.blob) return f;
       const path = tarName(n++, f.path || "fichier"); addFile(path, f.blob, when);
       return Object.assign({}, f, { blob: { $file: path } });
@@ -2714,7 +2747,10 @@ async function importLibrary(file) {
       if (old && (old.updated || old.added || 0) > (m.updated || m.added || 0)) { kept++; continue; }
       const r = Object.assign({}, m);
       if (r.blob && r.blob.$file) r.blob = slice(r.blob);
-      if (Array.isArray(r.files)) r.files = r.files.map(f => f.blob && f.blob.$file ? Object.assign({}, f, { blob: slice(f.blob) }) : f);
+      if (r.kind === "cd") {
+        if (old && old.files) for (const [k] of old.files.entries()) { const fr = cdFileRec(old, k); for (let i = 0; i < (fr.chunks || 0); i++) await DB.del(chunkId(fr, i)); }
+        for (const [k, f] of r.files.entries()) { const fr = { id: r.id + "/" + k }; await storeChunks(fr, slice(f.$hd)); r.files[k] = { name: f.name, size: fr.size, chunks: fr.chunks }; }
+      } else if (Array.isArray(r.files)) r.files = r.files.map(f => f.blob && f.blob.$file ? Object.assign({}, f, { blob: slice(f.blob) }) : f);
       if (r.$hd) { const blob = slice(r.$hd); delete r.$hd; await storeChunks(r, blob); }
       /* Morceaux de l'ancien disque qui dépassent le nouveau */
       if (old && old.chunks) for (let i = r.chunks || 0; i < old.chunks; i++) await DB.del(chunkId(old, i));
@@ -2999,6 +3035,151 @@ $("#whdDbUpdate").onclick = async () => {
 };
 renderWhdDbStatus();
 
+/* =========================================================
+   CD32 : la console CD de Commodore (AGA, puce Akiko, CD audio, manette à 7 boutons)
+   =========================================================
+   Le cœur PUAE l'émule entièrement (préréglage « CD32 »). Il lui faut les ROM de la console : le Kickstart
+   CD32 40.060 et sa ROM d'extension, ou les deux réunies en une ROM d'1 Mo. Les CD sont des images .iso ou
+   .cue avec leurs pistes .bin (CD audio compris), rangées par morceaux de 8 Mo comme les disques durs. */
+const ICON_CD = '<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="19" fill="#c9ced6"/><circle cx="24" cy="24" r="19" fill="url(#cdShine)"/><defs><linearGradient id="cdShine" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff9ad5" stop-opacity=".55"/><stop offset=".35" stop-color="#9ad7ff" stop-opacity=".5"/><stop offset=".65" stop-color="#b8ff9a" stop-opacity=".45"/><stop offset="1" stop-color="#ffe49a" stop-opacity=".5"/></linearGradient></defs><circle cx="24" cy="24" r="6.5" fill="#3a404a"/><circle cx="24" cy="24" r="2.6" fill="#0b0e12"/></svg>';
+const CD_MAX = 1024 * 1048576;
+let cdGame = null; /* CD de la session en cours (enregistrement de la Bibliothèque) */
+
+/* ---- ROM de la CD32 ---- */
+const CD32_CRC = { 0x1e62d4a5: "main", 0x87746be2: "ext" };
+async function plainRomBytes(u8) {
+  if (u8.length < 11 || u8ToStr(u8.subarray(0, 11)) !== "AMIROMTYPE1") return u8;
+  const k = S.keyId ? await DB.get(S.keyId) : null; if (!k) return null;
+  const key = new Uint8Array(await k.blob.arrayBuffer()), out = u8.slice(11);
+  for (let i = 0; i < out.length; i++) out[i] ^= key[i % key.length];
+  return out;
+}
+/* "main" (Kickstart CD32), "ext" (extension), "combined" (les deux en 1 Mo) ou null */
+async function cd32Role(name, u8) {
+  const p = await plainRomBytes(u8); if (!p) return /cd32/i.test(name) ? (/ext/i.test(name) ? "ext" : "main") : null;
+  const known = CD32_CRC[crc32u8(p)]; if (known) return known;
+  const v = kickVersion(p), cd32ver = v && v[0] === 40 && v[1] === 60;
+  if (p.length === 1048576 && (cd32ver || /cd32/i.test(name))) return "combined";
+  if (p.length === 524288 && /cd32/i.test(name)) return /ext/i.test(name) ? "ext" : "main";
+  if (p.length === 524288 && cd32ver) return "main";
+  return null;
+}
+const CD32_LABEL = { main: "Kickstart CD32 (40.060)", ext: "Extension CD32 (40.060)", combined: "ROM CD32 complète (40.060)" };
+/* Une ROM de CD32 importée ne devient pas le Kickstart de l'A1200 */
+{ const _ib = importBytes;
+  importBytes = async (name, u8, target, mount, quiet) => {
+    if (guessKind(name, u8) === "rom") {
+      const role = await cd32Role(name, u8);
+      if (role) {
+        const rec = { id: newId(), kind: "rom", name, size: u8.length, blob: new Blob([u8]), crc: crc32u8(u8), added: Date.now(), label: CD32_LABEL[role], cd32: role };
+        await DB.put(rec);
+        if (!quiet) toast(CD32_LABEL[role] + " ajoutée : elle servira aux CD de CD32.");
+        if (typeof renderRomChoices === "function") renderRomChoices();
+        return rec;
+      }
+    }
+    return _ib(name, u8, target, mount, quiet);
+  }; }
+/* ROM pour la CD32 : { main, ext } (octets en clair), ext absent si la ROM est complète ; null s'il en manque */
+async function cd32Roms() {
+  const roms = (await DB.all()).filter(r => r.kind === "rom");
+  const by = {};
+  for (const r of roms) {
+    if (r.cd32 === undefined) { r.cd32 = await cd32Role(r.name, new Uint8Array(await r.blob.arrayBuffer())) || false; await DB.put(r); }
+    if (r.cd32 && !by[r.cd32]) by[r.cd32] = r;
+  }
+  const bytes = async r => plainRomBytes(new Uint8Array(await r.blob.arrayBuffer()));
+  if (by.combined) return { id: by.combined.id, main: await bytes(by.combined), ext: null };
+  if (by.main && by.ext) return { id: by.main.id, main: await bytes(by.main), ext: await bytes(by.ext) };
+  return null;
+}
+
+/* ---- Images de CD : .iso, ou .cue avec ses pistes .bin ---- */
+let importBatch = [];
+/* Les fichiers choisis ou déposés ensemble : un .cue y trouve ses pistes */
+document.addEventListener("change", e => { if (e.target && e.target.type === "file" && e.target.files) importBatch = [...e.target.files]; }, true);
+window.addEventListener("drop", e => { importBatch = [...((e.dataTransfer && e.dataTransfer.files) || [])]; }, true);
+const cueFiles = text => [...text.matchAll(/^\s*FILE\s+(?:"([^"]+)"|(\S+))/gim)].map(m => (m[1] || m[2]).split(/[\\/]/).pop());
+const cdFileRec = (rec, k) => ({ id: rec.id + "/" + k, chunks: rec.files[k].chunks, size: rec.files[k].size });
+async function importCd(name, parts, cue) {
+  const total = parts.reduce((a, p) => a + p.size, 0);
+  if (total > CD_MAX) { toast(name + " : image trop grosse (" + fmtSize(total) + ").", true); return null; }
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+  const rec = { id: newId(), kind: "cd", name, size: total, cue: cue || null, files: [], added: Date.now() };
+  toast("Import de " + name + " (" + fmtSize(total) + ")…");
+  try {
+    for (const [k, p] of parts.entries()) {
+      const fr = { id: rec.id + "/" + k };
+      await storeChunks(fr, p, null, f => toast("Import de " + name + " : " + Math.round((k + f) / parts.length * 100) + " %"));
+      rec.files.push({ name: p.name, size: fr.size, chunks: fr.chunks });
+    }
+    await DB.put(rec);
+  } catch (e) {
+    for (const [k] of rec.files.entries()) { const fr = cdFileRec(rec, k); for (let i = 0; i < fr.chunks; i++) try { await DB.del(chunkId(fr, i)); } catch (x) {} }
+    toast(name + " : enregistrement impossible (" + (e && e.name === "QuotaExceededError" ? "plus de place pour ce site dans le navigateur" : e.message || e) + ").", true);
+    return null;
+  }
+  toast(name.replace(/\.(cue|iso)$/i, "") + " ajouté : une touche sur sa vignette pour le lancer sur la CD32.");
+  if ($("#winLib").classList.contains("open")) renderLib();
+  return rec;
+}
+{ const _imp = importFile;
+  importFile = async (file, target) => {
+    const n = file.name.toLowerCase();
+    if (n.endsWith(".iso")) return importCd(file.name, [file], null);
+    if (n.endsWith(".cue")) {
+      const text = await file.text(), wanted = cueFiles(text);
+      const pool = importBatch.filter(f => f !== file);
+      const parts = wanted.map(w => pool.find(f => f.name.toLowerCase() === w.toLowerCase()));
+      const missing = wanted.filter((w, i) => !parts[i]);
+      if (!wanted.length) { toast(file.name + " : aucune piste dans ce fichier .cue.", true); return; }
+      if (missing.length) { toast(file.name + " : choisissez aussi " + missing.join(", ") + " en même temps que le .cue (sélection multiple, ou glissez-les ensemble).", true); return; }
+      return importCd(file.name, parts, text);
+    }
+    if (n.endsWith(".bin") && file.size > 2 * 1048576) {
+      /* Piste d'un CD : prise en charge par son .cue quand il est dans le même lot */
+      if (importBatch.some(f => /\.cue$/i.test(f.name))) return;
+      toast(file.name + " : piste de CD, ouvrez plutôt le fichier .cue en même temps que ses pistes .bin.", true); return;
+    }
+    return _imp(file, target);
+  }; }
+/* « Ouvrir un fichier… » accepte plusieurs fichiers à la fois (un .cue et ses pistes) */
+$("#lOpen").onclick = () => {
+  const inp = $("#filePick"); inp.value = ""; inp.multiple = true;
+  inp.accept = ".adf,.adz,.dms,.zip,.gz,.lha,.lzh,.hdf,.rom,.bin,.key,.tar,.iso,.cue";
+  inp.onchange = async () => { for (const f of [...inp.files]) await importFile(f); };
+  inp.click();
+};
+/* Supprimer un CD emporte ses morceaux */
+{ const _del = DB.del;
+  DB.del = async id => {
+    const rec = await DB.get(id);
+    if (rec && rec.kind === "cd") for (const [k] of (rec.files || []).entries()) { const fr = cdFileRec(rec, k); for (let i = 0; i < (fr.chunks || 0); i++) await _del(chunkId(fr, i)); }
+    return _del(id);
+  }; }
+
+/* ---- Lancer un CD ---- */
+async function launchCd(rec) {
+  if (running || starting) return;
+  if (!(await cd32Roms())) {
+    toast("La CD32 a besoin de ses ROM : le Kickstart CD32 40.060 et sa ROM d'extension (ou la ROM CD32 complète d'1 Mo, Amiga Forever compris). Importez-les dans Réglages → Kickstart, puis touchez à nouveau le CD.", true);
+    return;
+  }
+  for (const t of ["df0", "df1"]) if (mounted[t]) await ejectMedia(t, true);
+  whdGame = null; cdGame = rec;
+  rec.used = Date.now(); await DB.put(rec);
+  powerOn();
+}
+/* Fichiers du CD écrits dans le système de fichiers du cœur ; renvoie le chemin à monter */
+async function writeCd(m, rec) {
+  for (const [k, f] of rec.files.entries()) m.writeFile("/media/cd/" + f.name, await recBytes(cdFileRec(rec, k)));
+  if (rec.cue) { const p = "/media/cd/" + safeName(rec.name); m.writeFile(p, new TextEncoder().encode(rec.cue)); return p; }
+  return "/media/cd/" + rec.files[0].name;
+}
+{ const _l = launchWith; launchWith = async rec => { if (rec.kind === "cd") return launchCd(rec); cdGame = null; return _l(rec); }; }
+{ const _w = launchWhd; launchWhd = async rec => { cdGame = null; return _w(rec); }; }
+{ const _off = powerOff; powerOff = async () => { await _off(); cdGame = null; delete document.documentElement.dataset.cd32; }; }
+
 /* Profil par disque */
 let profTarget = null;
 async function openProfile(tag) {
@@ -3078,6 +3259,8 @@ window.addEventListener("beforeunload", e => {
   setKeyboardOpen(!!S.kbdOpen);
   const resumeId = sessionStorage.getItem("a1200.resume");
   if (resumeId) { sessionStorage.removeItem("a1200.resume"); pendingResume = await DB.get(resumeId) || null; }
+  const cdId = sessionStorage.getItem("a1200.cd");
+  if (cdId) { sessionStorage.removeItem("a1200.cd"); cdGame = await DB.get(cdId) || null; }
   const whdId = sessionStorage.getItem("a1200.whd");
   if (whdId) { sessionStorage.removeItem("a1200.whd"); whdGame = await DB.get(whdId) || null; }
   if (sessionStorage.getItem("a1200.autostart")) { sessionStorage.removeItem("a1200.autostart"); powerOn(); }

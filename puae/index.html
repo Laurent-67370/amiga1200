@@ -142,6 +142,15 @@ button{font:inherit}
 .vk .s{display:none}
 .touch-tip{display:none;margin-top:8px;font-size:12.5px;color:#9aa3ad}
 .is-touch .touch-tip{display:block}
+.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0 12px}
+.slot-card{background:#bbb;border:1px solid;border-color:#fff #000 #000 #fff;padding:8px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.slot-img{width:100%;aspect-ratio:4/3;object-fit:cover;background:#222;color:#999;display:flex;align-items:center;justify-content:center;font-size:13px;
+  border:1px solid;border-color:#000 #fff #fff #000}
+.slot-meta{display:flex;flex-direction:column;gap:1px;font-size:13px}
+.slot-meta span{color:#222;font-variant-numeric:tabular-nums}
+.slot-acts{display:flex;flex-wrap:wrap;gap:5px}
+@media (max-width:640px){.slots{grid-template-columns:repeat(2,1fr)}}
+.is-touch #winStates .actions .hint{display:none}
 .footnote{margin-top:18px;color:#9aa3ad;font-size:12.5px;max-width:80ch}
 .footnote a{color:#b9c8dc}
 
@@ -264,6 +273,9 @@ button{font:inherit}
     <button class="gad" id="btnShot" disabled>
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1.5" y="4" width="13" height="9.5"/><circle cx="8" cy="8.7" r="2.6"/><path d="M5 4l1.2-2h3.6L11 4"/></svg>
       Capture</button>
+    <button class="gad" id="btnStates" title="Sauvegarder ou reprendre une partie (Ctrl+Maj+S / Ctrl+Maj+R)">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1.5v8M4.8 6.5 8 9.7l3.2-3.2"/><path d="M2 11v3.5h12V11"/></svg>
+      Sauvegardes</button>
     <span class="sep"></span>
     <button class="gad" id="btnLib">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="1.5" width="12" height="13"/><rect x="4.5" y="1.5" width="7" height="4.5"/><rect x="4" y="9" width="8" height="5.5"/></svg>
@@ -471,6 +483,15 @@ button{font:inherit}
   </div>
 </div>
 
+<!-- Fenêtre : Sauvegardes d'état -->
+<div class="veil" id="winStates" role="dialog" aria-modal="true" aria-labelledby="tStates">
+  <div class="win wb">
+    <div class="titlebar"><button class="closebox" data-close aria-label="Fermer"></button><span class="t" id="tStates">Sauvegardes</span><span class="stripes"></span></div>
+    <div class="body" id="statesBody"></div>
+    <div class="actions"><span class="hint">Ctrl+Maj+S sauvegarde dans l'emplacement 1, Ctrl+Maj+R le reprend</span><button class="gad primary" data-close>Fermer</button></div>
+  </div>
+</div>
+
 <!-- Fenêtre : Aide -->
 <div class="veil" id="winHelp" role="dialog" aria-modal="true" aria-labelledby="tHelp">
   <div class="win wb">
@@ -493,6 +514,8 @@ button{font:inherit}
       <p>Les touches Amiga sont la touche Windows/Cmd, ou les boutons <b>Amiga gauche</b> et <b>Amiga droite</b> sous les lecteurs, qui restent enfoncés jusqu'à la touche suivante. <span class="kbd">Menu</span> correspond à Help. Le bouton <b>Clavier</b> affiche un clavier A1200 complet à l'écran, pratique sur tablette.</p>
       <h3>Écran tactile</h3>
       <p>L'écran se comporte comme un pavé tactile : glissez un doigt pour déplacer la souris, touchez pour cliquer, touchez deux fois et gardez le doigt posé pour glisser une fenêtre ou une icône. Pour les menus, posez deux doigts (bouton droit), glissez jusqu'à l'option et relevez.</p>
+      <h3>Sauvegardes d'état</h3>
+      <p>Le bouton <b>Sauvegardes</b> fige la machine entière dans l'un des 4 emplacements du jeu en cours (la disquette de DF0:, ou le disque dur). <b>Reprendre</b> la remet exactement dans cet état, avec les mêmes disques et réglages ; si besoin l'Amiga se rallume tout seul. Raccourcis : <span class="kbd">Ctrl</span>+<span class="kbd">Maj</span>+<span class="kbd">S</span> sauvegarde dans l'emplacement 1, <span class="kbd">Ctrl</span>+<span class="kbd">Maj</span>+<span class="kbd">R</span> le reprend.</p>
       <h3>Compatibilité et vitesse</h3>
       <p>Le mode <b>Rapide</b> convient à la plupart des logiciels. Si un jeu ou une démo affiche des défauts, essayez <b>Compatibilité maximale</b> dans Réglages, ou mieux, dans le <b>Profil</b> de sa disquette : le réglage ne servira qu'à lui. Quand l'ordinateur ne suit pas, l'émulateur saute des images pour garder le son et la vitesse de jeu justes ; le compteur sous l'écran indique alors « 1 image sur 2 ».</p>
       <h3>Enregistrement des disques</h3>
@@ -666,11 +689,21 @@ function coreOptions() {
 async function powerOn() {
   if (running || starting) return;
   /* Le cœur ne se rallume pas dans la même page : on recharge et on rallume aussitôt. */
-  if (machine) { sessionStorage.setItem("a1200.autostart", "1"); location.reload(); return; }
+  if (machine) {
+    sessionStorage.setItem("a1200.autostart", "1");
+    if (pendingResume) sessionStorage.setItem("a1200.resume", pendingResume.id);
+    location.reload(); return;
+  }
   if (!window.crossOriginIsolated) { toast("La page doit être rechargée une fois pour activer l'émulateur (isolation du navigateur).", true); return; }
   starting = true; setPowerUi("starting");
   try {
-    E = await effectiveSettings();
+    /* Reprise d'une sauvegarde : mêmes disques, même Kickstart, mêmes réglages qu'au moment de la sauvegarde */
+    const resume = pendingResume; pendingResume = null;
+    if (resume) {
+      for (const t of ["df0", "df1", "dh0"]) setMounted(t, resume.ctx[t] ? await DB.get(resume.ctx[t]) : null);
+      E = Object.assign({}, S, resume.settings, { _profile: "" });
+    } else E = await effectiveSettings();
+    const romId = resume ? resume.ctx.rom : S.romId;
     skip.reset();
     machine = await PuaeMachine.create({
       canvas: $("#amigaScreen"), factory: window.createPuae,
@@ -679,9 +712,11 @@ async function powerOn() {
     });
     /* Kickstart : le vôtre, sinon AROS d'août 2026 (celui intégré à PUAE ne démarre pas avec un disque dur) */
     let kick = null, key = null, arosExt = null;
-    if (S.romId !== "aros") {
-      const r = await DB.get(S.romId);
-      if (r) kick = new Uint8Array(await r.blob.arrayBuffer()); else { S.romId = "aros"; saveSettings(); }
+    if (romId !== "aros") {
+      const r = await DB.get(romId);
+      if (r) kick = new Uint8Array(await r.blob.arrayBuffer());
+      else if (resume) throw new Error("le Kickstart de cette sauvegarde n'est plus dans la Bibliothèque");
+      else { S.romId = "aros"; saveSettings(); }
       if (kick && S.keyId) { const k = await DB.get(S.keyId); if (k) key = new Uint8Array(await k.blob.arrayBuffer()); }
     }
     if (!kick) [kick, arosExt] = await Promise.all([fetchGz("aros-rom.bin.gz"), fetchGz("aros-ext.bin.gz")]);
@@ -716,7 +751,9 @@ async function powerOn() {
     await machine.start({ model: "A1200OG", kickstart: kick, romKey: key, content: "/cfg/a1200.uae", options: coreOptions() });
     machine.setMuted(!!S.muted);
     machine.inputBlocked = false;
+    E._rom = romId;
     onStarted();
+    if (resume) await applyState(resume, true);
   } catch (e) {
     console.error(e); starting = false; setPowerUi("off");
     toast("Démarrage impossible : " + (e && e.message ? e.message : e), true);
@@ -1369,6 +1406,139 @@ $$(".drive").forEach(card => {
 });
 $("#slot").onclick = () => pickFile(".adf,.dms,.adz,.zip,.gz", f => importFile(f, "df0"));
 
+
+/* =========================================================
+   Sauvegardes d'état : 4 emplacements par jeu
+   =========================================================
+   Un état PUAE contient la machine entière (processeur, puces, mémoire) mais pas le contenu des disques :
+   il note leur chemin et les réinsère à la reprise. On garde donc avec chaque état la liste des disques,
+   le Kickstart et les réglages du moment, et « Reprendre » remet exactement cette configuration. */
+const SLOTS = 4;
+let pendingResume = null; /* état à appliquer au prochain allumage */
+
+/* Le « jeu » courant : la disquette de DF0:, sinon le disque dur, sinon la machine nue */
+function gameKey(m = mounted) { return m.df0 ? m.df0.id : m.dh0 ? m.dh0.id : "aucun"; }
+function gameName(m = mounted) { return m.df0 ? m.df0.name : m.dh0 ? m.dh0.name : "Sans disque"; }
+function stateCtx() {
+  return { df0: mounted.df0 && mounted.df0.id, df1: mounted.df1 && mounted.df1.id, dh0: mounted.dh0 && mounted.dh0.id, rom: E._rom || S.romId };
+}
+const STATE_SETTINGS = ["compat", "cpu", "fast", "region", "joy", "floppy"];
+
+async function statesFor(key) {
+  return (await DB.all()).filter(r => r.kind === "state" && r.game === key).sort((a, b) => a.slot - b.slot);
+}
+function thumbnail() {
+  const src = $("#amigaScreen"), c = document.createElement("canvas");
+  c.width = 192; c.height = 144;
+  c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", 0.7);
+}
+
+async function saveStateSlot(slot) {
+  if (!running) return;
+  const t0 = performance.now();
+  const data = machine.saveState();
+  if (!data) { toast("Le cœur a refusé la sauvegarde.", true); return; }
+  /* Les disques sont enregistrés en même temps, pour que l'état et leur contenu correspondent */
+  if (S.autosave) await saveAllDisks(true);
+  const key = gameKey(), old = (await statesFor(key)).find(r => r.slot === slot);
+  const settings = {}; for (const k of STATE_SETTINGS) settings[k] = E[k];
+  const rec = {
+    id: old ? old.id : newId(), kind: "state", game: key, gameName: gameName(), slot,
+    name: gameName() + " — emplacement " + slot, size: data.length, blob: new Blob([data]),
+    ctx: stateCtx(), settings, thumb: thumbnail(), added: old ? old.added : Date.now(), updated: Date.now()
+  };
+  await DB.put(rec);
+  toast(`Sauvegardé dans l'emplacement ${slot} (${fmtSize(data.length)}, ${Math.round(performance.now() - t0)} ms)`);
+  if (openWin && openWin.id === "winStates") renderStates();
+}
+
+/* À chaud si la machine tourne déjà avec les mêmes disques durs, Kickstart et réglages ; sinon on rallume. */
+function sameMachine(rec) {
+  if (!running) return false;
+  const c = stateCtx();
+  if (c.dh0 !== rec.ctx.dh0 || c.rom !== rec.ctx.rom) return false;
+  return STATE_SETTINGS.filter(k => k !== "joy").every(k => String(E[k]) === String(rec.settings[k]));
+}
+async function resumeState(id) {
+  const rec = await DB.get(id); if (!rec) return;
+  for (const t of ["df0", "df1", "dh0"]) {
+    if (rec.ctx[t] && !(await DB.get(rec.ctx[t]))) { toast("Un disque de cette sauvegarde a été supprimé de la Bibliothèque.", true); return; }
+  }
+  closeWin();
+  if (sameMachine(rec)) { await applyState(rec, false); return; }
+  pendingResume = rec;
+  if (running) { if (S.autosave) await saveAllDisks(true); }
+  toast("Rallumage avec les disques et réglages de la sauvegarde…");
+  powerOn();
+}
+/* Remet les disquettes de la sauvegarde là où le cœur les attend, puis charge l'état */
+async function applyState(rec, cold) {
+  for (const tag of ["df0", "df1"]) {
+    const want = rec.ctx[tag] || null, have = mounted[tag] && mounted[tag].id;
+    if (want === have) continue;
+    if (want) await mountMedia(tag, await DB.get(want));
+    else await ejectMedia(tag, true);
+  }
+  if (cold) await new Promise(r => setTimeout(r, 600)); /* quelques images : le cœur finit son initialisation */
+  const ok = machine.loadState(new Uint8Array(await rec.blob.arrayBuffer()));
+  toast(ok ? `Reprise : ${rec.gameName}, emplacement ${rec.slot}` : "Le cœur a refusé cette sauvegarde.", !ok);
+}
+async function deleteState(id) {
+  const rec = await DB.get(id); if (!rec) return;
+  if (!confirm(`Supprimer la sauvegarde de l'emplacement ${rec.slot} ?`)) return;
+  await DB.del(id); renderStates();
+}
+
+async function renderStates() {
+  const body = $("#statesBody"), key = gameKey(), list = await statesFor(key);
+  body.innerHTML = "";
+  const intro = document.createElement("p");
+  intro.textContent = running ? `Sauvegardes de ${gameName()}.` : `Sauvegardes de ${gameName()}. Reprendre allume l'Amiga avec les disques et réglages de la sauvegarde.`;
+  body.appendChild(intro);
+  const grid = document.createElement("div"); grid.className = "slots"; body.appendChild(grid);
+  for (let slot = 1; slot <= SLOTS; slot++) {
+    const rec = list.find(r => r.slot === slot);
+    const card = document.createElement("div"); card.className = "slot-card";
+    const img = document.createElement(rec ? "img" : "div");
+    img.className = "slot-img"; if (rec) { img.src = rec.thumb; img.alt = "Écran au moment de la sauvegarde " + slot; } else img.textContent = "Vide";
+    const meta = document.createElement("div"); meta.className = "slot-meta";
+    meta.innerHTML = `<b>Emplacement ${slot}</b><span></span>`;
+    meta.querySelector("span").textContent = rec
+      ? new Date(rec.updated).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(" ", " à ") + ", " + fmtSize(rec.size)
+      : "libre";
+    const acts = document.createElement("div"); acts.className = "slot-acts";
+    const b = (txt, fn, dis, primary) => { const x = document.createElement("button"); x.className = "gad small" + (primary ? " primary" : ""); x.textContent = txt; x.disabled = !!dis; x.onclick = fn; acts.appendChild(x); };
+    b(rec ? "Écraser" : "Sauvegarder", () => saveStateSlot(slot), !running, !rec);
+    b("Reprendre", () => resumeState(rec.id), !rec, !!rec);
+    if (rec) b("Supprimer", () => deleteState(rec.id));
+    card.append(img, meta, acts); grid.appendChild(card);
+  }
+  const note = document.createElement("p"); note.className = "hint";
+  note.textContent = "Une sauvegarde fige la machine, pas le contenu des disques : ce que l'Amiga a écrit depuis sur une disquette ou le disque dur reste écrit.";
+  body.appendChild(note);
+}
+$("#btnStates").onclick = () => { renderStates(); showWin("winStates"); };
+
+/* Raccourcis : Ctrl+Maj+S sauvegarde dans l'emplacement 1, Ctrl+Maj+R le reprend */
+window.addEventListener("keydown", async e => {
+  if (!e.ctrlKey || !e.shiftKey || openWin) return;
+  if (e.code === "KeyS" && running) { e.preventDefault(); e.stopPropagation(); saveStateSlot(1); }
+  else if (e.code === "KeyR") {
+    e.preventDefault(); e.stopPropagation();
+    const r = (await statesFor(gameKey())).find(x => x.slot === 1);
+    if (r) resumeState(r.id); else toast("Aucune sauvegarde dans l'emplacement 1 pour ce jeu.");
+  }
+}, true);
+
+/* Un disque supprimé emporte ses sauvegardes */
+const _dbDel = DB.del.bind(DB);
+DB.del = async id => {
+  const rec = await DB.get(id);
+  if (rec && rec.kind !== "state") for (const s of (await DB.all()).filter(x => x.kind === "state" && x.game === id)) await _dbDel(s.id);
+  return _dbDel(id);
+};
+
 /* Profil par disque */
 let profTarget = null;
 async function openProfile(tag) {
@@ -1446,6 +1616,8 @@ window.addEventListener("beforeunload", e => {
   refreshIdleRom();
   setPowerUi("off");
   setKeyboardOpen(!!S.kbdOpen);
+  const resumeId = sessionStorage.getItem("a1200.resume");
+  if (resumeId) { sessionStorage.removeItem("a1200.resume"); pendingResume = await DB.get(resumeId) || null; }
   if (sessionStorage.getItem("a1200.autostart")) { sessionStorage.removeItem("a1200.autostart"); powerOn(); }
 })();
 </script>

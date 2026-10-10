@@ -98,4 +98,12 @@ extinction (reprise au clavier) ; profil cycle exact + 8 Mo Fast + NTSC appliqu�
 - **Accueil** (`app/launcher-puae.js`) : quand l'Amiga est éteint, l'écran affiche le Kickstart utilisé, trois étapes
   au premier passage, puis les derniers disques en vignettes (insérer et allumer en une touche, reprise de la dernière
   sauvegarde d'état). Les commandes qui ne servent qu'allumé sont masquées.
+- **Disques durs** : jusqu'à 2 Go sur ordinateur, 512 Mo sur écran tactile (au-delà de 2 Go, les positions dans le fichier
+  dépasseraient le `long` 32 bits du cœur). Import lu directement depuis le fichier ; une image de partition sans RDB
+  (DOS\0 à DOS\7) reçoit un en-tête RDSK + PART (`hdf.js`, `rdbHeaderFor`) dont la géométrie tombe juste sur sa taille,
+  avec le nombre de blocs réservés retrouvé par la position du bloc racine. Stockage en morceaux de 8 Mo dans IndexedDB ;
+  `trackWrites` du frontal note les morceaux touchés par le cœur, seuls ceux-là sont recopiés et réenregistrés.
+  Le fichier du cœur reçoit le tableau sans copie (`canOwn`). Vérifié : image de partition FFS de 1,9 Go faite par
+  amitools, importée en 7 s, démarrage dessus, fichier écrit par le script de démarrage retrouvé dans l'image
+  téléchargée.
 

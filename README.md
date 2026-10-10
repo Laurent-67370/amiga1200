@@ -42,7 +42,10 @@ La Bibliothèque est propre à chaque navigateur : importez votre Kickstart et v
 
 - Accueil : étapes au premier passage, derniers disques en vignettes, Kickstart utilisé toujours visible
 - Disquettes `.adf`, `.dms`, `.adz`, archives `.zip` et `.gz` ; DF0: et DF1:, insertion à chaud, disquettes vierges formatées
-- Disque dur IDE `.hdf` jusqu'à 512 Mo ; **Nouveau** crée un disque partitionné (RDB) et formaté (FFS), prêt pour le Workbench
+- Disque dur IDE `.hdf` jusqu'à **2 Go** (512 Mo sur téléphone et tablette), par exemple avec des jeux WHDLoad installés :
+  image avec table de partitions (RDB), ou image d'une seule partition FFS/OFS (« partition hardfile » de WinUAE),
+  complétée automatiquement d'une table de partitions pour démarrer. Rangé par morceaux de 8 Mo : seuls ceux que l'Amiga modifie sont réenregistrés
+- **Nouveau** crée un disque partitionné (RDB) et formaté (FFS), prêt pour le Workbench
 - Enregistrement automatique des disques modifiés dans la Bibliothèque, téléchargement
 - **Sauvegardes d'état** : 4 emplacements par jeu, avec vignette ; Ctrl+Maj+S / Ctrl+Maj+R
 - **Profils par disque** : cycle exact, vitesse, carte accélératrice, mémoire Fast, PAL/NTSC, joystick, lecteurs

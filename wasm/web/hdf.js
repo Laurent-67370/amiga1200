@@ -139,3 +139,71 @@ export function makeHardDisk(sizeMB, label = "Travail", now = new Date()) {
   dosChecksum(dv, r, 20);
   return img;
 }
+
+/* ---------- Images sans RDB (« partition hardfile » de WinUAE) ---------- */
+
+const DOS_NAMES = { 0: "OFS", 1: "FFS", 2: "OFS international", 3: "FFS international", 4: "OFS cache", 5: "FFS cache", 6: "OFS noms longs", 7: "FFS noms longs" };
+
+/**
+ * Regarde le début d'une image .hdf.
+ * @param {Uint8Array} head  au moins les 16 premiers blocs (8 Ko)
+ * @returns {{rdb:boolean, dosType:number|null, fs:string|null}}
+ */
+export function inspectHdf(head) {
+  const dv = new DataView(head.buffer, head.byteOffset, head.byteLength);
+  for (let b = 0; b < 16 && (b + 1) * BS <= head.length; b++) if (get32(dv, b * BS) === 0x5244534b) return { rdb: true, dosType: null, fs: null }; /* RDSK */
+  if (head.length < 4) return { rdb: false, dosType: null, fs: null };
+  const t = get32(dv, 0), id = t >>> 8, v = t & 0xff;
+  const tag = String.fromCharCode(t >>> 24, (t >>> 16) & 255, (t >>> 8) & 255);
+  if (id === 0x444f53 && v <= 7) return { rdb: false, dosType: t, fs: DOS_NAMES[v] };          /* DOS\0 … DOS\7 */
+  if (/^(PFS|PDS|SFS|AFS|FAT|BFF)$/.test(tag)) return { rdb: false, dosType: t, fs: tag + "\\" + v };
+  return { rdb: false, dosType: null, fs: null };
+}
+
+/**
+ * Bloc racine d'une partition FFS/OFS : où AmigaDOS le cherche selon le nombre de blocs réservés.
+ * Lit la racine dans `rootBlock` (512 octets) et indique si elle est valide.
+ */
+export function rootCandidate(nBlocks, reserved) { return Math.floor((nBlocks - 1 + reserved) / 2); }
+export function isRootBlock(blk) {
+  if (!blk || blk.length < BS) return false;
+  const dv = new DataView(blk.buffer, blk.byteOffset, BS);
+  if (get32(dv, 0) !== 2 || get32(dv, 508) !== 1) return false;
+  let sum = 0; for (let i = 0; i < BS; i += 4) sum = (sum + get32(dv, i)) >>> 0;
+  return sum === 0;
+}
+
+/**
+ * En-tête RDB à placer devant une image de partition pour en faire un disque complet,
+ * démarrable sur le contrôleur IDE. La partition garde exactement son nombre de blocs.
+ * @param {number} nBlocks   taille de la partition en blocs de 512 octets
+ * @param {number} dosType   type lu dans son bloc d'amorce (ex. 0x444f5301)
+ * @param {number} reserved  blocs réservés de la partition (2 en général)
+ * @returns {Uint8Array} blocs à mettre devant l'image
+ */
+export function rdbHeaderFor(nBlocks, dosType, reserved = 2) {
+  /* Cylindre = s blocs (1 tête) avec s diviseur de la taille : la partition tombe juste sur des cylindres */
+  let s = 1;
+  for (let c = 256; c >= 2; c--) if (nBlocks % c === 0) { s = c; break; }
+  const rdbCyls = Math.max(1, Math.ceil(2 / s));
+  const hdr = rdbCyls * s, cyls = rdbCyls + nBlocks / s;
+  const img = new Uint8Array(hdr * BS), dv = new DataView(img.buffer);
+  putStr(img, 0, "RDSK", 4);
+  put32(dv, 4, 64); put32(dv, 12, 7); put32(dv, 16, BS); put32(dv, 20, 0);
+  put32(dv, 24, 0xffffffff); put32(dv, 28, 1); put32(dv, 32, 0xffffffff); put32(dv, 36, 0xffffffff);
+  for (let o = 40; o < 64; o += 4) put32(dv, o, 0xffffffff);
+  put32(dv, 64, cyls); put32(dv, 68, s); put32(dv, 72, 1); put32(dv, 76, 1); put32(dv, 80, cyls);
+  put32(dv, 96, cyls); put32(dv, 100, cyls); put32(dv, 104, 3);
+  put32(dv, 128, 0); put32(dv, 132, hdr - 1); put32(dv, 136, rdbCyls); put32(dv, 140, cyls - 1);
+  put32(dv, 144, s); put32(dv, 152, 1);
+  putStr(img, 160, "AMIGA1200", 8); putStr(img, 168, "DISQUE DUR", 16); putStr(img, 184, "1.0", 4);
+  rdbChecksum(dv, 0, 64);
+  const p = BS;
+  putStr(img, p, "PART", 4);
+  put32(dv, p + 4, 64); put32(dv, p + 12, 7); put32(dv, p + 16, 0xffffffff); put32(dv, p + 20, 1);
+  img[p + 36] = 3; putStr(img, p + 37, "DH0", 31);
+  const env = [16, 128, 0, 1, 1, s, reserved, 0, 0, rdbCyls, cyls - 1, 30, 0, 0x7fffffff, 0xfffffffe, 0, dosType >>> 0, 0, 0, 0, 0];
+  env.forEach((v, i) => put32(dv, p + 128 + i * 4, v));
+  rdbChecksum(dv, p, 64);
+  return img;
+}

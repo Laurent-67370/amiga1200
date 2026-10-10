@@ -329,6 +329,21 @@ rep(".idle p,.idle .rom-line{display:none}.idle h1{font-size:22px}}", """.idle p
   #lOpen{flex:1;justify-content:center}}""")
 rep("/* Profil par disque */", (APP / "launcher-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 
+# Disques durs : images sans RDB complétées, jusqu'à 2 Go, rangés par morceaux
+rep('import { makeHardDisk } from "./hdf.js";', 'import { makeHardDisk, inspectHdf, rdbHeaderFor, rootCandidate, isRootBlock } from "./hdf.js";')
+rep('''async function importFile(file, target) {
+  let items;''', '''async function importFile(file, target) {
+  /* Disque dur : lu directement depuis le fichier, sans le charger entier en mémoire */
+  if (/\\.hdf$/i.test(file.name) || (file.size > 64 * 1048576 && !/\\.(zip|gz|adz|hdz|lha|lzh|lzx|rar|7z|rom|bin|adf|dms)$/i.test(file.name)))
+    return importHdf(file.name, file, true);
+  let items;''')
+rep('''  if (kind === "hdf" && u8.length > 512 * 1048576) { toast("Disque dur trop gros (512 Mo maximum).", true); return; }''',
+    '''  if (kind === "hdf") return importHdf(name, new Blob([u8]), mount);''')
+rep('btn("Télécharger", async () => download(new Uint8Array(await r.blob.arrayBuffer()), r.name));',
+    'btn("Télécharger", async () => download(r.kind === "hdf" ? await recBlob(r) : new Uint8Array(await r.blob.arrayBuffer()), r.name));')
+
+rep("Disques durs .hdf ou .hdz (jusqu'à 512 Mo).", "Disques durs .hdf ou .hdz jusqu'à 2 Go (512 Mo sur téléphone et tablette), avec table de partitions (RDB) ou image d'une seule partition FFS/OFS, que l'émulateur complète d'une table de partitions pour qu'elle démarre. Seules les parties modifiées par l'Amiga sont réenregistrées. Pour les jeux WHDLoad, activez 8 Mo de Fast et copiez les Kickstart demandés dans Devs:Kickstarts du disque.")
+
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)
 assert not leftovers, f"restes de SAE : {sorted(set(leftovers))[:10]}"
 

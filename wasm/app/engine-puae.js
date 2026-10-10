@@ -136,7 +136,8 @@ async function powerOn() {
       const r = await DB.get(mounted.dh0.id);
       if (r) {
         fsPath.dh0 = "/media/dh0/" + safeName(r.name);
-        machine.writeFile(fsPath.dh0, new Uint8Array(await r.blob.arrayBuffer()));
+        machine.writeFile(fsPath.dh0, await recBytes(r));
+        hdDirty.clear(); machine.trackWrites(fsPath.dh0, hdWrite); /* pour ne réenregistrer que les morceaux modifiés */
         /* Disque IDE brut sur le contrôleur Gayle : géométrie lue sur le disque, comme un vrai A1200 */
         lines.push(`hardfile2=rw,DH0:${fsPath.dh0},0,0,0,512,0,,ide0_mainboard,0`);
       } else setMounted("dh0", null);
@@ -211,5 +212,6 @@ function setPowerUi(st) {
 /* Accès de diagnostic depuis la console du navigateur : __a1200.machine, __a1200.fsPath… */
 window.__a1200 = {
   get machine() { return machine; }, get running() { return running; },
-  fsPath, mounted, DB, get dirty() { return dirty; }, get settings() { return E; }
+  fsPath, mounted, DB, get dirty() { return dirty; }, get settings() { return E; },
+  recBlob: r => recBlob(r), download: (d, n) => download(d, n), get hdDirty() { return [...hdDirty]; }
 };

@@ -79,9 +79,23 @@ export class PuaeMachine {
   writeFile(path, bytes) {
     const dir = path.slice(0, path.lastIndexOf("/"));
     if (dir) this.M.FS.mkdirTree(dir);
-    this.M.FS.writeFile(path, bytes);
+    /* Le système de fichiers garde le tableau tel quel (pas de copie) : utile pour un disque dur de 2 Go */
+    this.M.FS.writeFile(path, bytes, { canOwn: true });
   }
   readFile(path) { this.M._fe_flush(); return this.M.FS.readFile(path); }
+  /** Copie d'une partie d'un fichier du cœur (après avoir vidé ses tampons d'écriture) */
+  readRange(path, off, len) {
+    const node = this.M.FS.lookupPath(path).node;
+    const end = Math.min(off + len, node.usedBytes);
+    return node.contents.slice(off, end);
+  }
+  /** Appelle onWrite(position, longueur) à chaque écriture du cœur dans ce fichier (à poser avant start) */
+  trackWrites(path, onWrite) {
+    const node = this.M.FS.lookupPath(path).node, ops = node.stream_ops;
+    node.stream_ops = Object.assign({}, ops, {
+      write(stream, buffer, offset, length, position, canOwn) { onWrite(position, length); return ops.write(stream, buffer, offset, length, position, canOwn); }
+    });
+  }
 
   /* ---------- démarrage ---------- */
   /** @param {object} cfg { model, kickstart: Uint8Array|null, romKey: Uint8Array|null, df0: {name, bytes}|null,

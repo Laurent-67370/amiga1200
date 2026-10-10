@@ -686,7 +686,10 @@ async function powerOn() {
     }
     if (!kick) [kick, arosExt] = await Promise.all([fetchGz("aros-rom.bin.gz"), fetchGz("aros-ext.bin.gz")]);
     /* Médias écrits dans le système de fichiers du cœur + configuration au format WinUAE */
-    const lines = ["nr_floppies=2", "floppy1type=0"];
+    /* Pas de ROM de démarrage UAE : un vrai A1200 n'en a pas, et ses fils « pièges » passent par le fil principal
+       de la page dans le navigateur — un blocage de la page (enregistrement d'un gros disque) faisait alors échouer
+       les écritures IDE suivantes. */
+    const lines = ["nr_floppies=2", "floppy1type=0", "boot_rom_uae=disabled", "uaeboard=disabled"];
     if (arosExt) { machine.writeFile("/sys/aros-ext.bin", arosExt); lines.push("kickstart_ext_rom_file=/sys/aros-ext.bin"); }
     for (const tag of ["df0", "df1"]) {
       fsPath[tag] = null;

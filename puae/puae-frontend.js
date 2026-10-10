@@ -129,7 +129,10 @@ export class PuaeMachine {
     let n = 0;
     if (this._acc > 0.25) this._acc = step; /* onglet en arrière-plan : on ne rattrape pas tout */
     const r0 = performance.now();
-    while (this._acc >= step && n < 4) { this._pollGamepads(); this.M._fe_run(); this._acc -= step; n++; this._frames++; }
+    while (this._acc >= step && n < 4) {
+      if (this._keyQ && this._keyQ.length) { const [d, k] = this._keyQ.shift(); this.M._fe_key(d, k); }
+      this._pollGamepads(); this.M._fe_run(); this._acc -= step; n++; this._frames++;
+    }
     this._busy = (this._busy || 0) + performance.now() - r0;
     if (n) { this._newFrame = true; this._pumpAudio(); if (this.onFrame) this.onFrame(this.leds()); }
     if (now - this._statT >= 1000) {
@@ -197,7 +200,14 @@ export class PuaeMachine {
   setMuted(m) { this.muted = m; if (this.gain) this.gain.gain.value = m ? 0 : 1; }
 
   /* ---------- clavier, souris, manettes ---------- */
-  key(code, down) { const k = RETROK[code]; if (k && this.running) this.M._fe_key(down ? 1 : 0, k); return !!k; }
+  /* PUAE lit le clavier une fois par image et dans un ordre fixe : une touche pressée puis relâchée entre deux
+     images serait perdue, et Maj pourrait passer après la lettre. Les événements attendent donc dans une file
+     et le cœur en reçoit un par image, dans l'ordre où ils sont arrivés. */
+  key(code, down) {
+    const k = RETROK[code];
+    if (k && this.running) { (this._keyQ || (this._keyQ = [])).push([down ? 1 : 0, k]); if (this._keyQ.length > 256) this._keyQ.shift(); }
+    return !!k;
+  }
   mouseMove(dx, dy) { if (this.running) this.M._fe_mouse_move(Math.round(dx), Math.round(dy)); }
   mouseButton(btn, down) { /* 0 gauche, 1 droit, 2 milieu */
     const bit = btn === 0 ? 1 : btn === 2 ? 2 : 4;
@@ -223,10 +233,26 @@ export class PuaeMachine {
 
   _attachInput() {
     const c = this.canvas;
+    /* Modificateurs recalés sur l'état que le navigateur annonce avec chaque touche : couvre une touche Maj
+       enfoncée avant que la page ait le focus, ou relâchée hors de la fenêtre. */
+    const MOD = [["shiftKey", ["ShiftLeft", "ShiftRight"]], ["ctrlKey", ["ControlLeft", "ControlRight"]], ["altKey", ["AltLeft", "AltRight"]]];
+    this._held = new Set(); this._synth = new Set();
+    const send = (code, down) => { if (this.key(code, down)) { down ? this._held.add(code) : this._held.delete(code); } };
     this._onKey = e => {
       if (!this.running || this.inputBlocked) return;
+      const down = e.type === "keydown";
       if (e.repeat) { if (RETROK[e.code]) e.preventDefault(); return; }
-      if (this.key(e.code, e.type === "keydown")) e.preventDefault();
+      const isMod = MOD.some(([, codes]) => codes.includes(e.code));
+      if (down && !isMod) {
+        for (const [flag, [left, right]] of MOD) {
+          const has = this._held.has(left) || this._held.has(right);
+          if (e[flag] && !has) { send(left, true); this._synth.add(left); }
+          else if (!e[flag] && has) { if (this._held.has(left)) send(left, false); if (this._held.has(right)) send(right, false); }
+        }
+      }
+      if (RETROK[e.code]) { send(e.code, down); e.preventDefault(); }
+      /* Un modificateur ajouté pour une touche est relâché avec elle */
+      if (!down && !isMod && this._synth.size) { for (const c of this._synth) send(c, false); this._synth.clear(); }
     };
     window.addEventListener("keydown", this._onKey);
     window.addEventListener("keyup", this._onKey);

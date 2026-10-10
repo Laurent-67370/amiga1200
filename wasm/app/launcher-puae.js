@@ -93,7 +93,7 @@ async function renderLauncher() {
       if (st && st.thumb) { const i = new Image(); i.src = st.thumb; i.alt = ""; img.appendChild(i); }
       else img.innerHTML = r.kind === "whd" ? ICON_WHD : r.kind === "hdf" ? ICON_HD : ICON_FLOPPY;
       const nm = lEl("span", "l-name"); nm.textContent = r.name.replace(/\.(adf|adz|dms|hdf|lha|lzh)$/i, "");
-      const sub = lEl("span", "l-sub"); sub.textContent = (r.kind === "whd" ? "jeu WHDLoad" : inDrive ? (r.kind === "hdf" ? "branché" : "dans le lecteur") : r.kind === "hdf" ? "disque dur" : "disquette") + (r.used ? " · " + whenUsed(r.used) : "");
+      const sub = lEl("span", "l-sub"); sub.textContent = (r.kind === "whd" ? "jeu WHDLoad" + (whdTags(r) ? " · " + whdTags(r) : "") : inDrive ? (r.kind === "hdf" ? "branché" : "dans le lecteur") : r.kind === "hdf" ? "disque dur" : "disquette") + (r.used ? " · " + whenUsed(r.used) : "");
       pick.append(img, nm, sub);
       pick.onclick = () => launchWith(r);
       tile.appendChild(pick);

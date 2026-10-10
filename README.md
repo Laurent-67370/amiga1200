@@ -79,6 +79,10 @@ sur un petit volume qui contient WHDLoad, monte l'archive en lecture seule et la
 - Il faut votre **Kickstart 3.1** de l'A1200 (WHDLoad ne fonctionne pas avec AROS). Les Kickstart 1.3 et 3.1 de la
   Bibliothèque sont donnés à WHDLoad sous les noms qu'il attend : beaucoup de jeux en ont besoin.
 - Les sauvegardes des jeux (`WHDSaves:`) sont gardées d'une partie à l'autre ; les sauvegardes d'état marchent aussi.
+- **Réglages par jeu** : la base de l'émulateur Amiberry (projet Amiberry-XML-Builder, plus de 11 000 jeux) est téléchargée
+  par le navigateur au premier jeu et rafraîchie tous les 30 jours. NTSC, processeur plus rapide, cycle exact, blitter
+  immédiat, souris ou manette CD32 s'appliquent tout seuls. Le jeu est reconnu par le nom de son archive d'origine,
+  sinon par son empreinte SHA-1 ; ce que la base indique s'affiche sous la vignette.
 - F10 quitte le jeu (touche habituelle des installations).
 
 **Sur un disque dur**, pour garder vos jeux dans un Workbench :

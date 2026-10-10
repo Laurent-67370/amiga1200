@@ -132,7 +132,10 @@ async function powerOn() {
     } else E = whdGame ? Object.assign({}, S) : await effectiveSettings(); /* les profils de disques ne s'appliquent pas à un jeu WHDLoad */
     /* Jeu WHDLoad : sur l'A1200, avec de la mémoire Fast (8 Mo si les réglages n'en donnent pas) */
     const whd = whdGame;
-    if (whd && !resume) { E.model = "a1200"; if (!+E.fast) E.fast = "8"; E._profile = ""; }
+    if (whd && !resume) {
+      E.model = "a1200"; if (!+E.fast) E.fast = "8"; E._profile = "";
+      if (whd.whdCfg) Object.assign(E, whd.whdCfg.e); /* réglages de la base WHDLoad pour ce jeu */
+    }
     const a500 = modelOf(E) === "a500";
     const romId = resume ? resume.ctx.rom : a500 ? await romFor500() : S.romId;
     if (a500 && romId === "aros" && !resume) toast("Mode Amiga 500 sans Kickstart 1.3 : AROS démarre, mais la plupart des jeux A500 ont besoin du vrai Kickstart (Réglages).", true);
@@ -203,13 +206,16 @@ async function powerOn() {
       machine.writeFile("/save/" + base + ".uae", new TextEncoder().encode(lines.filter(l => !/^(boot_rom_uae|uaeboard|nr_floppies|floppy1type)=/.test(l)).join("\n") + "\n"));
       const kicks = await whdPrepare(machine);
       if (!kicks.length && S.romId !== "aros") toast("Aucun Kickstart reconnu par WHDLoad dans la Bibliothèque : les jeux qui en demandent un (kick34005.A500, kick40068.A1200) s'arrêteront.", true);
-      Object.assign(options, { puae_use_whdload: "files", puae_use_whdload_nowritecache: "enabled", puae_use_whdload_prefs: "disabled" });
+      Object.assign(options, { puae_use_whdload: "files", puae_use_whdload_nowritecache: "enabled", puae_use_whdload_prefs: "disabled" }, whd.whdCfg ? whd.whdCfg.opts : {});
       E._whd = base;
     } else machine.writeFile(content, new TextEncoder().encode(lines.join("\n") + "\n"));
     for (const t in fsPath) seen[t] = fsPath[t] ? machine.fileMtime(fsPath[t]) : 0;
 
     await machine.start({ model: MODELS[modelOf(E)].core, kickstart: kick, romKey: key, content, options });
     machine.setMuted(!!S.muted);
+    /* Jeu WHDLoad prévu pour la manette CD32 (7 boutons) : la manette du port joystick en devient une */
+    if (whd && whd.whdCfg && whd.whdCfg.cd32) machine.M._retro_set_controller_port_device(0, CD32PAD);
+    if (whd && whd.whdCfg && whd.whdCfg.mouse && isTouch) toast("Ce jeu se joue à la souris : un doigt la déplace, une touche clique.");
     machine.inputBlocked = false;
     E._rom = romId;
     onStarted();
@@ -229,7 +235,7 @@ function onStarted() {
   starting = false; running = true; setPowerUi("on");
   $("#statMode").textContent = (modelOf(E) === "a500" ? "A500, " : "") + (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "")
     + (modelOf(E) !== "a500" && ACCEL[E.accel] && ACCEL[E.accel].label ? ", " + ACCEL[E.accel].label : "")
-    + (E.compat === "max" ? ", cycle exact" : "") + (E._profile ? ", profil " + E._profile : "") + (E._whd ? ", WHDLoad" : "");
+    + (E.compat === "max" ? ", cycle exact" : "") + (E._profile ? ", profil " + E._profile : "") + (E._whd ? ", WHDLoad" + (whdGame && whdGame.whdCfg ? " (réglages de la base)" : "") : "");
   showCaptureHint();
 }
 function onStopped() {

@@ -29,7 +29,7 @@ function tarName(i, name) {
 
 async function exportLibrary() {
   if (running && S.autosave) await saveAllDisks(true); /* les disques en cours sont à jour dans l'export */
-  const all = (await DB.all()).filter(r => r.kind !== "chunk");
+  const all = (await DB.all()).filter(r => r.kind !== "chunk" && r.kind !== "whddb"); /* la base WHDLoad se retélécharge */
   if (!all.length) { toast("La Bibliothèque est vide : rien à exporter.", true); return; }
   toast("Préparation de l'export…");
   const parts = [], records = [];

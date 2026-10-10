@@ -28,7 +28,7 @@ async function launchWith(rec) {
   if (rec.kind === "hdf") {
     /* Démarrer sur le disque dur : on libère DF0: (une disquette amorçable passerait devant) */
     if (mounted.df0) await ejectMedia("df0", true);
-    if (!mounted.dh0 || mounted.dh0.id !== rec.id) await mountMedia("dh0", rec);
+    if (!mounted.dh0 || mounted.dh0.id !== rec.id) await mountMedia("dh0", rec); /* quitte son autre unité s'il y était */
   } else if (!mounted.df0 || mounted.df0.id !== rec.id) await mountMedia("df0", rec);
   await markUsed(); powerOn();
 }
@@ -84,7 +84,7 @@ async function renderLauncher() {
     const grid = lEl("div", "l-grid");
     for (const r of disks.slice(0, LAUNCH_MAX)) {
       const tile = lEl("div", "l-tile");
-      const inDrive = (mounted.df0 && mounted.df0.id === r.id) || (mounted.dh0 && mounted.dh0.id === r.id);
+      const inDrive = ["df0", ...HD_TAGS].some(t => mounted[t] && mounted[t].id === r.id);
       if (inDrive) tile.classList.add("in");
       const pick = lEl("button", "l-pick");
       pick.title = (r.kind === "whd" ? "Jouer : " : "Insérer et allumer : ") + r.name;
@@ -112,12 +112,13 @@ async function renderLauncher() {
   /* Ce qui démarrera avec le bouton Allumer */
   const what = [];
   if (mounted.df0) what.push(mounted.df0.name.replace(/\.(adf|adz|dms)$/i, ""));
-  if (mounted.dh0) what.push((mounted.df0 ? "+ disque dur " : "disque dur ") + mounted.dh0.name.replace(/\.hdf$/i, ""));
+  const hds = HD_TAGS.filter(t => mounted[t]).map(t => mounted[t].name.replace(/\.hdf$/i, ""));
+  if (hds.length) what.push((mounted.df0 ? "+ " : "") + (hds.length > 1 ? "disques durs " : "disque dur ") + hds.join(", "));
   $("#lWhat").textContent = what.length ? "avec " + what.join(" ") : "sans disque";
 }
 
 /* Le bouton « Ouvrir un fichier » : disquette, archive, disque dur ou Kickstart */
-$("#lOpen").onclick = () => pickFile(".adf,.adz,.dms,.zip,.gz,.lha,.lzh,.hdf,.rom,.bin,.key", f => importFile(f));
+$("#lOpen").onclick = () => pickFile(".adf,.adz,.dms,.zip,.gz,.lha,.lzh,.hdf,.rom,.bin,.key,.tar", f => importFile(f));
 /* Allumer depuis l'accueil ou la barre d'outils : les disques en place remontent en tête */
 $("#idlePower").onclick = async () => { await markUsed(); powerOn(); };
 { const b = $("#btnPower"), prev = b.onclick; b.onclick = async e => { if (!running) await markUsed(); prev(e); }; }

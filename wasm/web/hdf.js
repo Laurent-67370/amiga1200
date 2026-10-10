@@ -35,9 +35,11 @@ function amigaDate(d) {
 /**
  * @param {number} sizeMB   taille totale (Mo)
  * @param {string} label    nom du volume
+ * @param {string} device   nom de la partition (DH0, DH1…)
+ * @param {number} bootPri  priorité de démarrage (0 pour DH0:, négative pour les autres)
  * @returns {Uint8Array}    image .hdf complète
  */
-export function makeHardDisk(sizeMB, label = "Travail", now = new Date()) {
+export function makeHardDisk(sizeMB, label = "Travail", now = new Date(), device = "DH0", bootPri = 0) {
   const cyls = Math.floor(sizeMB * 1048576 / BS / CYL_BLOCKS);
   const total = cyls * CYL_BLOCKS;
   const img = new Uint8Array(total * BS), dv = new DataView(img.buffer);
@@ -80,9 +82,9 @@ export function makeHardDisk(sizeMB, label = "Travail", now = new Date()) {
   put32(dv, p + 16, 0xffffffff); /* Next */
   put32(dv, p + 20, 1);          /* Flags : PBFF_BOOTABLE */
   put32(dv, p + 32, 0);          /* DevFlags */
-  img[p + 36] = 3; putStr(img, p + 37, "DH0", 31);
+  img[p + 36] = device.length; putStr(img, p + 37, device, 31);
   /* DosEnvec à l'octet 128 */
-  const env = [16, 128, 0, HEADS, 1, SECTORS, 2, 0, 0, 1, cyls - 1, 30, 0, 0x7fffffff, 0xfffffffe, 0, 0x444f5301, 0, 0, 0, 0];
+  const env = [16, 128, 0, HEADS, 1, SECTORS, 2, 0, 0, 1, cyls - 1, 30, 0, 0x7fffffff, 0xfffffffe, bootPri >>> 0, 0x444f5301, 0, 0, 0, 0];
   /* TableSize, SizeBlock(longs), SecOrg, Surfaces, SectorPerBlock, BlocksPerTrack, Reserved, PreAlloc, Interleave,
      LowCyl, HighCyl, NumBuffers, BufMemType, MaxTransfer, Mask, BootPri, DosType, Baud, Control, BootBlocks */
   env.forEach((v, i) => put32(dv, p + 128 + i * 4, v));
@@ -206,4 +208,37 @@ export function rdbHeaderFor(nBlocks, dosType, reserved = 2) {
   env.forEach((v, i) => put32(dv, p + 128 + i * 4, v));
   rdbChecksum(dv, p, 64);
   return img;
+}
+
+/**
+ * Noms des partitions d'un disque RDB, rendus uniques : deux disques préparés chacun avec une partition DH0:
+ * ne peuvent pas être montés ensemble. Une partition dont le nom est déjà pris reçoit le premier nom DHn libre
+ * (somme de contrôle refaite). Modifie l'image en mémoire ; les noms retenus sont ajoutés à `used`.
+ * @param {Uint8Array} img  image du disque (au moins son premier cylindre)
+ * @param {Set<string>} used  noms déjà pris (en majuscules)
+ * @returns {{from:string, to:string}[]} partitions renommées
+ */
+export function uniquePartitionNames(img, used) {
+  const dv = new DataView(img.buffer, img.byteOffset, img.byteLength), renamed = [];
+  let rdsk = -1;
+  for (let b = 0; b < 16 && (b + 1) * BS <= img.length; b++) if (get32(dv, b * BS) === 0x5244534b) { rdsk = b; break; }
+  if (rdsk < 0) return renamed;
+  let blk = get32(dv, rdsk * BS + 28);
+  for (let guard = 0; blk !== 0xffffffff && guard < 64 && (blk + 1) * BS <= img.length; guard++) {
+    const p = blk * BS;
+    if (get32(dv, p) !== 0x50415254) break; /* PART */
+    const len = Math.min(img[p + 36], 31);
+    const name = new TextDecoder("latin1").decode(img.subarray(p + 37, p + 37 + len));
+    let key = name.toUpperCase();
+    if (used.has(key)) {
+      let n = 0; while (used.has("DH" + n)) n++;
+      const to = "DH" + n;
+      img.fill(0, p + 36, p + 68); img[p + 36] = to.length; putStr(img, p + 37, to, 31);
+      rdbChecksum(dv, p, Math.min(get32(dv, p + 4), 128));
+      renamed.push({ from: name, to }); key = to;
+    }
+    used.add(key);
+    blk = get32(dv, p + 16);
+  }
+  return renamed;
 }

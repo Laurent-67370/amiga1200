@@ -201,5 +201,5 @@ for (const id of ["#filesPick", "#dirPick"]) {
     await copyToHd(items, $("#filesDest").value, problems);
   };
 }
-$('#drive-dh0 [data-act="files"]').onclick = async () => openFiles(mounted.dh0 && await DB.get(mounted.dh0.id));
-{ const _sm = setMounted; setMounted = (t, r) => { _sm(t, r); if (t === "dh0") $('#drive-dh0 [data-act="files"]').disabled = !r; }; }
+for (const t of HD_TAGS) $('#drive-' + t + ' [data-act="files"]').onclick = async () => openFiles(mounted[t] && await DB.get(mounted[t].id));
+{ const _sm = setMounted; setMounted = (t, r) => { _sm(t, r); if (isHd(t)) $('#drive-' + t + ' [data-act="files"]').disabled = !r; }; }

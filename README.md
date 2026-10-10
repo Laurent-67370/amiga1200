@@ -45,6 +45,8 @@ La Bibliothèque est propre à chaque navigateur : importez votre Kickstart et v
 - Disque dur IDE `.hdf` jusqu'à **2 Go** (512 Mo sur téléphone et tablette), par exemple avec des jeux WHDLoad installés :
   image avec table de partitions (RDB), ou image d'une seule partition FFS/OFS (« partition hardfile » de WinUAE),
   complétée automatiquement d'une table de partitions pour démarrer. Rangé par morceaux de 8 Mo : seuls ceux que l'Amiga modifie sont réenregistrés
+- **Quatre disques durs** : DH0: et DH1: sur l'IDE de l'A1200 (maître, esclave), DH2: et DH3: par le pilote de disque d'UAE ;
+  le panneau de l'unité suivante apparaît dès qu'un disque est branché
 - **Nouveau** crée un disque partitionné (RDB) et formaté (FFS), prêt pour le Workbench
 - **Copier des fichiers sur le disque dur** (Amiga éteint, bouton *Fichiers…*) : fichiers, dossier entier, archives `.lha`/`.lzh`
   et `.zip` décompressées au passage, dans le dossier choisi ; c'est la façon d'installer des jeux **WHDLoad**.
@@ -55,6 +57,8 @@ La Bibliothèque est propre à chaque navigateur : importez votre Kickstart et v
 - **Jeux WHDLoad en un geste** : une archive `.lha` de jeu WHDLoad se lance directement depuis sa vignette, sans Workbench ni disque dur
 - Archives `.lha` acceptées aussi pour les disquettes qu'elles contiennent
 - Enregistrement automatique des disques modifiés dans la Bibliothèque, téléchargement
+- **Changer d'appareil** : *Exporter tout…* (Bibliothèque) range tout dans un seul fichier `.tar` (disquettes, disques durs,
+  Kickstart, jeux WHDLoad, sauvegardes) ; *Importer…* sur l'autre appareil, ce qui y est déjà et plus récent est gardé
 - **Sauvegardes d'état** : 4 emplacements par jeu, avec vignette ; Ctrl+Maj+S / Ctrl+Maj+R
 - **Profils par disque** : modèle (A1200/A500), cycle exact, vitesse, carte accélératrice, mémoire Fast, PAL/NTSC, joystick, lecteurs
 - **Carte accélératrice** au choix : 68030 + FPU 68882 (28 MHz), 68040 (28 MHz) ou 68060 (42 MHz)
@@ -93,6 +97,7 @@ Inser = Help, Page préc. / Page suiv. = touches Amiga.
   bouton droit maintenu pour la barre de menus, comme sur l'Amiga ; sur un pavé tactile, clic à deux doigts.
 - **Sans souris** (fonction du Kickstart) : Amiga gauche + Alt gauche = bouton gauche, + Alt droite = bouton droit.
 - **Joystick tactile** : bouton *Joystick* sous l'écran ou dans le plein écran ; manche à gauche, FEU et 2e bouton à droite.
+  Dans Réglages : zone morte du manche, disposition gaucher, opacité, vibration au tir et aux changements de direction (pas sur iPhone).
 - **Plein écran sur téléphone** : barre en haut à gauche avec le clavier complet, le joystick, Espace, Entrée, Échap, F1, F2.
 - **Écran tactile** : un doigt déplace la souris, une touche clique, deux touches puis glisser déplace une fenêtre,
   deux doigts posés = bouton droit (glissez jusqu'à l'option du menu et relevez).

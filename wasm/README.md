@@ -127,3 +127,14 @@ extinction (reprise au clavier) ; profil cycle exact + 8 Mo Fast + NTSC appliqu�
   soit écrite tout de suite. Vérifié dans Chromium avec une archive d'essai (un `.slave` minimal) : WHDLoad 20.0 démarre
   depuis l'archive et trouve le slave ; avec AROS il s'arrête sur « Couldn't find VCL instruction » (il cherche la liste
   Copper du vrai Kickstart), d'où l'exigence d'un Kickstart d'origine.
+- **Quatre disques durs** : DH0: et DH1: en maître et esclave sur l'IDE Gayle (`ide0_mainboard`, `ide1_mainboard`). Les unités
+  IDE 2 et 3 du Gayle émulé ne sont vues ni par AROS ni par le Kickstart 3.1 (vérifié avec AROS : « Please insert volume dh2 ») ;
+  DH2: et DH3: passent donc par `uaehf.device` (`uae0`, `uae1`), avec la ROM de démarrage UAE activée seulement dans ce cas.
+  « Nouveau » nomme la partition d'après l'unité (DH1…, priorité de démarrage négative) ; deux disques importés avec la même
+  partition (DH0 souvent) : `uniquePartitionNames` renomme celle du second dans l'image chargée. Vérifié avec AROS : les quatre
+  volumes montés, un fichier écrit sur chacun, y compris après un blocage de la page de 4 s, retrouvé dans la Bibliothèque.
+- **Export et import de la Bibliothèque** (`app/library-io-puae.js`) : une archive tar standard, `bibliotheque.json` (les
+  enregistrements, contenus remplacés par des références) puis un fichier par contenu, disque dur en une seule image .hdf. L'export
+  assemble des Blob (rien n'est copié en mémoire), l'import lit le fichier par tranches et range les disques durs en morceaux.
+  À l'import, un élément plus récent sur l'appareil est gardé. Vérifié : quatre disques de 64 Mo, une disquette, un jeu WHDLoad
+  et WHDSaves exportés puis importés dans un navigateur vierge, contenus identiques ; l'archive se relit avec GNU tar.

@@ -335,15 +335,15 @@ rep(".idle p,.idle .rom-line{display:none}.idle h1{font-size:22px}}", """.idle p
 rep("/* Profil par disque */", (APP / "launcher-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 
 # Disques durs : images sans RDB complétées, jusqu'à 2 Go, rangés par morceaux
-rep('import { makeHardDisk } from "./hdf.js";', 'import { makeHardDisk, inspectHdf, rdbHeaderFor, rootCandidate, isRootBlock } from "./hdf.js";')
+rep('import { makeHardDisk } from "./hdf.js";', 'import { makeHardDisk, inspectHdf, rdbHeaderFor, rootCandidate, isRootBlock, uniquePartitionNames } from "./hdf.js";')
 rep('''async function importFile(file, target) {
   let items;''', '''async function importFile(file, target) {
   /* Disque dur : lu directement depuis le fichier, sans le charger entier en mémoire */
   if (/\\.hdf$/i.test(file.name) || (file.size > 64 * 1048576 && !/\\.(zip|gz|adz|hdz|lha|lzh|lzx|rar|7z|rom|bin|adf|dms)$/i.test(file.name)))
-    return importHdf(file.name, file, true);
+    return importHdf(file.name, file, isHd(target || "") ? target : true);
   let items;''')
 rep('''  if (kind === "hdf" && u8.length > 512 * 1048576) { toast("Disque dur trop gros (512 Mo maximum).", true); return; }''',
-    '''  if (kind === "hdf") return importHdf(name, new Blob([u8]), mount);''')
+    '''  if (kind === "hdf") return importHdf(name, new Blob([u8]), mount && isHd(target || "") ? target : mount);''')
 rep('btn("Télécharger", async () => download(new Uint8Array(await r.blob.arrayBuffer()), r.name));',
     'btn("Télécharger", async () => download(r.kind === "hdf" ? await recBlob(r) : new Uint8Array(await r.blob.arrayBuffer()), r.name));')
 
@@ -550,6 +550,79 @@ rep('''      <h3>Écran tactile</h3>''', '''      <h3>Jouer sur écran tactile</
       <p>Le bouton <b>Joystick</b> (sous l'écran, ou dans la barre du plein écran) pose un joystick sur l'écran : le manche à gauche, <b>FEU</b> et un deuxième bouton à droite ; il commande le port joystick de l'Amiga, même en plein écran. En plein écran, une barre en haut à gauche donne aussi le <b>Clavier</b> complet, Espace, Entrée, Échap, F1 et F2, souvent demandés pour lancer un jeu.</p>
       <h3>Écran tactile</h3>''')
 
+# Joystick tactile : zone morte réglable, disposition gaucher, transparence, vibration
+rep('''      <p class="hint">Avec « Flèches », les flèches pilotent aussi le joystick : choisissez « Aucun » pour un usage bureautique.</p>''',
+    '''      <p class="hint">Avec « Flèches », les flèches pilotent aussi le joystick : choisissez « Aucun » pour un usage bureautique.</p>
+
+      <div class="vj-opts">
+        <h3>Joystick tactile</h3>
+        <div class="opt vj-range"><label for="vjDead">Zone morte</label><input type="range" id="vjDead" min="10" max="60" step="5"><output id="vjDeadV"></output></div>
+        <p class="hint">Distance du centre à partir de laquelle le manche compte une direction : plus grande, moins de mouvements involontaires ; plus petite, plus de réactivité. Le cercle au centre du manche la montre.</p>
+        <div class="opt vj-range"><label for="vjAlpha">Opacité</label><input type="range" id="vjAlpha" min="20" max="100" step="5"><output id="vjAlphaV"></output></div>
+        <div class="opt">
+          <label><input type="checkbox" id="vjLeft"> Gaucher : manche à droite, boutons de tir à gauche</label>
+          <label><input type="checkbox" id="vjVibe"> Vibration au tir et aux changements de direction</label>
+        </div>
+        <p class="hint" id="vjVibeNote" hidden>Ce navigateur ne sait pas faire vibrer l'appareil (c'est le cas sur iPhone et iPad).</p>
+      </div>''')
+rep(".tube > #vkbd{position:absolute;", """.vjoy.left{flex-direction:row-reverse}
+.vjoy.left .vjoy-fire{flex-direction:row-reverse}
+.vjoy-stick::before{content:"";position:absolute;left:50%;top:50%;width:var(--vj-dead,30%);height:var(--vj-dead,30%);transform:translate(-50%,-50%);
+  border-radius:50%;border:1px dashed rgba(255,255,255,.35);pointer-events:none}
+body:not(.is-touch) .vj-opts{display:none}
+.vj-range{display:flex;align-items:center;gap:10px}
+.vj-range label{min-width:7em}
+.vj-range input{flex:1;max-width:260px}
+.vj-range output{min-width:3.5em;font-variant-numeric:tabular-nums}
+.tube > #vkbd{position:absolute;""")
+rep('''      <h3>Écran tactile</h3>''', '''      <p>Dans <b>Réglages</b>, le joystick tactile se règle à votre main : <b>zone morte</b> du manche, disposition <b>gaucher</b> (manche à droite), <b>opacité</b> pour voir le jeu au travers, et <b>vibration</b> au tir et aux changements de direction (pas sur iPhone).</p>
+      <h3>Écran tactile</h3>''')
+
+# Quatre disques durs : DH0: et DH1: (IDE maître et esclave), DH2: et DH3: (pilote de disque d'UAE)
+rep('df0: null, df1: null, dh0: null, muted: false', 'df0: null, df1: null, dh0: null, dh1: null, dh2: null, dh3: null, muted: false')
+rep('n.textContent = rec ? rec.name : (tag === "dh0" ? "Aucun disque dur" : "Aucune disquette");',
+    'n.textContent = rec ? rec.name : (/^dh/.test(tag) ? "Aucun disque dur" : "Aucune disquette");')
+rep('if (act === "insert") pickFile(tag === "dh0" ? ".hdf,.hdz,.zip,.gz"', 'if (act === "insert") pickFile(/^dh/.test(tag) ? ".hdf,.hdz,.zip,.gz"')
+rep('if (tag === "dh0") { if (running) { toast("Éteignez l\'Amiga pour brancher un nouveau disque dur.", true); return; } showWin("winHd"); }',
+    'if (/^dh/.test(tag)) { if (running) { toast("Éteignez l\'Amiga pour brancher un nouveau disque dur.", true); return; } hdTarget = tag; showWin("winHd"); }')
+rep('''    for (const t of ["df0", "df1", "dh0"]) {
+      if (S[t])''', '''    for (const t of ["df0", "df1", ...HD_TAGS]) {
+      if (S[t])''')
+rep('''        btn("DH0:", async () => { if (running) { toast("Éteignez l'Amiga pour changer de disque dur.", true); return; } await mountMedia("dh0", r); renderLib(); }, inUse);''',
+    '''        for (const t of HD_TAGS) btn(t.toUpperCase() + ":", async () => { if (running) { toast("Éteignez l'Amiga pour changer de disque dur.", true); return; } await mountMedia(t, r); renderLib(); }, inUse === t);''')
+# Panneaux DH1: à DH3:, sur le modèle de DH0:
+_i = page.find('    <div class="drive wb" id="drive-dh0" data-unit="dh0">')
+_j = page.find('\n    </div>\n', _i) + len('\n    </div>\n')
+assert _i >= 0 and _j > _i
+_panel = page[_i:_j]
+_extra = ""
+for _n, _lbl in [(1, "IDE, esclave"), (2, "disque UAE"), (3, "disque UAE")]:
+    _extra += (_panel.replace('class="drive wb"', 'class="drive wb hd-extra" hidden').replace("dh0", "dh%d" % _n)
+               .replace("DH0:", "DH%d:" % _n).replace('IDE interne 2,5"', _lbl))
+page = page[:_j] + _extra + page[_j:]
+rep("/* Profil par disque */", """/* Disques durs supplémentaires : chaque unité occupée a son panneau, plus la suivante, libre, pour en ajouter une */
+function refreshHdPanels() {
+  HD_TAGS.forEach((t, i) => { if (i) $("#drive-" + t).hidden = !mounted[t] && !mounted[HD_TAGS[i - 1]]; });
+}
+{ const _sm = setMounted; setMounted = (t, r) => { _sm(t, r); refreshHdPanels(); }; }
+
+/* Profil par disque */""")
+rep('''  if (sessionStorage.getItem("a1200.autostart")) {''', '''  refreshHdPanels();
+  if (sessionStorage.getItem("a1200.autostart")) {''')
+rep(".tube > #vkbd{position:absolute;", """.hd-extra [data-act="profile"]{display:none}
+.tube > #vkbd{position:absolute;""")
+
+# Export et import de la Bibliothèque : un seul fichier pour passer d'un appareil à l'autre
+rep('<button class="gad" id="libImport">Ajouter des fichiers…</button>', '''<button class="gad" id="libImport">Ajouter des fichiers…</button>
+      <button class="gad" id="libExport" title="Tout enregistrer dans un seul fichier, pour un autre appareil ou une sauvegarde">Exporter tout…</button>
+      <button class="gad" id="libRestore" title="Reprendre une Bibliothèque exportée (fichier .tar)">Importer…</button>''')
+rep("/* Profil par disque */", (APP / "library-io-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Plusieurs disques durs</h3>
+      <p>Jusqu'à quatre disques : <b>DH0:</b> et <b>DH1:</b> sur le contrôleur IDE de l'A1200 (maître et esclave), <b>DH2:</b> et <b>DH3:</b> par le pilote de disque d'UAE (uaehf.device), reconnu par tous les Kickstart. Dès qu'un disque est branché, le panneau de l'unité suivante apparaît ; la Bibliothèque a un bouton par unité. L'Amiga démarre sur DH0:. Si deux disques ont une partition du même nom (souvent DH0), celle du second est renommée au démarrage.</p>
+      <h3>Changer d'appareil</h3>
+      <p>Dans la Bibliothèque, <b>Exporter tout…</b> enregistre tout dans un seul fichier .tar : disquettes, disques durs, Kickstart, jeux WHDLoad, sauvegardes d'état et de jeux. Sur l'autre appareil, <b>Importer…</b> (ou glissez le fichier sur la page) les ajoute ; ce qui y est déjà et plus récent est gardé. Le fichier reste lisible par 7-Zip ou tar.</p>
+      <h3>Copier des fichiers sur le disque dur</h3>''')
+
 # Jeux WHDLoad en un geste : une archive .lha, et on joue (sans Workbench ni disque dur)
 rep("/* Profil par disque */", (APP / "whdload-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 rep('''  if (sessionStorage.getItem("a1200.autostart")) { sessionStorage.removeItem("a1200.autostart"); powerOn(); }''',
@@ -562,7 +635,7 @@ rep('''      } else if (kind === "rom") {
         btn("Jouer", () => { if (running) { toast("Éteignez d'abord l'Amiga.", true); return; } closeWin(); launchWhd(r); });
       } else if (kind === "rom") {
         btn(S.romId === r.id''')
-rep('inp.accept = ".adf,.dms,.adz,.zip,.gz,.hdf,.hdz,.rom,.bin,.key";', 'inp.accept = ".adf,.dms,.adz,.zip,.gz,.lha,.lzh,.hdf,.hdz,.rom,.bin,.key";')
+rep('inp.accept = ".adf,.dms,.adz,.zip,.gz,.hdf,.hdz,.rom,.bin,.key";', 'inp.accept = ".adf,.dms,.adz,.zip,.gz,.lha,.lzh,.hdf,.hdz,.rom,.bin,.key,.tar";')
 rep("Les archives .lha et .lzx doivent être extraites avant.", "Une archive .lha qui contient un jeu WHDLoad (un fichier .slave) devient un jeu prêt à lancer ; une autre .lha donne les disquettes qu'elle contient. Les archives .lzx doivent être extraites avant.")
 rep('Déposez le fichier : disquette, disque dur ou Kickstart', 'Déposez le fichier : disquette, jeu WHDLoad (.lha), disque dur ou Kickstart')
 rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Jeux WHDLoad en un geste</h3>

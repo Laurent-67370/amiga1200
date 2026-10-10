@@ -34,6 +34,8 @@ const CD32_LABEL = { main: "Kickstart CD32 (40.060)", ext: "Extension CD32 (40.0
     if (guessKind(name, u8) === "rom") {
       const role = await cd32Role(name, u8);
       if (role) {
+        /* Les ROM CD32 déjà rangées (fichier identique) ne sont pas dupliquées */
+        if ((await DB.all()).some(r => r.kind === "rom" && r.crc === crc32u8(u8))) { if (!quiet) toast(name + " est déjà dans la Bibliothèque."); return null; }
         const rec = { id: newId(), kind: "rom", name, size: u8.length, blob: new Blob([u8]), crc: crc32u8(u8), added: Date.now(), label: CD32_LABEL[role], cd32: role };
         await DB.put(rec);
         if (!quiet) toast(CD32_LABEL[role] + " ajoutée : elle servira aux CD de CD32.");
@@ -56,6 +58,24 @@ async function cd32Roms() {
   if (by.main && by.ext) return { id: by.main.id, main: await bytes(by.main), ext: await bytes(by.ext) };
   return null;
 }
+
+/* État des ROM pour l'accueil : { ok, label } */
+async function cd32RomStatus(all) {
+  const roms = (all || await DB.all()).filter(r => r.kind === "rom" && r.cd32);
+  const has = k => roms.some(r => r.cd32 === k);
+  if (has("combined")) return { ok: true, label: CD32_LABEL.combined };
+  if (has("main") && has("ext")) return { ok: true, label: "Kickstart CD32 + extension (40.060)" };
+  if (has("main")) return { ok: false, label: "Kickstart CD32 seul (il manque l'extension)" };
+  if (has("ext")) return { ok: false, label: "extension seule (il manque le Kickstart CD32)" };
+  return { ok: false, label: "" };
+}
+function pickFiles(accept, cb) {
+  const inp = $("#filePick"); inp.value = ""; inp.multiple = true; inp.accept = accept;
+  inp.onchange = () => { if (inp.files.length) cb([...inp.files]); };
+  inp.click();
+}
+/* Les ROM importées à l'accueil le rafraîchissent */
+{ const _ib = importBytes; importBytes = async (...a) => { const r = await _ib(...a); renderLauncherSoon(); return r; }; }
 
 /* ---- Images de CD : .iso, ou .cue avec ses pistes .bin ---- */
 let importBatch = [];

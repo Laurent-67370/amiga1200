@@ -15,19 +15,19 @@ const BOING = '<svg class="boing" viewBox="0 0 40 40" aria-hidden="true"><defs>'
 
 let themeModel = null;
 function applyModelTheme(model) {
-  model = model === "a500" ? "a500" : "a1200";
+  model = model === "a500" ? "a500" : model === "cd32" ? "cd32" : "a1200";
   if (model === themeModel) return;
   themeModel = model;
   document.documentElement.dataset.model = model;
-  const label = model === "a500" ? "AMIGA 500" : "AMIGA 1200";
+  const label = model === "a500" ? "AMIGA 500" : model === "cd32" ? "AMIGA CD32" : "AMIGA 1200";
   const brand = $(".monitor-foot .brand"), name = $(".wedge .name");
   if (brand) { const led = $("#monLed"); brand.innerHTML = AMIGA_TICK + label; if (led) brand.appendChild(led); }
   if (name) name.innerHTML = AMIGA_TICK + label;
-  const wedge = $(".wedge"); if (wedge) wedge.setAttribute("aria-label", "Boîtier " + (model === "a500" ? "Amiga 500" : "Amiga 1200"));
+  const wedge = $(".wedge"); if (wedge) wedge.setAttribute("aria-label", "Boîtier " + (model === "a500" ? "Amiga 500" : model === "cd32" ? "Amiga CD32" : "Amiga 1200"));
   const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.content = model === "a500" ? "#0b3a73" : "#2b303b";
 }
 /* Le modèle qui tourne (réglages effectifs, profil compris), sinon celui choisi pour le prochain allumage */
-const themeNow = () => applyModelTheme(running || starting ? modelOf(E) : S.model);
+const themeNow = () => applyModelTheme(running || starting ? (E._cd ? "cd32" : modelOf(E)) : S.model);
 { const _r = renderLauncher; renderLauncher = async () => { await _r(); themeNow(); decorateLauncher(); }; }
 { const _s = onStarted; onStarted = (...a) => { _s(...a); themeNow(); }; }
 $$('#winSettings input[name="model"]').forEach(i => i.addEventListener("change", () => setTimeout(themeNow)));

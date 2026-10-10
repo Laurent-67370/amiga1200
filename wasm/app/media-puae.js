@@ -32,7 +32,7 @@ async function recBytes(rec) {
   return out;
 }
 /* Supprimer un disque emporte ses morceaux */
-{ const _del = DB.del;
+{ const _del = DB.del.bind(DB); /* la méthode d'origine a besoin de son « this » */
   DB.del = async id => {
     const rec = await DB.get(id);
     if (rec && rec.chunks) for (let i = 0; i < rec.chunks; i++) await _del(chunkId(rec, i));

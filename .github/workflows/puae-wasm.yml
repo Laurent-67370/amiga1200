@@ -36,16 +36,20 @@ jobs:
         working-directory: wasm/dist
         run: |
           mkdir -p sys
-          {
-            echo "## Banc d'essai PUAE WebAssembly"
-            echo '```'
-            node puae-bench.js 150 500 normal frame-normal.ppm | grep -E "images|sauvegarde"
-            node puae-bench.js 150 500 exact frame-exact.ppm | grep -E "images|sauvegarde"
-            for f in puae.wasm puae-bench.wasm; do echo "$f : $(stat -c %s $f) octets, $(gzip -9 -c $f | wc -c) compressé"; done
-            echo '```'
-          } | tee -a "$GITHUB_STEP_SUMMARY" | tee bench.txt
-          # Résultats aussi en annotations, lisibles par l'API GitHub
-          grep -E "images|sauvegarde|octets" bench.txt | while read -r l; do echo "::notice title=Banc d'essai::$l"; done
+          note() { echo "::notice title=$1::$2"; echo "$2" >> "$GITHUB_STEP_SUMMARY"; }
+          grep -E "objets du cœur|correctif|compressé" ../../build.log | while read -r l; do note "Compilation" "$l"; done
+          ok=0
+          for mode in normal exact; do
+            set +e
+            timeout 600 node puae-bench.js 150 500 $mode frame-$mode.ppm > out-$mode.txt 2>&1
+            rc=$?
+            set -e
+            grep -E "images/s|sauvegarde" out-$mode.txt | while read -r l; do note "Banc $mode" "$l"; done
+            if grep -q "images/s" out-$mode.txt; then ok=1; else
+              note "Banc $mode en échec (code $rc)" "$(grep -v -E 'warning|^$' out-$mode.txt | tail -8 | tr '\n' ' ' | cut -c1-900)"
+            fi
+          done
+          test $ok = 1
 
       - uses: actions/upload-artifact@v4
         with:
@@ -55,3 +59,4 @@ jobs:
             wasm/dist/puae.wasm
             wasm/dist/frame-*.ppm
             build.log
+            wasm/dist/out-*.txt

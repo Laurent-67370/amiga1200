@@ -11,4 +11,14 @@ Branche de travail pour remplacer le cœur SAE par [PUAE](https://github.com/lib
 La GitHub Action `.github/workflows/puae-wasm.yml` compile tout à chaque modification et publie
 la vitesse mesurée dans le résumé de l'exécution.
 
-Étape 1 sur 6 : chaîne de compilation. Étape suivante : écran, son, clavier et souris dans le navigateur.
+## Résultats (GitHub Actions, Emscripten 4.0.15, 10 octobre 2026)
+
+| Mode | Vitesse | Temps réel PAL |
+| --- | --- | --- |
+| Rapide | 167 images/s | × 3,3 |
+| Cycle exact | 118 images/s | × 2,4 |
+
+Sauvegarde d'état : 2,3 Mo en 4,5 ms, restauration OK. Module navigateur : 3,5 Mo compressé.
+Machine : serveur partagé de GitHub, plus lent qu'un PC de bureau récent.
+
+Étape 1 sur 6 : chaîne de compilation, terminée. Étape suivante : écran, son, clavier et souris dans le navigateur.

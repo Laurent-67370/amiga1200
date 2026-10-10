@@ -258,6 +258,20 @@ body.is-off #btnPower,body.is-off #btnReset,body.is-off #btnPause,body.is-off #b
 .fs-exit{display:none;position:absolute;top:12px;right:12px;z-index:5;align-items:center;gap:8px;padding:9px 14px;font:inherit;font-size:14px;
   color:#fff;background:rgba(20,24,30,.78);border:1px solid rgba(255,255,255,.25);border-radius:6px;cursor:pointer;transition:opacity .3s}
 .fs-exit svg{width:16px;height:16px}
+.fs-bar{display:none;position:absolute;top:12px;left:12px;z-index:5;gap:6px;flex-wrap:wrap;max-width:calc(100% - 250px)}
+.tube:fullscreen .fs-bar,.tube:-webkit-full-screen .fs-bar{display:flex}
+.fsb{font:inherit;font-size:13px;color:#fff;background:rgba(20,24,30,.65);border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:8px 11px;cursor:pointer}
+.fsb[aria-pressed="true"]{background:var(--wb-blue)}
+body:not(.is-touch) [data-vjoy]{display:none}
+.vjoy{position:absolute;left:0;right:0;bottom:0;z-index:5;display:flex;justify-content:space-between;align-items:flex-end;padding:14px 16px;pointer-events:none}
+.vjoy[hidden],body.is-off .vjoy,body.is-off .fs-bar{display:none}
+.vjoy-stick{pointer-events:auto;position:relative;width:min(34vmin,150px);aspect-ratio:1;border-radius:50%;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.35);touch-action:none}
+.vjoy-knob{position:absolute;left:29%;top:29%;width:42%;height:42%;border-radius:50%;background:rgba(255,255,255,.45);pointer-events:none}
+.vjoy-fire{pointer-events:auto;display:flex;gap:12px;align-items:flex-end}
+.vjoy-fire button{width:min(21vmin,88px);aspect-ratio:1;border-radius:50%;border:2px solid rgba(255,255,255,.4);background:rgba(220,60,60,.45);color:#fff;font:inherit;font-weight:700;touch-action:none;padding:0}
+.vjoy-fire .vf2{width:min(15vmin,62px);background:rgba(80,120,200,.45)}
+.vjoy-fire button.down{filter:brightness(1.7)}
+.tube > #vkbd{position:absolute;left:0;right:0;bottom:0;z-index:7;margin:0;opacity:.94}
 .tube:fullscreen .fs-exit,.tube:-webkit-full-screen .fs-exit{display:flex}
 .fs-exit.hide{opacity:0;pointer-events:none}
 .tube:-webkit-full-screen{border-radius:0;background:#000}
@@ -306,6 +320,19 @@ body.is-off #btnPower,body.is-off #btnReset,body.is-off #btnPause,body.is-off #b
           </div>
         </div>
         <div class="glare"></div>
+        <div class="fs-bar" id="fsBar">
+          <button class="fsb" id="fsKbd" type="button" aria-pressed="false">Clavier</button>
+          <button class="fsb" data-vjoy type="button" aria-pressed="false">Joystick</button>
+          <button class="fsb" data-tap="Space" type="button">Espace</button>
+          <button class="fsb" data-tap="Enter" type="button">Entrée</button>
+          <button class="fsb" data-tap="Escape" type="button">Échap</button>
+          <button class="fsb" data-tap="F1" type="button">F1</button>
+          <button class="fsb" data-tap="F2" type="button">F2</button>
+        </div>
+        <div class="vjoy" id="vjoy" hidden>
+          <div class="vjoy-stick" id="vjoyStick" aria-label="Manche du joystick"><div class="vjoy-knob" id="vjoyKnob"></div></div>
+          <div class="vjoy-fire"><button type="button" data-fire="8" class="vf2" aria-label="Deuxième bouton">2</button><button type="button" data-fire="0" class="vf1">FEU</button></div>
+        </div>
         <button class="fs-exit" id="fsExit" type="button"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5.5 1.5v4h-4M10.5 1.5v4h4M14.5 10.5h-4v4M1.5 10.5h4v4"/></svg>Quitter le plein écran</button>
         <div class="capture-hint" id="captureHint" style="opacity:0">Cliquez dans l'écran pour utiliser la souris. Échap pour la libérer.</div>
       </div>
@@ -405,6 +432,7 @@ body.is-off #btnPower,body.is-off #btnReset,body.is-off #btnPause,body.is-off #b
     <button class="gad small" id="kbdToggle" aria-pressed="false" aria-controls="vkbd">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3.5" width="14" height="9"/><path d="M3.5 6.5h1M6 6.5h1M8.5 6.5h1M11 6.5h1.5M4 10h8"/></svg>
       Clavier</button>
+    <button class="gad small" data-vjoy aria-pressed="false" title="Joystick tactile sur l'écran (port 2)">Joystick</button>
     <button class="gad small" data-latch="MetaLeft" aria-pressed="false" title="Touche Amiga gauche, maintenue jusqu'à la touche suivante">Amiga gauche</button>
     <button class="gad small" data-latch="MetaRight" aria-pressed="false" title="Touche Amiga droite, maintenue jusqu'à la touche suivante">Amiga droite</button>
     <button class="gad small" data-key="ContextMenu">Help</button>
@@ -627,6 +655,8 @@ body.is-off #btnPower,body.is-off #btnReset,body.is-off #btnPause,body.is-off #b
       <h3>Clavier et souris</h3>
       <p>Le clavier suit la position des touches : choisissez le keymap <i>f</i> (français) dans les Préférences Input du Workbench. Cliquez dans l'écran pour capturer la souris, <span class="kbd">Échap</span> pour la libérer. Une fois capturée, le bouton gauche sélectionne et le bouton droit (gardé enfoncé) ouvre la barre de menus, comme sur l'Amiga ; sur un pavé tactile, cliquez à deux doigts. Sans souris : <span class="kbd">Page préc.</span> (Amiga gauche) + <span class="kbd">Alt</span> gauche = bouton gauche, + <span class="kbd">Alt Gr</span> = bouton droit.</p>
       <p>Les touches Amiga sont la touche Windows/Cmd, ou les boutons <b>Amiga gauche</b> et <b>Amiga droite</b> sous les lecteurs, qui restent enfoncés jusqu'à la touche suivante. <span class="kbd">Menu</span> correspond à Help. Le bouton <b>Clavier</b> affiche un clavier A1200 complet à l'écran, pratique sur tablette.</p>
+      <h3>Jouer sur écran tactile</h3>
+      <p>Le bouton <b>Joystick</b> (sous l'écran, ou dans la barre du plein écran) pose un joystick sur l'écran : le manche à gauche, <b>FEU</b> et un deuxième bouton à droite ; il commande le port joystick de l'Amiga, même en plein écran. En plein écran, une barre en haut à gauche donne aussi le <b>Clavier</b> complet, Espace, Entrée, Échap, F1 et F2, souvent demandés pour lancer un jeu.</p>
       <h3>Écran tactile</h3>
       <p>L'écran se comporte comme un pavé tactile : glissez un doigt pour déplacer la souris, touchez pour cliquer, touchez deux fois et gardez le doigt posé pour glisser une fenêtre ou une icône. Pour les menus, posez deux doigts (bouton droit), glissez jusqu'à l'option et relevez.</p>
       <h3>Installer l'application</h3>
@@ -1497,7 +1527,7 @@ function joyKey(e) {
   if (!running || E.joy !== "keys" || !(e.code in JOY_KEYS) || openWin) return;
   const bit = 1 << JOY_KEYS[e.code];
   joyKeys = e.type === "keydown" ? joyKeys | bit : joyKeys & ~bit;
-  machine.setJoy(0, joyKeys);
+  sendJoy(); /* avec le joystick virtuel */
 }
 window.addEventListener("keydown", joyKey);
 window.addEventListener("keyup", joyKey);
@@ -2266,6 +2296,79 @@ function profileModelUi() {
 $$('#winSettings input[name="model"]').forEach(i => i.addEventListener("change", settingsModelUi));
 $$('#winProfile input[name="p_model"]').forEach(i => i.addEventListener("change", profileModelUi));
 { const _o = openProfile; openProfile = async t => { await _o(t); profileModelUi(); }; }
+
+
+/* =========================================================
+   Commandes tactiles : joystick virtuel et barre de touches en plein écran
+   ========================================================= */
+let joyTouch = 0;                       /* directions et tir du joystick virtuel */
+function sendJoy() { if (running && machine) machine.setJoy(0, joyKeys | joyTouch); }
+
+(function touchControls() {
+  const tube = $("#tube"), pad = $("#vjoy"), stick = $("#vjoyStick"), knob = $("#vjoyKnob");
+  /* Les touchers sur les commandes ne doivent pas bouger la souris de l'Amiga */
+  const shield = el => ["touchstart", "touchmove", "touchend", "touchcancel"].forEach(t => el.addEventListener(t, e => e.stopPropagation(), { passive: true }));
+  [pad, $("#fsBar"), $("#vkbd")].forEach(shield);
+
+  /* ---- Manche : 8 directions, zone morte au centre ---- */
+  let stickId = null;
+  const UP = 1 << 4, DOWN = 1 << 5, LEFT = 1 << 6, RIGHT = 1 << 7, DIRS = UP | DOWN | LEFT | RIGHT;
+  const moveStick = t => {
+    const r = stick.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    let dx = t.clientX - cx, dy = t.clientY - cy;
+    const max = r.width / 2, d = Math.hypot(dx, dy);
+    if (d > max) { dx *= max / d; dy *= max / d; }
+    knob.style.transform = `translate(${dx}px, ${dy}px)`;
+    let m = 0;
+    if (d > max * 0.3) {
+      const a = Math.atan2(dy, dx) * 180 / Math.PI; /* 0 = droite, 90 = bas */
+      if (a > -67.5 && a < 67.5) m |= RIGHT;
+      if (a > 22.5 && a < 157.5) m |= DOWN;
+      if (a > 112.5 || a < -112.5) m |= LEFT;
+      if (a > -157.5 && a < -22.5) m |= UP;
+    }
+    if ((joyTouch & DIRS) !== m) { joyTouch = (joyTouch & ~DIRS) | m; sendJoy(); }
+  };
+  const releaseStick = () => { stickId = null; knob.style.transform = ""; joyTouch &= ~DIRS; sendJoy(); };
+  stick.addEventListener("touchstart", e => { e.preventDefault(); const t = e.changedTouches[0]; stickId = t.identifier; moveStick(t); }, { passive: false });
+  stick.addEventListener("touchmove", e => { e.preventDefault(); for (const t of e.changedTouches) if (t.identifier === stickId) moveStick(t); }, { passive: false });
+  const endStick = e => { for (const t of e.changedTouches) if (t.identifier === stickId) releaseStick(); };
+  stick.addEventListener("touchend", endStick); stick.addEventListener("touchcancel", endStick);
+
+  /* ---- Boutons de tir : bit 0 (tir), bit 8 (2e bouton) ---- */
+  $$("#vjoy [data-fire]").forEach(b => {
+    const bit = 1 << +b.dataset.fire;
+    const on = e => { e.preventDefault(); b.classList.add("down"); joyTouch |= bit; sendJoy(); };
+    const off = e => { e.preventDefault(); b.classList.remove("down"); joyTouch &= ~bit; sendJoy(); };
+    b.addEventListener("touchstart", on, { passive: false });
+    b.addEventListener("touchend", off, { passive: false }); b.addEventListener("touchcancel", off, { passive: false });
+  });
+
+  /* ---- Afficher le joystick : bouton « Joystick » (touches spéciales et barre plein écran) ---- */
+  const setVjoy = v => {
+    S.vjoy = v; saveSettings();
+    pad.hidden = !v;
+    $$("[data-vjoy]").forEach(b => b.setAttribute("aria-pressed", v ? "true" : "false"));
+    if (!v) { joyTouch = 0; sendJoy(); }
+  };
+  $$("[data-vjoy]").forEach(b => b.onclick = () => setVjoy(!S.vjoy));
+  setVjoy(!!S.vjoy && isTouch);
+
+  /* ---- Barre plein écran : clavier, joystick, touches courantes ---- */
+  $$("#fsBar [data-tap]").forEach(b => b.onclick = () => tap(b.dataset.tap.split("+")));
+  $("#fsKbd").onclick = () => { setKeyboardOpen(!S.kbdOpen); placeKeyboard(); };
+  /* En plein écran, seul l'écran est affiché : le clavier à l'écran vient se poser dessus, puis reprend sa place */
+  const kbd = $("#vkbd"), home = kbd.parentNode, after = kbd.nextSibling;
+  function placeKeyboard() {
+    const fs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    if (fs && kbd.parentNode !== tube) tube.appendChild(kbd);
+    else if (!fs && kbd.parentNode === tube) home.insertBefore(kbd, after);
+    $("#fsKbd").setAttribute("aria-pressed", S.kbdOpen ? "true" : "false");
+    /* Le joystick se pose au-dessus du clavier quand les deux sont ouverts */
+    pad.style.bottom = kbd.parentNode === tube && !kbd.hidden ? kbd.offsetHeight + "px" : "";
+  }
+  document.addEventListener("fullscreenchange", placeKeyboard); document.addEventListener("webkitfullscreenchange", placeKeyboard);
+})();
 
 /* Profil par disque */
 let profTarget = null;

@@ -39,8 +39,6 @@ Raccourcis : Inser = Help, Page préc. / Page suiv. = Amiga gauche / droite. Ét
   que les parties qui parlent au cœur : `app/engine-puae.js` (allumage, configuration WinUAE `.uae`, LED, charge)
   et `app/media-puae.js` (lecteurs à chaud, enregistrement des écritures, disquette et disque dur vierges).
 - `web/adf.js` : disquette vierge formatée FFS, validée avec amitools (xdftool).
-- `patches/0002-ide-synchrone.patch` : commandes IDE traitées sur le fil principal (le système de fichiers
-  du navigateur n'est accessible que de là ; le fil IDE bloquait le démarrage avec un disque dur).
 - Bibliothèque et réglages partagés avec la version SAE (même site, même stockage local).
 - Page d'essai brute conservée : `/puae/essai.html`.
 
@@ -48,6 +46,20 @@ Testé dans Chromium (bureau et mobile tactile) : 50 images/s, disquette vierge 
 insertion à chaud dans DF1:, éjection, écriture enregistrée automatiquement dans la Bibliothèque, extinction
 puis rallumage (la page se recharge).
 
-Limite constatée : avec un disque dur branché, l'AROS intégré à PUAE reste sur l'écran gris de démarrage,
-en natif comme dans le navigateur, alors que le contrôleur IDE répond. À vérifier avec un vrai Kickstart 3.1
-(étape 4).
+
+## Étape 4 : disque dur (terminée)
+
+- L'écran gris avec un disque dur venait de l'AROS intégré à PUAE (révision 55696), pas du portage : reproduit en
+  natif. Le Kickstart de secours est désormais AROS du 20 août 2026 (`vendor/aros`), servi compressé par la page.
+- « Nouveau » crée un disque partitionné (RDB, DH0: amorçable, comme HDToolBox) et formaté FFS (`web/hdf.js`),
+  validé avec amitools de 64 à 512 Mo ; AROS démarre directement dessus sur son Shell.
+- `fe_flush` : le cœur écrit par `fwrite`, la dernière écriture pouvait rester dans le tampon de la bibliothèque C ;
+  la page vide les tampons avant de relire un disque.
+- Clavier : un événement par image et dans l'ordre (PUAE lit le clavier une fois par image) ; Maj, Ctrl et Alt
+  recalés sur l'état annoncé par le navigateur.
+- Le correctif « IDE synchrone » de l'étape 3 est retiré : il ne contournait que l'ancien AROS et provoquait, dans
+  le navigateur, des erreurs d'écriture après un blocage de la page. L'IDE garde son propre fil d'exécution.
+
+Vérifié dans Chromium : démarrage depuis DH0:, fichier écrit par un script de démarrage puis retrouvé dans la
+Bibliothèque (relu avec amitools), commande tapée au clavier qui écrit sur DH0: avec l'enregistrement automatique
+actif, disque créé par « Nouveau » amorçable.

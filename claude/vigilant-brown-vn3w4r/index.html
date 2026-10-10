@@ -281,6 +281,8 @@ body:not(.is-touch) .vj-opts{display:none}
 .vj-range input{flex:1;max-width:260px}
 .vj-range output{min-width:3.5em;font-variant-numeric:tabular-nums}
 .hd-extra [data-act="profile"]{display:none}
+/* Sur téléphone, un disque dur supplémentaire libre se réduit à son titre et à ses deux boutons utiles */
+@media (max-width:760px){.hd-extra:has(.media.empty) .media,.hd-extra:has(.media.empty) button:disabled{display:none}.hd-extra:has(.media.empty){gap:6px;padding:8px 12px}}
 .tube > #vkbd{position:absolute;left:0;right:0;bottom:0;z-index:7;margin:0;opacity:.94}
 .tube:fullscreen .fs-exit,.tube:-webkit-full-screen .fs-exit{display:flex}
 .fs-exit.hide{opacity:0;pointer-events:none}
@@ -436,7 +438,7 @@ body:not(.is-touch) .vj-opts{display:none}
         <button class="gad small" data-act="profile" disabled title="Réglages propres à ce disque">Profil</button>
       </div>
     </div>
-    <div class="drive wb hd-extra" hidden id="drive-dh1" data-unit="dh1">
+    <div class="drive wb hd-extra" id="drive-dh1" data-unit="dh1">
       <div class="drive-head"><b>DH1:</b><small id="trk-dh1">IDE, esclave</small></div>
       <div class="media empty" id="name-dh1">Aucun disque dur</div>
       <div class="acts">
@@ -448,7 +450,7 @@ body:not(.is-touch) .vj-opts{display:none}
         <button class="gad small" data-act="profile" disabled title="Réglages propres à ce disque">Profil</button>
       </div>
     </div>
-    <div class="drive wb hd-extra" hidden id="drive-dh2" data-unit="dh2">
+    <div class="drive wb hd-extra" id="drive-dh2" data-unit="dh2">
       <div class="drive-head"><b>DH2:</b><small id="trk-dh2">disque UAE</small></div>
       <div class="media empty" id="name-dh2">Aucun disque dur</div>
       <div class="acts">
@@ -460,7 +462,7 @@ body:not(.is-touch) .vj-opts{display:none}
         <button class="gad small" data-act="profile" disabled title="Réglages propres à ce disque">Profil</button>
       </div>
     </div>
-    <div class="drive wb hd-extra" hidden id="drive-dh3" data-unit="dh3">
+    <div class="drive wb hd-extra" id="drive-dh3" data-unit="dh3">
       <div class="drive-head"><b>DH3:</b><small id="trk-dh3">disque UAE</small></div>
       <div class="media empty" id="name-dh3">Aucun disque dur</div>
       <div class="acts">
@@ -708,7 +710,7 @@ body:not(.is-touch) .vj-opts{display:none}
       </ol>
       <h3>Installer sur disque dur</h3>
       <ol class="help-list">
-        <li>Sous DH0:, cliquez sur <b>Nouveau</b> et choisissez une taille.</li>
+        <li>Sous DH0:, cliquez sur <b>Nouveau</b> et choisissez une taille. DH1: à DH3: accueillent d'autres disques, pour vos jeux ou vos données.</li>
         <li>Le disque arrive déjà partitionné et formaté : démarrez sur la disquette Install 3.1.</li>
         <li>Lancez l'installation. À l'extinction, le disque dur est enregistré dans la Bibliothèque.</li>
       </ol>
@@ -727,7 +729,7 @@ body:not(.is-touch) .vj-opts{display:none}
       <h3>Amiga 500</h3>
       <p>Certains jeux A500 ne fonctionnent pas sur l'A1200. Choisissez <b>Amiga 500</b> sur l'écran d'accueil ou dans Réglages (68000, chipset OCS, 512 Ko de Chip + 512 Ko de Slow), ou seulement pour une disquette dans son <b>Profil</b>. Importez le Kickstart 1.3 dans Réglages : il est choisi automatiquement pour l'A500. Les jeux A500 installés sur disque dur se lancent, eux, avec WHDLoad sur l'A1200.</p>
       <h3>Plusieurs disques durs</h3>
-      <p>Jusqu'à quatre disques : <b>DH0:</b> et <b>DH1:</b> sur le contrôleur IDE de l'A1200 (maître et esclave), <b>DH2:</b> et <b>DH3:</b> par le pilote de disque d'UAE (uaehf.device), reconnu par tous les Kickstart. Dès qu'un disque est branché, le panneau de l'unité suivante apparaît ; la Bibliothèque a un bouton par unité. L'Amiga démarre sur DH0:. Si deux disques ont une partition du même nom (souvent DH0), celle du second est renommée au démarrage.</p>
+      <p>Jusqu'à quatre disques : <b>DH0:</b> et <b>DH1:</b> sur le contrôleur IDE de l'A1200 (maître et esclave), <b>DH2:</b> et <b>DH3:</b> par le pilote de disque d'UAE (uaehf.device), reconnu par tous les Kickstart. Chaque unité a son panneau sous l'écran, à côté des lecteurs de disquettes : <b>Nouveau</b> y crée un disque (sa partition prend le nom de l'unité), <b>Choisir…</b> en importe un. Dans la Bibliothèque, les boutons <b>DH0:</b> à <b>DH3:</b> branchent un disque déjà rangé ; un disque ne peut être branché qu'à un endroit. Les disques se branchent Amiga éteint. L'Amiga démarre sur DH0:. Si deux disques ont une partition du même nom (souvent DH0), celle du second est renommée au démarrage.</p>
       <h3>Changer d'appareil</h3>
       <p>Dans la Bibliothèque, <b>Exporter tout…</b> enregistre tout dans un seul fichier .tar : disquettes, disques durs, Kickstart, jeux WHDLoad, sauvegardes d'état et de jeux. Sur l'autre appareil, <b>Importer…</b> (ou glissez le fichier sur la page) les ajoute ; ce qui y est déjà et plus récent est gardé. Le fichier reste lisible par 7-Zip ou tar.</p>
       <h3>Jeux WHDLoad en un geste</h3>
@@ -2507,12 +2509,6 @@ function sendJoy() { if (running && machine) machine.setJoy(0, joyKeys | joyTouc
   document.addEventListener("fullscreenchange", placeKeyboard); document.addEventListener("webkitfullscreenchange", placeKeyboard);
 })();
 
-/* Disques durs supplémentaires : chaque unité occupée a son panneau, plus la suivante, libre, pour en ajouter une */
-function refreshHdPanels() {
-  HD_TAGS.forEach((t, i) => { if (i) $("#drive-" + t).hidden = !mounted[t] && !mounted[HD_TAGS[i - 1]]; });
-}
-{ const _sm = setMounted; setMounted = (t, r) => { _sm(t, r); refreshHdPanels(); }; }
-
 /* =========================================================
    Export et import de la Bibliothèque : tout passer d'un appareil à l'autre
    =========================================================
@@ -2828,7 +2824,6 @@ window.addEventListener("beforeunload", e => {
   setKeyboardOpen(!!S.kbdOpen);
   const resumeId = sessionStorage.getItem("a1200.resume");
   if (resumeId) { sessionStorage.removeItem("a1200.resume"); pendingResume = await DB.get(resumeId) || null; }
-  refreshHdPanels();
   const whdId = sessionStorage.getItem("a1200.whd");
   if (whdId) { sessionStorage.removeItem("a1200.whd"); whdGame = await DB.get(whdId) || null; }
   if (sessionStorage.getItem("a1200.autostart")) { sessionStorage.removeItem("a1200.autostart"); powerOn(); }

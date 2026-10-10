@@ -54,7 +54,7 @@ La Bibliothèque est propre à chaque navigateur : importez votre Kickstart et v
   et `.zip` décompressées au passage, dans le dossier choisi ; c'est la façon d'installer des jeux **WHDLoad**.
   Un bouton copie aussi vos Kickstart dans `Devs:Kickstarts` sous les noms attendus par WHDLoad (`kick34005.A500`, `kick40068.A1200`…).
   Partitions OFS et FFS (DOS\0 à DOS\3) ; PFS, SFS et FFS à cache de dossiers ne sont pas modifiables
-- **CD32** : images `.iso`, ou `.cue` avec ses pistes `.bin` (CD audio), lancées depuis leur vignette sur la console émulée
+- **CD32** : troisième modèle sur l'accueil (A1200 / A500 / CD32), avec l'état des ROM et leur import ; images `.iso`, ou `.cue` avec ses pistes `.bin` (CD audio), lancées depuis leur vignette sur la console émulée
   (Akiko, manette CD32 à 7 boutons ; ▶ = Play sur écran tactile). Il faut les ROM de la console : Kickstart CD32 40.060 et
   son extension, ou la ROM CD32 complète d'1 Mo
 - **Mode Amiga 500** (68000, OCS, 512 Ko Chip + 512 Ko Slow) pour les jeux A500 qui refusent l'A1200 : bascule sur l'accueil,

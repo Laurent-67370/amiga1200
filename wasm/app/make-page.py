@@ -426,6 +426,7 @@ rep('''      <h3>Kickstart</h3>
       <div class="opt" data-setting="model">
         <label><input type="radio" name="model" value="a1200"> Amiga 1200 (68EC020, AGA, 2 Mo)</label>
         <label><input type="radio" name="model" value="a500"> Amiga 500 (68000, OCS, 1 Mo)</label>
+        <label><input type="radio" name="model" value="cd32"> Amiga CD32 (console CD)</label>
       </div>
       <p class="hint">L'Amiga 500 sert aux jeux A500 qui refusent de tourner sur l'A1200, lancés depuis leurs disquettes ; il demande le Kickstart 1.3. Ni disque dur ni carte accélératrice dans ce mode. Le choix peut aussi se faire pour une seule disquette, dans son Profil.</p>
 
@@ -495,7 +496,7 @@ rep("/* Profil par disque */", '''function modelUi(win, prefix, model) {
 }
 function settingsModelUi() {
   modelUi("#winSettings", "", S.model);
-  $("#tSettings").textContent = "Réglages de l'" + (S.model === "a500" ? "Amiga 500" : "Amiga 1200");
+  $("#tSettings").textContent = "Réglages de l'" + (S.model === "a500" ? "Amiga 500" : S.model === "cd32" ? "Amiga CD32" : "Amiga 1200");
 }
 function profileModelUi() {
   const c = $('#winProfile input[name="p_model"]:checked');

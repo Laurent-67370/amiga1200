@@ -131,7 +131,7 @@ async function powerOn() {
       whdGame = resume.ctx.whd ? await DB.get(resume.ctx.whd) : null;
       cdGame = resume.ctx.cd ? await DB.get(resume.ctx.cd) : null;
       E = Object.assign({}, S, { accel: "none", model: "a1200" }, resume.settings, { _profile: "" });
-    } else E = whdGame || cdGame ? Object.assign({}, S) : await effectiveSettings(); /* les profils de disques ne s'appliquent pas à un jeu WHDLoad */
+    } else E = whdGame || cdGame || S.model === "cd32" ? Object.assign({}, S) : await effectiveSettings(); /* les profils de disques ne s'appliquent pas à un jeu WHDLoad */
     /* Jeu WHDLoad : sur l'A1200, avec de la mémoire Fast (8 Mo si les réglages n'en donnent pas) */
     const whd = whdGame;
     if (whd && !resume) {
@@ -139,7 +139,7 @@ async function powerOn() {
       if (whd.whdCfg) Object.assign(E, whd.whdCfg.e); /* réglages de la base WHDLoad pour ce jeu */
     }
     /* CD32 : la console telle qu'elle est (2 Mo de Chip, 68EC020), ses propres ROM */
-    const cd = cdGame;
+    const cd = cdGame || (!resume && !whdGame && S.model === "cd32") ? cdGame || "sans CD" : null; /* console CD32, avec ou sans CD */
     if (cd && !resume) Object.assign(E, { model: "a1200", fast: "0", accel: "none", _profile: "" });
     const cdRoms = cd ? await cd32Roms() : null;
     if (cd && !cdRoms) throw new Error("ROM de la CD32 absentes de la Bibliothèque");
@@ -210,7 +210,7 @@ async function powerOn() {
       /* Modèle CD32 du cœur ; l'extension est cherchée sous le nom kick40060.CD32.ext (inutile avec la ROM complète) */
       if (cdRoms.ext) machine.writeFile("/sys/kick40060.CD32.ext", cdRoms.ext);
       lines.splice(0, lines.length, ...lines.filter(l => !/^(nr_floppies|floppy1type)=/.test(l))); /* pas de lecteur de disquettes */
-      lines.push(`cdimage0=${await writeCd(machine, cd)},`);
+      if (cdGame) lines.push(`cdimage0=${await writeCd(machine, cdGame)},`);
       options.puae_model = "CD32"; options.puae_fastmem_size = "0";
       E._cd = true;
     }

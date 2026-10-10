@@ -41,31 +41,51 @@ async function renderLauncher() {
   try { all = await DB.all(); } catch (e) {}
   /* Kickstart */
   const kick = $("#lKick"); kick.innerHTML = "";
-  const is500 = S.model === "a500";
-  /* Bascule Amiga 1200 / Amiga 500 */
+  const is500 = S.model === "a500", isCd32 = S.model === "cd32";
+  /* Bascule Amiga 1200 / Amiga 500 / CD32 */
   const seg = lEl("span", "l-model");
-  for (const [m, t] of [["a1200", "A1200"], ["a500", "A500"]]) {
+  for (const [m, t] of [["a1200", "A1200"], ["a500", "A500"], ["cd32", "CD32"]]) {
     const b = lEl("button", "l-seg"); b.textContent = t; b.setAttribute("aria-pressed", (S.model || "a1200") === m ? "true" : "false");
-    b.title = m === "a500" ? "Amiga 500 : 68000, OCS, pour les jeux A500 récalcitrants" : "Amiga 1200 : 68EC020, AGA";
+    b.title = m === "a500" ? "Amiga 500 : 68000, OCS, pour les jeux A500 récalcitrants" : m === "cd32" ? "Amiga CD32 : la console CD (68EC020, AGA, manette à 7 boutons)" : "Amiga 1200 : 68EC020, AGA";
     b.onclick = () => { S.model = m; saveSettings(); renderLauncher(); };
     seg.appendChild(b);
   }
-  $("#lTitle").textContent = is500 ? "Amiga 500" : "Amiga 1200";
+  $("#lTitle").textContent = is500 ? "Amiga 500" : isCd32 ? "Amiga CD32" : "Amiga 1200";
   const romId = is500 ? await romFor500(all) : S.romId;
-  let romRec = romId !== "aros" ? all.find(r => r.id === romId) : null;
+  const romRec = romId !== "aros" ? all.find(r => r.id === romId) : null;
+  if (isCd32) {
+    /* ROM de la console : état et import (plusieurs fichiers à la fois : Kickstart, extension, rom.key) */
+    const st = await cd32RomStatus(all);
+    const t = lEl("span", "l-kick-name"); t.textContent = st.ok ? st.label : st.label || "absentes";
+    const b = lEl("button", "gad small"); b.textContent = st.ok ? "Changer" : "Importer les ROM CD32…";
+    b.onclick = () => pickFiles(".rom,.bin,.key", files => { (async () => { for (const f of files) await importFile(f); })(); });
+    kick.append(seg, lEl("span", "l-kick-lbl", "ROM CD32"), t, b);
+  } else {
   const kTxt = lEl("span", "l-kick-name");
   kTxt.textContent = romRec ? (romRec.label || romRec.name) : "AROS (Kickstart libre)";
   kick.append(seg, lEl("span", "l-kick-lbl", "Kickstart"), kTxt);
   const kBtn = lEl("button", "gad small"); kBtn.textContent = romRec ? "Changer" : is500 ? "Importer le 1.3…" : "Importer le mien…";
   kBtn.onclick = romRec ? () => $("#btnSettings").click() : () => pickFile(".rom,.bin,.key", f => importFile(f));
   kick.appendChild(kBtn);
+  }
 
   /* Disques : les plus récemment utilisés d'abord */
-  const disks = all.filter(r => r.kind === "adf" || r.kind === "hdf" || r.kind === "whd" || r.kind === "cd").sort((a, b) => (b.used || b.added) - (a.used || a.added));
+  const disks = all.filter(r => isCd32 ? r.kind === "cd" : r.kind === "adf" || r.kind === "hdf" || r.kind === "whd" || r.kind === "cd").sort((a, b) => (b.used || b.added) - (a.used || a.added));
   const thumbs = {};
   for (const s of all.filter(r => r.kind === "state").sort((a, b) => a.updated - b.updated)) thumbs[s.game] = s;
   box.innerHTML = "";
-  if (!disks.length) {
+  if (!disks.length && isCd32) {
+    /* CD32 : ROM, un CD, Allumer */
+    const st = await cd32RomStatus(all);
+    const steps = lEl("ol", "l-steps");
+    const s1 = lEl("li", null, "<b>ROM de la CD32</b><span></span>");
+    s1.querySelector("span").textContent = st.ok ? "Prêtes : " + st.label + "."
+      : "Le Kickstart CD32 40.060 et sa ROM d'extension, ou la ROM CD32 complète d'1 Mo (Amiga Forever compris, avec rom.key) : bouton ci-dessus." + (st.label ? " Déjà là : " + st.label + "." : "");
+    const s2 = lEl("li", null, "<b>Un CD</b><span>Une image .iso, ou un fichier .cue choisi en même temps que ses pistes .bin (CD audio compris).</span>");
+    const acts = lEl("div", "l-acts"); const o = lEl("button", "gad"); o.textContent = "Ouvrir un CD…"; o.onclick = () => $("#lOpen").click(); acts.appendChild(o); s2.appendChild(acts);
+    const s3 = lEl("li", null, "<b>Allumer</b><span>Une touche sur la vignette du CD lance la console. Allumer sans CD affiche l'écran de démarrage de la CD32. Manette USB ou joystick tactile (▶ = Play).</span>");
+    steps.append(s1, s2, s3); box.appendChild(steps);
+  } else if (!disks.length) {
     /* Première visite : trois étapes */
     const steps = lEl("ol", "l-steps");
     const s1 = lEl("li", null, "<b>Kickstart</b><span></span>");
@@ -114,7 +134,7 @@ async function renderLauncher() {
   if (mounted.df0) what.push(mounted.df0.name.replace(/\.(adf|adz|dms)$/i, ""));
   const hds = HD_TAGS.filter(t => mounted[t]).map(t => mounted[t].name.replace(/\.hdf$/i, ""));
   if (hds.length) what.push((mounted.df0 ? "+ " : "") + (hds.length > 1 ? "disques durs " : "disque dur ") + hds.join(", "));
-  $("#lWhat").textContent = what.length ? "avec " + what.join(" ") : "sans disque";
+  $("#lWhat").textContent = isCd32 ? "console CD32, sans CD (touchez un CD pour le lancer)" : what.length ? "avec " + what.join(" ") : "sans disque";
 }
 
 /* Le bouton « Ouvrir un fichier » : disquette, archive, disque dur ou Kickstart */

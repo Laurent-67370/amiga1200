@@ -74,6 +74,9 @@ button{font:inherit}
 .l-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px}
 .launch h1{font-size:clamp(22px,3.4vw,32px);text-align:left}
 .l-kick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;background:rgba(255,255,255,.05);padding:5px 6px 5px 10px;border:1px solid rgba(255,255,255,.08)}
+.l-model{display:inline-flex;border:1px solid rgba(255,255,255,.25);margin-right:6px}
+.l-seg{appearance:none;font:inherit;font-size:12.5px;background:none;border:0;color:#aeb7c1;padding:3px 9px;cursor:pointer}
+.l-seg[aria-pressed="true"]{background:var(--wb-blue);color:#fff}
 .l-kick-lbl{color:#7c8792;text-transform:uppercase;letter-spacing:.08em;font-size:11px}
 .l-kick-name{color:#e3e7eb}
 .l-main{flex:1 0 auto;display:flex;flex-direction:column;gap:10px;min-height:0}
@@ -198,6 +201,9 @@ body.is-off #btnPower,body.is-off #btnReset,body.is-off #btnPause,body.is-off #b
 .slot-acts{display:flex;flex-wrap:wrap;gap:5px}
 @media (max-width:640px){.slots{grid-template-columns:repeat(2,1fr)}}
 .is-touch #winStates .actions .hint{display:none}
+.files-log{white-space:pre-wrap;font:12.5px/1.4 ui-monospace,Menlo,Consolas,monospace;background:#ddd;border:1px solid;border-color:#000 #fff #fff #000;padding:6px 8px;margin:10px 0 0;min-height:1.4em;max-height:180px;overflow:auto}
+.files-log:empty{display:none}
+.files-warn{background:#e9b7a6;padding:6px 8px;border:1px solid #000}
 .footnote{margin-top:18px;color:#9aa3ad;font-size:12.5px;max-width:80ch}
 .footnote a{color:#b9c8dc}
 
@@ -286,7 +292,7 @@ body.is-off #btnPower,body.is-off #btnReset,body.is-off #btnPause,body.is-off #b
         <canvas id="amigaScreen" width="720" height="568" aria-label="Écran de l'Amiga"></canvas>
         <div class="idle launch" id="idle">
           <div class="l-head">
-            <h1>Amiga 1200</h1>
+            <h1 id="lTitle">Amiga 1200</h1>
             <div class="l-kick" id="lKick"></div>
           </div>
           <div class="l-main" id="lMain"></div>
@@ -386,6 +392,7 @@ body.is-off #btnPower,body.is-off #btnReset,body.is-off #btnPause,body.is-off #b
         <button class="gad small" data-act="insert">Choisir…</button>
         <button class="gad small" data-act="eject" disabled>Retirer</button>
         <button class="gad small" data-act="blank">Nouveau</button>
+        <button class="gad small" data-act="files" disabled title="Copier des fichiers, un dossier ou un jeu WHDLoad (.lha) sur ce disque">Fichiers…</button>
         <button class="gad small" data-act="download" disabled>Télécharger</button>
         <button class="gad small" data-act="profile" disabled title="Réglages propres à ce disque">Profil</button>
       </div>
@@ -423,8 +430,18 @@ body.is-off #btnPower,body.is-off #btnReset,body.is-off #btnPause,body.is-off #b
   <div class="win wb">
     <div class="titlebar"><button class="closebox" data-close aria-label="Fermer"></button><span class="t" id="tSettings">Réglages de l'Amiga 1200</span><span class="stripes"></span></div>
     <div class="body">
+      <h3>Modèle</h3>
+      <div class="opt" data-setting="model">
+        <label><input type="radio" name="model" value="a1200"> Amiga 1200 (68EC020, AGA, 2 Mo)</label>
+        <label><input type="radio" name="model" value="a500"> Amiga 500 (68000, OCS, 1 Mo)</label>
+      </div>
+      <p class="hint">L'Amiga 500 sert aux jeux A500 qui refusent de tourner sur l'A1200, lancés depuis leurs disquettes ; il demande le Kickstart 1.3. Ni disque dur ni carte accélératrice dans ce mode. Le choix peut aussi se faire pour une seule disquette, dans son Profil.</p>
+
       <h3>Kickstart</h3>
+      <p class="hint">Pour l'Amiga 1200 :</p>
       <div id="romChoices" class="lib-list"></div>
+      <p class="hint">Pour l'Amiga 500 :</p>
+      <div id="rom500Choices" class="lib-list"></div>
       <div class="opt">
         <button class="gad small" id="setImportRom">Importer un Kickstart…</button>
         <button class="gad small" id="setImportKey">Importer rom.key…</button>
@@ -549,6 +566,8 @@ body.is-off #btnPower,body.is-off #btnReset,body.is-off #btnPause,body.is-off #b
         <div class="opt"><label><input type="radio" name="p_compat" value="normal"> Rapide</label><label><input type="radio" name="p_compat" value="max"> Maximale</label></div>
         <h3>Processeur</h3>
         <div class="opt"><label><input type="radio" name="p_cpu" value="orig"> 14 MHz</label><label><input type="radio" name="p_cpu" value="max"> Aussi vite que possible</label></div>
+        <h3>Modèle</h3>
+        <div class="opt"><label><input type="radio" name="p_model" value="a1200"> Amiga 1200</label><label><input type="radio" name="p_model" value="a500"> Amiga 500</label></div>
         <h3>Carte accélératrice</h3>
         <div class="opt"><label><input type="radio" name="p_accel" value="none"> Aucune</label><label><input type="radio" name="p_accel" value="030"> 68030</label><label><input type="radio" name="p_accel" value="040"> 68040</label><label><input type="radio" name="p_accel" value="060"> 68060</label></div>
         <h3>Mémoire</h3>
@@ -574,6 +593,17 @@ body.is-off #btnPower,body.is-off #btnReset,body.is-off #btnPause,body.is-off #b
     <div class="actions"><span class="hint">Ctrl+Maj+S sauvegarde dans l'emplacement 1, Ctrl+Maj+R le reprend</span><button class="gad primary" data-close>Fermer</button></div>
   </div>
 </div>
+
+<!-- Fenêtre : copier des fichiers sur le disque dur -->
+<div class="veil" id="winFiles" role="dialog" aria-modal="true" aria-labelledby="tFiles">
+  <div class="win wb">
+    <div class="titlebar"><button class="closebox" data-close aria-label="Fermer"></button><span class="t" id="tFiles">Copier sur le disque dur</span><span class="stripes"></span></div>
+    <div class="body" id="filesBody"></div>
+    <div class="actions"><span></span><button class="gad primary" data-close>Fermer</button></div>
+  </div>
+</div>
+<input type="file" id="filesPick" multiple hidden>
+<input type="file" id="dirPick" webkitdirectory multiple hidden>
 
 <!-- Fenêtre : Aide -->
 <div class="veil" id="winHelp" role="dialog" aria-modal="true" aria-labelledby="tHelp">
@@ -601,6 +631,10 @@ body.is-off #btnPower,body.is-off #btnReset,body.is-off #btnPause,body.is-off #b
       <p>L'émulateur s'installe comme une application et fonctionne ensuite <b>sans connexion</b>, avec votre Bibliothèque et vos réglages.
       <b>Android, ordinateur (Chrome, Edge)</b> : bouton <b>Installer</b> de la barre d'outils, ou menu du navigateur → « Installer l'application ».
       <b>iPhone, iPad</b> : dans Safari, bouton Partager → « Sur l'écran d'accueil ». Les mises à jour arrivent seules, au lancement suivant une connexion.</p>
+      <h3>Amiga 500</h3>
+      <p>Certains jeux A500 ne fonctionnent pas sur l'A1200. Choisissez <b>Amiga 500</b> sur l'écran d'accueil ou dans Réglages (68000, chipset OCS, 512 Ko de Chip + 512 Ko de Slow), ou seulement pour une disquette dans son <b>Profil</b>. Importez le Kickstart 1.3 dans Réglages : il est choisi automatiquement pour l'A500. Les jeux A500 installés sur disque dur se lancent, eux, avec WHDLoad sur l'A1200.</p>
+      <h3>Copier des fichiers sur le disque dur</h3>
+      <p>Amiga éteint, le bouton <b>Fichiers…</b> du disque dur (ou de la Bibliothèque) copie des fichiers, un dossier entier ou des archives .lha et .zip, décompressées au passage, dans le dossier de votre choix. C'est la façon d'installer des jeux <b>WHDLoad</b> : copiez WHDLoad dans C:, vos jeux .lha dans Jeux, et vos Kickstart dans Devs:Kickstarts avec le bouton prévu (1.3 pour l'A500, 3.1 pour l'A1200). Disques OFS et FFS ; PFS, SFS et FFS à cache de dossiers ne sont pas modifiables ici.</p>
       <h3>Sauvegardes d'état</h3>
       <p>Le bouton <b>Sauvegardes</b> fige la machine entière dans l'un des 4 emplacements du jeu en cours (la disquette de DF0:, ou le disque dur). <b>Reprendre</b> la remet exactement dans cet état, avec les mêmes disques et réglages ; si besoin l'Amiga se rallume tout seul. Raccourcis : <span class="kbd">Ctrl</span>+<span class="kbd">Maj</span>+<span class="kbd">S</span> sauvegarde dans l'emplacement 1, <span class="kbd">Ctrl</span>+<span class="kbd">Maj</span>+<span class="kbd">R</span> le reprend.</p>
       <h3>Compatibilité et vitesse</h3>
@@ -621,6 +655,8 @@ body.is-off #btnPower,body.is-off #btnReset,body.is-off #btnPause,body.is-off #b
 <script type="module">
 import { PuaeMachine } from "./puae-frontend.js";
 import { makeBlankAdf } from "./adf.js";
+import { readLha } from "./lha.js";
+import { listPartitions, AmigaVolume, amigaName } from "./ffs.js";
 import { makeHardDisk, inspectHdf, rdbHeaderFor, rootCandidate, isRootBlock } from "./hdf.js";
 
 /* =========================================================
@@ -699,7 +735,7 @@ function newId() { return Date.now().toString(36) + Math.random().toString(36).s
    Réglages persistants
    ========================================================= */
 const DEFAULTS = { fast: "0", cpu: "orig", region: "pal", res: "hires", joy: "none", floppy: "orig",
-  crt: true, sharp: false, autosave: true, center: true, kbd: "azerty", kbdOpen: false, compat: "normal", accel: "none", floppySound: false, autoskip: true, romId: "aros", keyId: null, df0: null, df1: null, dh0: null, muted: false };
+  crt: true, sharp: false, autosave: true, center: true, kbd: "azerty", kbdOpen: false, compat: "normal", accel: "none", model: "a1200", romId500: "auto", floppySound: false, autoskip: true, romId: "aros", keyId: null, df0: null, df1: null, dh0: null, muted: false };
 let S = Object.assign({}, DEFAULTS);
 try { Object.assign(S, JSON.parse(localStorage.getItem("a1200.settings") || "{}")); } catch (e) {}
 function saveSettings() { try { localStorage.setItem("a1200.settings", JSON.stringify(S)); } catch (e) {} }
@@ -717,11 +753,37 @@ const DRIVE_NUM = { df0: 0, df1: 1 };
 /* Empreintes connues des Kickstart A1200 (CRC32 du fichier) */
 const KNOWN_ROMS = {
   0x1483a091: "Kickstart 3.1 (40.068) A1200",
-  0x6c9b07d2: "Kickstart 3.0 (39.106) A1200"
+  0x6c9b07d2: "Kickstart 3.0 (39.106) A1200",
+  0xc4f0f55f: "Kickstart 1.3 (34.005) A500",
+  0xc3bdb240: "Kickstart 2.04 (37.175) A500+"
 };
+/* Version d'un Kickstart, lue dans son en-tête (octets 12 à 15) : [version, révision] ou null */
+function kickVersion(u8) {
+  if (!u8 || u8.length < 16 || u8[2] !== 0x4e || u8[3] !== 0xf9 || u8[0] !== 0x11) return null;
+  return [(u8[12] << 8) | u8[13], (u8[14] << 8) | u8[15]];
+}
+const KICK_NAMES = { 33: "1.2", 34: "1.3", 36: "2.0", 37: "2.04", 39: "3.0", 40: "3.1", 45: "3.9", 46: "3.1.4", 47: "3.2" };
+
+/* ---- Modèle : Amiga 1200 ou Amiga 500 (68000, OCS, 512 Ko de Chip + 512 Ko de Slow, Kickstart 1.3) ---- */
+const MODELS = { a1200: { core: "A1200OG", name: "Amiga 1200" }, a500: { core: "A500", name: "Amiga 500" } };
+const modelOf = s => s && s.model === "a500" ? "a500" : "a1200";
+/* Kickstart pour l'A500 : celui choisi, sinon un 1.x ou 2.0x de la Bibliothèque (le plus ancien d'abord) */
+async function romFor500(all) {
+  all = all || await DB.all();
+  if (S.romId500 && S.romId500 !== "auto") { if (S.romId500 === "aros" || all.some(r => r.id === S.romId500)) return S.romId500; }
+  const cands = [];
+  for (const r of all.filter(x => x.kind === "rom")) {
+    if (r.kickVer === undefined) {
+      try { const u8 = new Uint8Array(await r.blob.slice(0, 16).arrayBuffer()); r.kickVer = kickVersion(u8); await DB.put(r); } catch (e) { r.kickVer = null; }
+    }
+    if (r.kickVer && r.kickVer[0] <= 37) cands.push(r);
+  }
+  cands.sort((a, b) => Math.abs(a.kickVer[0] - 34) - Math.abs(b.kickVer[0] - 34));
+  return cands.length ? cands[0].id : "aros";
+}
 
 /* ---- Profils par disque : réglages propres à un jeu, appliqués au démarrage ---- */
-const PROFILE_KEYS = ["compat", "cpu", "fast", "region", "joy", "floppy", "accel"];
+const PROFILE_KEYS = ["compat", "cpu", "fast", "region", "joy", "floppy", "accel", "model"];
 /* Cartes accélératrices : processeur, FPU et multiplicateur d'horloge (×4 = 14 MHz, ×8 = 28 MHz, ×12 = 42 MHz) */
 const ACCEL = {
   none: { cpu: "68020", fpu: "0", mult: "0", label: "" },
@@ -769,7 +831,7 @@ async function fetchGz(url) {
 /* Options du cœur d'après les réglages effectifs */
 function coreOptions() {
   return {
-    puae_model: "A1200OG",
+    puae_model: MODELS[modelOf(E)].core,
     puae_fastmem_size: String(+E.fast || 0),
     puae_cpu_throttle: E.cpu === "max" ? "4000.0" : "0.0",
     puae_cpu_compatibility: E.compat === "max" ? "exact" : "normal",
@@ -778,9 +840,10 @@ function coreOptions() {
     puae_crop: S.center ? "auto" : "disabled",
     puae_floppy_speed: E.floppy === "turbo" ? "0" : "100",
     puae_gfx_framerate: "disabled",
-    puae_cpu_model: (ACCEL[E.accel] || ACCEL.none).cpu,
-    puae_fpu_model: (ACCEL[E.accel] || ACCEL.none).fpu,
-    puae_cpu_multiplier: (ACCEL[E.accel] || ACCEL.none).mult,
+    /* L'A500 garde son 68000 : la carte accélératrice ne concerne que l'A1200 */
+    puae_cpu_model: modelOf(E) === "a500" ? "auto" : (ACCEL[E.accel] || ACCEL.none).cpu,
+    puae_fpu_model: modelOf(E) === "a500" ? "auto" : (ACCEL[E.accel] || ACCEL.none).fpu,
+    puae_cpu_multiplier: modelOf(E) === "a500" ? "0" : (ACCEL[E.accel] || ACCEL.none).mult,
     puae_floppy_sound: S.floppySound ? "75" : "100",
     puae_floppy_sound_type: "internal"
   };
@@ -801,9 +864,11 @@ async function powerOn() {
     const resume = pendingResume; pendingResume = null;
     if (resume) {
       for (const t of ["df0", "df1", "dh0"]) setMounted(t, resume.ctx[t] ? await DB.get(resume.ctx[t]) : null);
-      E = Object.assign({}, S, { accel: "none" }, resume.settings, { _profile: "" });
+      E = Object.assign({}, S, { accel: "none", model: "a1200" }, resume.settings, { _profile: "" });
     } else E = await effectiveSettings();
-    const romId = resume ? resume.ctx.rom : S.romId;
+    const a500 = modelOf(E) === "a500";
+    const romId = resume ? resume.ctx.rom : a500 ? await romFor500() : S.romId;
+    if (a500 && romId === "aros" && !resume) toast("Mode Amiga 500 sans Kickstart 1.3 : AROS démarre, mais la plupart des jeux A500 ont besoin du vrai Kickstart (Réglages).", true);
     skip.reset();
     machine = await PuaeMachine.create({
       canvas: $("#amigaScreen"), factory: window.createPuae,
@@ -816,7 +881,7 @@ async function powerOn() {
       const r = await DB.get(romId);
       if (r) kick = new Uint8Array(await r.blob.arrayBuffer());
       else if (resume) throw new Error("le Kickstart de cette sauvegarde n'est plus dans la Bibliothèque");
-      else { S.romId = "aros"; saveSettings(); }
+      else if (!a500) { S.romId = "aros"; saveSettings(); }
       if (kick && S.keyId) { const k = await DB.get(S.keyId); if (k) key = new Uint8Array(await k.blob.arrayBuffer()); }
     }
     if (!kick) [kick, arosExt] = await Promise.all([fetchGz("aros-rom.bin.gz"), fetchGz("aros-ext.bin.gz")]);
@@ -838,7 +903,8 @@ async function powerOn() {
       lines.push(`floppy${DRIVE_NUM[tag]}=${fsPath[tag]}`);
     }
     fsPath.dh0 = null;
-    if (mounted.dh0) {
+    if (mounted.dh0 && a500) toast("Mode Amiga 500 : le disque dur n'est pas branché (l'A500 n'a pas de contrôleur IDE).");
+    if (mounted.dh0 && !a500) {
       const r = await DB.get(mounted.dh0.id);
       if (r) {
         fsPath.dh0 = "/media/dh0/" + safeName(r.name);
@@ -851,7 +917,7 @@ async function powerOn() {
     machine.writeFile("/cfg/a1200.uae", new TextEncoder().encode(lines.join("\n") + "\n"));
     for (const t in fsPath) seen[t] = fsPath[t] ? machine.fileMtime(fsPath[t]) : 0;
 
-    await machine.start({ model: "A1200OG", kickstart: kick, romKey: key, content: "/cfg/a1200.uae", options: coreOptions() });
+    await machine.start({ model: MODELS[modelOf(E)].core, kickstart: kick, romKey: key, content: "/cfg/a1200.uae", options: coreOptions() });
     machine.setMuted(!!S.muted);
     machine.inputBlocked = false;
     E._rom = romId;
@@ -870,8 +936,8 @@ async function powerOff() {
 }
 function onStarted() {
   starting = false; running = true; setPowerUi("on");
-  $("#statMode").textContent = (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "")
-    + (ACCEL[E.accel] && ACCEL[E.accel].label ? ", " + ACCEL[E.accel].label : "")
+  $("#statMode").textContent = (modelOf(E) === "a500" ? "A500, " : "") + (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "")
+    + (modelOf(E) !== "a500" && ACCEL[E.accel] && ACCEL[E.accel].label ? ", " + ACCEL[E.accel].label : "")
     + (E.compat === "max" ? ", cycle exact" : "") + (E._profile ? ", profil " + E._profile : "");
   showCaptureHint();
 }
@@ -1208,7 +1274,7 @@ async function unzip(u8) {
     if (method === 0) data = raw.slice();
     else if (method === 8) data = await inflate(raw, "deflate-raw");
     else throw new Error("méthode de compression non gérée dans " + name);
-    out.push({ name: name.split("/").pop(), data });
+    out.push({ name: name.split("/").pop(), path: name, data });
   }
   return out;
 }
@@ -1225,7 +1291,14 @@ async function expandFile(name, u8) {
     const inner = n.endsWith(".adz") ? name.slice(0, -4) + ".adf" : n.endsWith(".hdz") ? name.slice(0, -4) + ".hdf" : name.slice(0, -3);
     return expandFile(inner, data);
   }
-  if (/\.(lha|lzh|lzx|rar|7z)$/.test(n)) throw new Error(name + " : format d'archive non géré, extrayez-la d'abord (.zip, .adz et .gz sont acceptés)");
+  if (/\.(lha|lzh)$/.test(n)) {
+    /* Archive LhA : les disquettes et disques qu'elle contient */
+    const items = [];
+    for (const e of readLha(u8)) if (!e.dir && e.data && /\.(adf|adz|dms|hdf|hdz|zip|gz|rom|key)$/i.test(e.path)) items.push(...await expandFile(e.path.split("/").pop(), e.data));
+    if (!items.length) throw new Error(name + " ne contient ni disquette ni disque dur : pour un jeu WHDLoad, utilisez le bouton « Fichiers… » du disque dur");
+    return items;
+  }
+  if (/\.(lzx|rar|7z)$/.test(n)) throw new Error(name + " : format d'archive non géré, extrayez-la d'abord (.zip, .lha, .adz et .gz sont acceptés)");
   return [{ name, data: u8 }];
 }
 async function importFile(file, target) {
@@ -1261,10 +1334,15 @@ async function importBytes(name, u8, target, mount, quiet) {
   if (kind === "rom") {
     await loadKeyForExamine();
     const info = describeRom(rec.name, u8);
-    rec.label = info.label;
+    rec.label = info.label; rec.kickVer = kickVersion(u8);
     await DB.put(rec);
-    S.romId = rec.id; saveSettings();
-    toast("Kickstart sélectionné : " + info.label + (running ? ". Éteignez puis rallumez pour l'utiliser." : ""), info.warn);
+    if (rec.kickVer && rec.kickVer[0] <= 37) {
+      /* Kickstart 1.x / 2.0x : pour le mode Amiga 500, l'A1200 garde le sien */
+      toast(info.label + " ajouté : il servira au mode Amiga 500.");
+    } else {
+      S.romId = rec.id; saveSettings();
+      toast("Kickstart sélectionné : " + info.label + (running ? ". Éteignez puis rallumez pour l'utiliser." : ""), info.warn);
+    }
     renderRomChoices(); refreshIdleRom();
     return;
   }
@@ -1285,6 +1363,8 @@ function describeRom(name, u8) {
     return { label: name + " (Amiga Forever, rom.key nécessaire)", warn: !S.keyId };
   const known = KNOWN_ROMS[crc32u8(u8)];
   if (known) return { label: known, warn: false };
+  const v = kickVersion(u8);
+  if (v) return { label: "Kickstart " + (KICK_NAMES[v[0]] || "") + " (" + v[0] + "." + String(v[1]).padStart(3, "0") + ")", warn: false };
   if (u8.length !== 262144 && u8.length !== 524288) return { label: name + " (taille inhabituelle)", warn: true };
   return { label: name + " (version non répertoriée)", warn: false };
 }
@@ -1340,14 +1420,14 @@ async function refreshIdleRom() {
 }
 
 function syncSettingsForm() {
-  for (const k of ["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel"]) {
+  for (const k of ["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel", "model"]) {
     $$('#winSettings input[name="' + k + '"]').forEach(i => i.checked = i.value === S[k]);
   }
   $("#optCenter").checked = S.center; $("#optSkip").checked = S.autoskip;
   $("#optCrt").checked = S.crt; $("#optSharp").checked = S.sharp; $("#optAutosave").checked = S.autosave; $("#optFloppySound").checked = !!S.floppySound;
   $("#restartHint").textContent = running ? "L'Amiga est allumé : ces réglages s'appliqueront au prochain allumage." : "Les réglages s'appliquent au prochain allumage.";
 }
-for (const k of ["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel"]) {
+for (const k of ["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel", "model"]) {
   $$('#winSettings input[name="' + k + '"]').forEach(i => i.addEventListener("change", () => { S[k] = i.value; saveSettings(); if (k === "kbd" && S.kbdOpen) buildKeyboard(); }));
 }
 $("#optCenter").onchange = e => { S.center = e.target.checked; saveSettings(); };
@@ -1383,6 +1463,7 @@ async function renderLib() {
         btn("DF1:", async () => { await mountMedia("df1", r); renderLib(); }, inUse);
       } else if (kind === "hdf") {
         btn("DH0:", async () => { if (running) { toast("Éteignez l'Amiga pour changer de disque dur.", true); return; } await mountMedia("dh0", r); renderLib(); }, inUse);
+        btn("Fichiers…", () => openFiles(r));
       } else if (kind === "rom") {
         btn(S.romId === r.id ? "Utilisé" : "Utiliser", async () => { S.romId = r.id; saveSettings(); refreshIdleRom(); renderLib(); toast("Kickstart choisi" + (running ? " : il servira au prochain allumage." : ".")); }, S.romId === r.id);
       }
@@ -1657,7 +1738,7 @@ function gameName(m = mounted) { return m.df0 ? m.df0.name : m.dh0 ? m.dh0.name 
 function stateCtx() {
   return { df0: mounted.df0 && mounted.df0.id, df1: mounted.df1 && mounted.df1.id, dh0: mounted.dh0 && mounted.dh0.id, rom: E._rom || S.romId };
 }
-const STATE_SETTINGS = ["compat", "cpu", "fast", "region", "joy", "floppy", "accel"];
+const STATE_SETTINGS = ["compat", "cpu", "fast", "region", "joy", "floppy", "accel", "model"];
 
 async function statesFor(key) {
   return (await DB.all()).filter(r => r.kind === "state" && r.game === key).sort((a, b) => a.slot - b.slot);
@@ -1693,7 +1774,7 @@ function sameMachine(rec) {
   if (!running) return false;
   const c = stateCtx();
   if (c.dh0 !== rec.ctx.dh0 || c.rom !== rec.ctx.rom) return false;
-  return STATE_SETTINGS.filter(k => k !== "joy").every(k => String(E[k]) === String(rec.settings[k] ?? (k === "accel" ? "none" : undefined)));
+  return STATE_SETTINGS.filter(k => k !== "joy").every(k => String(E[k] ?? (k === "model" ? "a1200" : undefined)) === String(rec.settings[k] ?? (k === "accel" ? "none" : k === "model" ? "a1200" : undefined)));
 }
 async function resumeState(id) {
   const rec = await DB.get(id); if (!rec) return;
@@ -1846,11 +1927,22 @@ async function renderLauncher() {
   try { all = await DB.all(); } catch (e) {}
   /* Kickstart */
   const kick = $("#lKick"); kick.innerHTML = "";
-  let romRec = S.romId !== "aros" ? all.find(r => r.id === S.romId) : null;
+  const is500 = S.model === "a500";
+  /* Bascule Amiga 1200 / Amiga 500 */
+  const seg = lEl("span", "l-model");
+  for (const [m, t] of [["a1200", "A1200"], ["a500", "A500"]]) {
+    const b = lEl("button", "l-seg"); b.textContent = t; b.setAttribute("aria-pressed", (S.model || "a1200") === m ? "true" : "false");
+    b.title = m === "a500" ? "Amiga 500 : 68000, OCS, pour les jeux A500 récalcitrants" : "Amiga 1200 : 68EC020, AGA";
+    b.onclick = () => { S.model = m; saveSettings(); renderLauncher(); };
+    seg.appendChild(b);
+  }
+  $("#lTitle").textContent = is500 ? "Amiga 500" : "Amiga 1200";
+  const romId = is500 ? await romFor500(all) : S.romId;
+  let romRec = romId !== "aros" ? all.find(r => r.id === romId) : null;
   const kTxt = lEl("span", "l-kick-name");
   kTxt.textContent = romRec ? (romRec.label || romRec.name) : "AROS (Kickstart libre)";
-  kick.append(lEl("span", "l-kick-lbl", "Kickstart"), kTxt);
-  const kBtn = lEl("button", "gad small"); kBtn.textContent = romRec ? "Changer" : "Importer le mien…";
+  kick.append(seg, lEl("span", "l-kick-lbl", "Kickstart"), kTxt);
+  const kBtn = lEl("button", "gad small"); kBtn.textContent = romRec ? "Changer" : is500 ? "Importer le 1.3…" : "Importer le mien…";
   kBtn.onclick = romRec ? () => $("#btnSettings").click() : () => pickFile(".rom,.bin,.key", f => importFile(f));
   kick.appendChild(kBtn);
 
@@ -1863,7 +1955,9 @@ async function renderLauncher() {
     /* Première visite : trois étapes */
     const steps = lEl("ol", "l-steps");
     const s1 = lEl("li", null, "<b>Kickstart</b><span></span>");
-    s1.querySelector("span").textContent = romRec ? "Le vôtre est prêt : " + (romRec.label || romRec.name) + "." : "AROS, un Kickstart libre, est fourni. Pour l'A1200 d'origine, importez votre ROM Kickstart 3.1 (bouton ci-dessus).";
+    s1.querySelector("span").textContent = romRec ? "Le vôtre est prêt : " + (romRec.label || romRec.name) + "."
+      : is500 ? "Le mode Amiga 500 demande le Kickstart 1.3 : importez-le (bouton ci-dessus)."
+      : "AROS, un Kickstart libre, est fourni. Pour l'A1200 d'origine, importez votre ROM Kickstart 3.1 (bouton ci-dessus).";
     const s2 = lEl("li", null, "<b>Une disquette</b><span>Un jeu, une démo ou le Workbench au format .adf, ou une archive .zip. Elle sera rangée dans la Bibliothèque pour les prochaines fois.</span>");
     const acts = lEl("div", "l-acts");
     const o = lEl("button", "gad"); o.textContent = "Ouvrir une disquette…"; o.onclick = () => $("#lOpen").click();
@@ -1919,6 +2013,232 @@ $("#idlePower").onclick = async () => { await markUsed(); powerOn(); };
 { const _put = DB.put.bind(DB), _del = DB.del; DB.put = async r => { const x = await _put(r); renderLauncherSoon(); return x; };
   DB.del = async id => { const x = await _del(id); renderLauncherSoon(); return x; }; }
 refreshIdleRom = async () => renderLauncherSoon();
+
+
+/* =========================================================
+   Copier des fichiers sur le disque dur (Amiga éteint) :
+   jeux WHDLoad en .lha, archives .zip, dossiers, Kickstart pour WHDLoad
+   ========================================================= */
+let filesRec = null;      /* disque visé */
+let filesPart = 0;        /* indice de la partition choisie */
+let filesDest = "Jeux";   /* dernier dossier de destination */
+
+/* Noms attendus par WHDLoad dans Devs:Kickstarts, d'après l'empreinte du Kickstart */
+const WHD_KICKS = {
+  0xc4f0f55f: ["kick34005.A500", "Kickstart 1.3 (34.005) A500"],
+  0xc3bdb240: ["kick37175.A500", "Kickstart 2.04 (37.175) A500+"],
+  0x6c9b07d2: ["kick39106.A1200", "Kickstart 3.0 (39.106) A1200"],
+  0x1483a091: ["kick40068.A1200", "Kickstart 3.1 (40.068) A1200"]
+};
+/* ROM Amiga Forever : déchiffrée avec rom.key (OU exclusif répété) */
+async function plainRom(rec) {
+  const u8 = new Uint8Array(await rec.blob.arrayBuffer());
+  if (u8.length < 11 || u8ToStr(u8.subarray(0, 11)) !== "AMIROMTYPE1") return u8;
+  const k = S.keyId ? await DB.get(S.keyId) : null; if (!k) return null;
+  const key = new Uint8Array(await k.blob.arrayBuffer()), out = u8.slice(11);
+  for (let i = 0; i < out.length; i++) out[i] ^= key[i % key.length];
+  return out;
+}
+async function whdKickstarts() {
+  const list = [];
+  for (const r of (await DB.all()).filter(x => x.kind === "rom")) {
+    const u8 = await plainRom(r); if (!u8) continue;
+    const w = WHD_KICKS[crc32u8(u8)]; if (w && !list.some(x => x.file === w[0])) list.push({ file: w[0], label: w[1], data: u8 });
+  }
+  return list;
+}
+
+/* Disque entier en mémoire, et les morceaux de 8 Mo modifiés */
+async function openHd(rec) {
+  if (!rec.chunks) { await storeChunks(rec, rec.blob); await DB.put(rec); }
+  const img = await recBytes(rec), dirtyChunks = new Set();
+  const io = { block: n => img.subarray(n * 512, n * 512 + 512), touch: n => dirtyChunks.add(Math.floor(n * 512 / CHUNK)) };
+  return { img, io, dirtyChunks, parts: listPartitions(io, Math.floor(img.length / 512)) };
+}
+/* Lecture seule sans charger tout le disque : les morceaux manquants sont lus à la demande, puis on recommence */
+async function readHd(rec, fn) {
+  const cache = new Map();
+  const io = { block: n => { const i = Math.floor(n * 512 / CHUNK), c = cache.get(i); if (!c) throw { need: i }; const o = n * 512 - i * CHUNK; return c.subarray(o, o + 512); }, touch() {} };
+  for (let guard = 0; guard < 400; guard++) {
+    try { return fn(io); }
+    catch (e) {
+      if (!e || e.need === undefined) throw e;
+      const c = await DB.get(chunkId(rec, e.need)); if (!c) throw new Error("morceau " + e.need + " manquant");
+      cache.set(e.need, new Uint8Array(await c.blob.arrayBuffer()));
+    }
+  }
+  throw new Error("disque trop fragmenté pour être lu");
+}
+async function saveHd(rec, hd) {
+  for (const i of hd.dirtyChunks) await DB.put({ id: chunkId(rec, i), kind: "chunk", owner: rec.id, blob: new Blob([hd.img.slice(i * CHUNK, (i + 1) * CHUNK)]) });
+  rec.updated = Date.now(); await DB.put(rec);
+}
+
+function cleanPath(p) {
+  return p.replace(/\\/g, "/").split("/").filter(s => s && s !== "." && s !== "..").map(amigaName);
+}
+/* Fichiers choisis → éléments { path, data, date, comment } (archives décompressées si demandé) */
+async function collectItems(files, unpack) {
+  const items = [], problems = [];
+  for (const f of files) {
+    const rel = f.webkitRelativePath || f.name;
+    const u8 = new Uint8Array(await f.arrayBuffer());
+    const date = new Date(f.lastModified || Date.now());
+    try {
+      if (unpack && /\.(lha|lzh)$/i.test(f.name)) {
+        for (const e of readLha(u8)) {
+          if (e.error) { problems.push(e.path + " : " + e.error); continue; }
+          items.push({ path: e.path, dir: e.dir, data: e.data, date: e.date, comment: e.comment });
+        }
+      } else if (unpack && /\.zip$/i.test(f.name)) {
+        for (const e of await unzip(u8)) items.push({ path: e.path || e.name, data: e.data, date });
+      } else items.push({ path: rel, data: u8, date });
+    } catch (e) { problems.push(f.name + " : " + (e.message || e)); }
+  }
+  return { items, problems };
+}
+
+async function copyToHd(items, dest, problems = []) {
+  if (running || starting) { toast("Éteignez d'abord l'Amiga : le disque ne doit pas servir pendant la copie.", true); return; }
+  const rec = await DB.get(filesRec.id); if (!rec) return;
+  const log = $("#filesLog"); log.textContent = "Ouverture du disque…";
+  try {
+    const hd = await openHd(rec), part = hd.parts[filesPart];
+    if (!part || !part.ok) throw new Error("partition non modifiable" + (part && part.reason ? " : " + part.reason : ""));
+    const vol = new AmigaVolume(hd.io, part);
+    const base = cleanPath(dest);
+    /* Place nécessaire : chaque fichier, plus un bloc par dossier */
+    const dirs = new Set();
+    let need = 0;
+    for (const it of items) {
+      const segs = cleanPath(it.path); if (!segs.length) continue;
+      for (let i = 1; i <= (it.dir ? segs.length : segs.length - 1); i++) dirs.add(segs.slice(0, i).join("/"));
+      if (!it.dir) need += vol.blocksFor(it.data.length);
+    }
+    need += dirs.size + base.length;
+    const free = vol.freeCount();
+    if (need > free) throw new Error("pas assez de place : " + fmtSize(need * 512) + " nécessaires, " + fmtSize(free * 512) + " libres");
+    let n = 0, bytes = 0;
+    for (const it of items) {
+      const segs = cleanPath(it.path); if (!segs.length) continue;
+      if (it.dir) { vol.dir([...base, ...segs].join("/")); continue; }
+      const d = vol.dir([...base, ...segs.slice(0, -1)].join("/"));
+      vol.writeFile(d, segs[segs.length - 1], it.data, it.date || new Date(), it.comment || "");
+      n++; bytes += it.data.length;
+    }
+    vol.finish();
+    log.textContent = "Enregistrement…";
+    await saveHd(rec, hd);
+    const where = part.name + ":" + base.join("/");
+    log.textContent = n + " fichier" + (n > 1 ? "s" : "") + " copié" + (n > 1 ? "s" : "") + " dans " + where + " (" + fmtSize(bytes) + ")." + (problems.length ? "\nIgnorés :\n" + problems.join("\n") : "");
+    toast(n + " fichier" + (n > 1 ? "s" : "") + " copié" + (n > 1 ? "s" : "") + " dans " + where);
+    renderFiles(true);
+  } catch (e) {
+    log.textContent = "Copie impossible : " + (e.message || e) + ". Le disque n'a pas été modifié.";
+    toast("Copie impossible : " + (e.message || e), true);
+  }
+}
+
+async function renderFiles(keepLog) {
+  const body = $("#filesBody"), rec = filesRec && await DB.get(filesRec.id);
+  const oldLog = keepLog && $("#filesLog") ? $("#filesLog").textContent : "";
+  body.innerHTML = "";
+  if (!rec) { body.textContent = "Branchez ou choisissez d'abord un disque dur."; return; }
+  const intro = document.createElement("p");
+  intro.innerHTML = "Disque <b></b>. Les fichiers sont copiés directement sur le disque, comme depuis le Workbench.";
+  intro.querySelector("b").textContent = rec.name; body.appendChild(intro);
+  if (running || starting) {
+    const w = document.createElement("p"); w.className = "files-warn";
+    w.textContent = "L'Amiga est allumé : éteignez-le d'abord, le disque ne doit pas servir pendant la copie.";
+    body.appendChild(w);
+  }
+  let hd;
+  try {
+    if (!rec.chunks) { await storeChunks(rec, rec.blob); await DB.put(rec); }
+    hd = await readHd(rec, io => {
+      const parts = listPartitions(io, Math.floor(rec.size / 512));
+      for (const p of parts) if (p.ok) p.free = new AmigaVolume(io, p).freeCount();
+      return { parts };
+    });
+  } catch (e) { body.appendChild(Object.assign(document.createElement("p"), { textContent: "Disque illisible : " + (e.message || e) })); return; }
+  const h = (t) => { const x = document.createElement("h3"); x.textContent = t; body.appendChild(x); };
+  h("Partition");
+  const list = document.createElement("div"); list.className = "lib-list"; body.appendChild(list);
+  if (!hd.parts[filesPart] || !hd.parts[filesPart].ok) filesPart = Math.max(0, hd.parts.findIndex(p => p.ok));
+  hd.parts.forEach((p, i) => {
+    const row = document.createElement("label"); row.className = "lib-row";
+    row.innerHTML = '<input type="radio" name="fpart"><span class="n"></span><span class="s"></span>';
+    const inp = row.querySelector("input"); inp.checked = i === filesPart; inp.disabled = !p.ok; inp.onchange = () => { filesPart = i; };
+    row.querySelector(".n").textContent = p.name + ":" + (p.volume ? " « " + p.volume + " »" : "") + " — " + p.fs + (p.ok ? "" : " : " + p.reason);
+    row.querySelector(".s").textContent = p.ok ? fmtSize(p.free * 512) + " libres" : "";
+    list.appendChild(row);
+  });
+  hd = null;
+  h("Copier");
+  const dest = document.createElement("div"); dest.className = "opt";
+  dest.innerHTML = '<label>Dans le dossier <input type="text" id="filesDest" size="18" spellcheck="false" style="font:inherit;padding:3px 6px"></label><label><input type="checkbox" id="filesUnpack" checked> Décompresser les archives .lha et .zip</label>';
+  body.appendChild(dest);
+  $("#filesDest").value = filesDest; $("#filesDest").oninput = e => { filesDest = e.target.value; };
+  const acts = document.createElement("div"); acts.className = "opt";
+  const b = (t, fn) => { const x = document.createElement("button"); x.className = "gad"; x.textContent = t; x.onclick = fn; x.disabled = running || starting; acts.appendChild(x); };
+  b("Fichiers ou archives…", () => $("#filesPick").click());
+  b("Un dossier…", () => $("#dirPick").click());
+  body.appendChild(acts);
+  const hint = document.createElement("p"); hint.className = "hint";
+  hint.textContent = "Un jeu WHDLoad (.lha) arrive dans son propre dossier, avec son icône. Laissez le champ vide pour copier à la racine du disque. Un fichier du même nom est remplacé.";
+  body.appendChild(hint);
+  h("Kickstart pour WHDLoad");
+  const ks = await whdKickstarts();
+  const kp = document.createElement("p");
+  kp.textContent = ks.length ? "Dans la Bibliothèque : " + ks.map(k => k.label + " → " + k.file).join(", ") + "."
+    : "Aucun Kickstart reconnu dans la Bibliothèque (1.3 A500, 2.04, 3.0 ou 3.1 A1200).";
+  body.appendChild(kp);
+  const ka = document.createElement("div"); ka.className = "opt"; body.appendChild(ka);
+  const kb = document.createElement("button"); kb.className = "gad"; kb.textContent = "Copier dans Devs:Kickstarts"; kb.disabled = !ks.length || running || starting;
+  kb.onclick = () => copyToHd(ks.map(k => ({ path: "Devs/Kickstarts/" + k.file, data: k.data })), "");
+  ka.appendChild(kb);
+  const kh = document.createElement("p"); kh.className = "hint";
+  kh.textContent = "WHDLoad demande aussi les petits fichiers .RTB fournis avec lui : copiez-les dans le même dossier.";
+  body.appendChild(kh);
+  const log = document.createElement("pre"); log.id = "filesLog"; log.className = "files-log"; log.textContent = oldLog; body.appendChild(log);
+}
+async function openFiles(rec) {
+  if (!rec) { toast("Branchez d'abord un disque dur sur DH0:, ou créez-en un avec « Nouveau ».", true); return; }
+  filesRec = rec; filesPart = 0;
+  showWin("winFiles"); $("#filesBody").textContent = "Lecture du disque…";
+  await renderFiles();
+}
+for (const id of ["#filesPick", "#dirPick"]) {
+  $(id).onchange = async e => {
+    const files = [...e.target.files]; e.target.value = ""; if (!files.length) return;
+    $("#filesLog").textContent = "Lecture de " + files.length + " fichier" + (files.length > 1 ? "s" : "") + "…";
+    const { items, problems } = await collectItems(files, $("#filesUnpack").checked);
+    if (!items.length) { $("#filesLog").textContent = "Rien à copier." + (problems.length ? "\n" + problems.join("\n") : ""); return; }
+    await copyToHd(items, $("#filesDest").value, problems);
+  };
+}
+$('#drive-dh0 [data-act="files"]').onclick = async () => openFiles(mounted.dh0 && await DB.get(mounted.dh0.id));
+{ const _sm = setMounted; setMounted = (t, r) => { _sm(t, r); if (t === "dh0") $('#drive-dh0 [data-act="files"]').disabled = !r; }; }
+
+/* Kickstart de l'Amiga 500 : automatique (un 1.x de la Bibliothèque), AROS, ou une ROM précise */
+async function renderRom500() {
+  const box = $("#rom500Choices"); if (!box) return;
+  const all = await DB.all(), roms = all.filter(r => r.kind === "rom").sort((a, b) => a.added - b.added);
+  const eff = await romFor500(all), effRec = roms.find(r => r.id === eff);
+  box.innerHTML = "";
+  const row = (id, label) => {
+    const r = document.createElement("label"); r.className = "lib-row";
+    r.innerHTML = '<input type="radio" name="rom500"><span class="n"></span>';
+    const inp = r.querySelector("input"); inp.checked = (S.romId500 || "auto") === id;
+    inp.onchange = () => { S.romId500 = id; saveSettings(); renderRom500(); renderLauncherSoon(); };
+    r.querySelector(".n").textContent = label; box.appendChild(r);
+  };
+  row("auto", "Automatique : " + (effRec ? (effRec.label || effRec.name) : "AROS, aucun Kickstart 1.x dans la Bibliothèque"));
+  row("aros", "AROS (libre, intégré)");
+  roms.forEach(r => row(r.id, r.label || r.name));
+}
+{ const _r = renderRomChoices; renderRomChoices = async () => { await _r(); await renderRom500(); }; }
+$$('#winSettings input[name="model"]').forEach(i => i.addEventListener("change", () => renderLauncherSoon()));
 
 /* Profil par disque */
 let profTarget = null;

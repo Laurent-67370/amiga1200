@@ -271,6 +271,15 @@ body:not(.is-touch) [data-vjoy]{display:none}
 .vjoy-fire button{width:min(21vmin,88px);aspect-ratio:1;border-radius:50%;border:2px solid rgba(255,255,255,.4);background:rgba(220,60,60,.45);color:#fff;font:inherit;font-weight:700;touch-action:none;padding:0}
 .vjoy-fire .vf2{width:min(15vmin,62px);background:rgba(80,120,200,.45)}
 .vjoy-fire button.down{filter:brightness(1.7)}
+.vjoy.left{flex-direction:row-reverse}
+.vjoy.left .vjoy-fire{flex-direction:row-reverse}
+.vjoy-stick::before{content:"";position:absolute;left:50%;top:50%;width:var(--vj-dead,30%);height:var(--vj-dead,30%);transform:translate(-50%,-50%);
+  border-radius:50%;border:1px dashed rgba(255,255,255,.35);pointer-events:none}
+body:not(.is-touch) .vj-opts{display:none}
+.vj-range{display:flex;align-items:center;gap:10px}
+.vj-range label{min-width:7em}
+.vj-range input{flex:1;max-width:260px}
+.vj-range output{min-width:3.5em;font-variant-numeric:tabular-nums}
 .tube > #vkbd{position:absolute;left:0;right:0;bottom:0;z-index:7;margin:0;opacity:.94}
 .tube:fullscreen .fs-exit,.tube:-webkit-full-screen .fs-exit{display:flex}
 .fs-exit.hide{opacity:0;pointer-events:none}
@@ -540,6 +549,18 @@ body:not(.is-touch) [data-vjoy]{display:none}
       </div>
       <p class="hint">Avec « Flèches », les flèches pilotent aussi le joystick : choisissez « Aucun » pour un usage bureautique.</p>
 
+      <div class="vj-opts">
+        <h3>Joystick tactile</h3>
+        <div class="opt vj-range"><label for="vjDead">Zone morte</label><input type="range" id="vjDead" min="10" max="60" step="5"><output id="vjDeadV"></output></div>
+        <p class="hint">Distance du centre à partir de laquelle le manche compte une direction : plus grande, moins de mouvements involontaires ; plus petite, plus de réactivité. Le cercle au centre du manche la montre.</p>
+        <div class="opt vj-range"><label for="vjAlpha">Opacité</label><input type="range" id="vjAlpha" min="20" max="100" step="5"><output id="vjAlphaV"></output></div>
+        <div class="opt">
+          <label><input type="checkbox" id="vjLeft"> Gaucher : manche à droite, boutons de tir à gauche</label>
+          <label><input type="checkbox" id="vjVibe"> Vibration au tir et aux changements de direction</label>
+        </div>
+        <p class="hint" id="vjVibeNote" hidden>Ce navigateur ne sait pas faire vibrer l'appareil (c'est le cas sur iPhone et iPad).</p>
+      </div>
+
       <h3>Lecteurs de disquettes</h3>
       <div class="opt" data-setting="floppy">
         <label><input type="radio" name="floppy" value="orig"> Vitesse d'origine (plus compatible)</label>
@@ -657,6 +678,7 @@ body:not(.is-touch) [data-vjoy]{display:none}
       <p>Les touches Amiga sont la touche Windows/Cmd, ou les boutons <b>Amiga gauche</b> et <b>Amiga droite</b> sous les lecteurs, qui restent enfoncés jusqu'à la touche suivante. <span class="kbd">Menu</span> correspond à Help. Le bouton <b>Clavier</b> affiche un clavier A1200 complet à l'écran, pratique sur tablette.</p>
       <h3>Jouer sur écran tactile</h3>
       <p>Le bouton <b>Joystick</b> (sous l'écran, ou dans la barre du plein écran) pose un joystick sur l'écran : le manche à gauche, <b>FEU</b> et un deuxième bouton à droite ; il commande le port joystick de l'Amiga, même en plein écran. En plein écran, une barre en haut à gauche donne aussi le <b>Clavier</b> complet, Espace, Entrée, Échap, F1 et F2, souvent demandés pour lancer un jeu.</p>
+      <p>Dans <b>Réglages</b>, le joystick tactile se règle à votre main : <b>zone morte</b> du manche, disposition <b>gaucher</b> (manche à droite), <b>opacité</b> pour voir le jeu au travers, et <b>vibration</b> au tir et aux changements de direction (pas sur iPhone).</p>
       <h3>Écran tactile</h3>
       <p>L'écran se comporte comme un pavé tactile : glissez un doigt pour déplacer la souris, touchez pour cliquer, touchez deux fois et gardez le doigt posé pour glisser une fenêtre ou une icône. Pour les menus, posez deux doigts (bouton droit), glissez jusqu'à l'option et relevez.</p>
       <h3>Installer l'application</h3>
@@ -2338,7 +2360,30 @@ function sendJoy() { if (running && machine) machine.setJoy(0, joyKeys | joyTouc
   const shield = el => ["touchstart", "touchmove", "touchend", "touchcancel"].forEach(t => el.addEventListener(t, e => e.stopPropagation(), { passive: true }));
   [pad, $("#fsBar"), $("#vkbd")].forEach(shield);
 
-  /* ---- Manche : 8 directions, zone morte au centre ---- */
+  /* ---- Confort : zone morte, gaucher, transparence, vibration (Réglages, rangés avec les autres) ---- */
+  const canVibe = typeof navigator.vibrate === "function";
+  const vj = () => ({ dead: +(S.vjDead ?? 30), alpha: +(S.vjAlpha ?? 100), left: !!S.vjLeft, vibe: canVibe && S.vjVibe !== false });
+  const buzz = ms => { if (vj().vibe) try { navigator.vibrate(ms); } catch (e) {} };
+  function applyVj() {
+    const o = vj();
+    pad.classList.toggle("left", o.left);
+    pad.style.opacity = o.alpha / 100;
+    stick.style.setProperty("--vj-dead", o.dead + "%");
+  }
+  {
+    const dead = $("#vjDead"), alpha = $("#vjAlpha"), left = $("#vjLeft"), vibe = $("#vjVibe");
+    const show = () => { const o = vj(); $("#vjDeadV").textContent = o.dead + " %"; $("#vjAlphaV").textContent = o.alpha + " %"; };
+    dead.value = vj().dead; alpha.value = vj().alpha; left.checked = vj().left; vibe.checked = vj().vibe; vibe.disabled = !canVibe;
+    if (!canVibe) $("#vjVibeNote").hidden = false;
+    dead.oninput = () => { S.vjDead = +dead.value; show(); applyVj(); };
+    alpha.oninput = () => { S.vjAlpha = +alpha.value; show(); applyVj(); };
+    dead.onchange = alpha.onchange = () => saveSettings();
+    left.onchange = () => { S.vjLeft = left.checked; saveSettings(); applyVj(); };
+    vibe.onchange = () => { S.vjVibe = vibe.checked; saveSettings(); buzz(30); };
+    show(); applyVj();
+  }
+
+  /* ---- Manche : 8 directions, zone morte au centre (réglable) ---- */
   let stickId = null;
   const UP = 1 << 4, DOWN = 1 << 5, LEFT = 1 << 6, RIGHT = 1 << 7, DIRS = UP | DOWN | LEFT | RIGHT;
   const moveStick = t => {
@@ -2348,14 +2393,14 @@ function sendJoy() { if (running && machine) machine.setJoy(0, joyKeys | joyTouc
     if (d > max) { dx *= max / d; dy *= max / d; }
     knob.style.transform = `translate(${dx}px, ${dy}px)`;
     let m = 0;
-    if (d > max * 0.3) {
+    if (d > max * vj().dead / 100) {
       const a = Math.atan2(dy, dx) * 180 / Math.PI; /* 0 = droite, 90 = bas */
       if (a > -67.5 && a < 67.5) m |= RIGHT;
       if (a > 22.5 && a < 157.5) m |= DOWN;
       if (a > 112.5 || a < -112.5) m |= LEFT;
       if (a > -157.5 && a < -22.5) m |= UP;
     }
-    if ((joyTouch & DIRS) !== m) { joyTouch = (joyTouch & ~DIRS) | m; sendJoy(); }
+    if ((joyTouch & DIRS) !== m) { if (m) buzz(8); joyTouch = (joyTouch & ~DIRS) | m; sendJoy(); }
   };
   const releaseStick = () => { stickId = null; knob.style.transform = ""; joyTouch &= ~DIRS; sendJoy(); };
   stick.addEventListener("touchstart", e => { e.preventDefault(); const t = e.changedTouches[0]; stickId = t.identifier; moveStick(t); }, { passive: false });
@@ -2366,7 +2411,7 @@ function sendJoy() { if (running && machine) machine.setJoy(0, joyKeys | joyTouc
   /* ---- Boutons de tir : bit 0 (tir), bit 8 (2e bouton) ---- */
   $$("#vjoy [data-fire]").forEach(b => {
     const bit = 1 << +b.dataset.fire;
-    const on = e => { e.preventDefault(); b.classList.add("down"); joyTouch |= bit; sendJoy(); };
+    const on = e => { e.preventDefault(); b.classList.add("down"); joyTouch |= bit; sendJoy(); buzz(15); };
     const off = e => { e.preventDefault(); b.classList.remove("down"); joyTouch &= ~bit; sendJoy(); };
     b.addEventListener("touchstart", on, { passive: false });
     b.addEventListener("touchend", off, { passive: false }); b.addEventListener("touchcancel", off, { passive: false });

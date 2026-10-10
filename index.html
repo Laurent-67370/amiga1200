@@ -230,9 +230,11 @@ body.is-off #btnPower,body.is-off #btnReset,body.is-off #btnPause,body.is-off #b
 .hint{font-size:13px;color:#222}
 .win .actions{display:flex;justify-content:space-between;gap:8px;padding:10px 16px;border-top:1px solid #fff}
 .lib-list{display:flex;flex-direction:column;gap:4px;margin:6px 0 10px}
-.lib-row{display:flex;align-items:center;gap:8px;background:#bbb;padding:4px 6px;border:1px solid;border-color:#fff #000 #000 #fff}
-.lib-row .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lib-row{display:flex;flex-wrap:wrap;align-items:center;gap:5px 8px;background:#bbb;padding:4px 6px;border:1px solid;border-color:#fff #000 #000 #fff}
+/* Le nom garde toujours de la place ; sur un écran étroit, les boutons passent à la ligne */
+.lib-row .n{flex:1 1 200px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lib-row .s{font-size:12px;color:#222;font-variant-numeric:tabular-nums}
+@media (max-width:560px){.lib-row .n{flex-basis:calc(100% - 85px)}}
 .lib-empty{font-size:13.5px;color:#222;padding:4px 0 8px}
 .kbd{display:inline-block;border:1px solid #000;background:#ddd;padding:0 5px;font-size:12.5px;border-radius:2px}
 .help-list{margin:0 0 10px;padding-left:20px}
@@ -1037,7 +1039,7 @@ async function recBytes(rec) {
   return out;
 }
 /* Supprimer un disque emporte ses morceaux */
-{ const _del = DB.del;
+{ const _del = DB.del.bind(DB); /* la méthode d'origine a besoin de son « this » */
   DB.del = async id => {
     const rec = await DB.get(id);
     if (rec && rec.chunks) for (let i = 0; i < rec.chunks; i++) await _del(chunkId(rec, i));

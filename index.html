@@ -382,6 +382,15 @@ button{font:inherit}
         <label><input type="radio" name="cpu" value="max"> Accéléré (×5)</label>
       </div>
 
+      <h3>Carte accélératrice</h3>
+      <div class="opt" data-setting="accel">
+        <label><input type="radio" name="accel" value="none"> Aucune (68EC020 d'origine)</label>
+        <label><input type="radio" name="accel" value="030"> 68030 + FPU 68882, 28 MHz</label>
+        <label><input type="radio" name="accel" value="040"> 68040, 28 MHz</label>
+        <label><input type="radio" name="accel" value="060"> 68060, 42 MHz</label>
+      </div>
+      <p class="hint">Comme une Blizzard dans la trappe. 68040 et 68060 demandent beaucoup plus de calcul à l'ordinateur et certains jeux anciens ne les supportent pas. Avec la mémoire Fast, l'Amiga a aussi une horloge sauvegardée.</p>
+
       <h3>Affichage</h3>
       <div class="opt" data-setting="region">
         <label><input type="radio" name="region" value="pal"> PAL 50 Hz</label>
@@ -421,6 +430,7 @@ button{font:inherit}
       </div>
       <div class="opt">
         <label><input type="checkbox" id="optAutosave"> Enregistrer les disques modifiés à l'extinction</label>
+        <label><input type="checkbox" id="optFloppySound"> Bruit des lecteurs (clics de la tête)</label>
       </div>
       <p class="hint" id="restartHint">Les réglages s'appliquent au prochain allumage.</p>
     </div>
@@ -469,6 +479,8 @@ button{font:inherit}
         <div class="opt"><label><input type="radio" name="p_compat" value="normal"> Rapide</label><label><input type="radio" name="p_compat" value="max"> Maximale</label></div>
         <h3>Processeur</h3>
         <div class="opt"><label><input type="radio" name="p_cpu" value="orig"> 14 MHz</label><label><input type="radio" name="p_cpu" value="max"> Aussi vite que possible</label></div>
+        <h3>Carte accélératrice</h3>
+        <div class="opt"><label><input type="radio" name="p_accel" value="none"> Aucune</label><label><input type="radio" name="p_accel" value="030"> 68030</label><label><input type="radio" name="p_accel" value="040"> 68040</label><label><input type="radio" name="p_accel" value="060"> 68060</label></div>
         <h3>Mémoire</h3>
         <div class="opt"><label><input type="radio" name="p_fast" value="0"> 2 Mo Chip</label><label><input type="radio" name="p_fast" value="4"> + 4 Mo Fast</label><label><input type="radio" name="p_fast" value="8"> + 8 Mo Fast</label></div>
         <h3>Région</h3>
@@ -612,7 +624,7 @@ function newId() { return Date.now().toString(36) + Math.random().toString(36).s
    Réglages persistants
    ========================================================= */
 const DEFAULTS = { fast: "0", cpu: "orig", region: "pal", res: "hires", joy: "none", floppy: "orig",
-  crt: true, sharp: false, autosave: true, center: true, kbd: "azerty", kbdOpen: false, compat: "normal", autoskip: true, romId: "aros", keyId: null, df0: null, df1: null, dh0: null, muted: false };
+  crt: true, sharp: false, autosave: true, center: true, kbd: "azerty", kbdOpen: false, compat: "normal", accel: "none", floppySound: false, autoskip: true, romId: "aros", keyId: null, df0: null, df1: null, dh0: null, muted: false };
 let S = Object.assign({}, DEFAULTS);
 try { Object.assign(S, JSON.parse(localStorage.getItem("a1200.settings") || "{}")); } catch (e) {}
 function saveSettings() { try { localStorage.setItem("a1200.settings", JSON.stringify(S)); } catch (e) {} }
@@ -634,7 +646,14 @@ const KNOWN_ROMS = {
 };
 
 /* ---- Profils par disque : réglages propres à un jeu, appliqués au démarrage ---- */
-const PROFILE_KEYS = ["compat", "cpu", "fast", "region", "joy", "floppy"];
+const PROFILE_KEYS = ["compat", "cpu", "fast", "region", "joy", "floppy", "accel"];
+/* Cartes accélératrices : processeur, FPU et multiplicateur d'horloge (×4 = 14 MHz, ×8 = 28 MHz, ×12 = 42 MHz) */
+const ACCEL = {
+  none: { cpu: "68020", fpu: "0", mult: "0", label: "" },
+  "030": { cpu: "68030", fpu: "68882", mult: "8", label: "68030/68882 28 MHz" },
+  "040": { cpu: "68040", fpu: "cpu", mult: "8", label: "68040 28 MHz" },
+  "060": { cpu: "68060", fpu: "cpu", mult: "12", label: "68060 42 MHz" }
+};
 let E = Object.assign({}, S); /* réglages effectifs de la session en cours */
 async function bootProfileRec() {
   for (const t of ["df0", "dh0"]) {
@@ -683,7 +702,12 @@ function coreOptions() {
     puae_video_resolution: S.res === "lores" ? "lores" : S.res === "shires" ? "superhires" : "hires",
     puae_crop: S.center ? "auto" : "disabled",
     puae_floppy_speed: E.floppy === "turbo" ? "0" : "100",
-    puae_gfx_framerate: "disabled"
+    puae_gfx_framerate: "disabled",
+    puae_cpu_model: (ACCEL[E.accel] || ACCEL.none).cpu,
+    puae_fpu_model: (ACCEL[E.accel] || ACCEL.none).fpu,
+    puae_cpu_multiplier: (ACCEL[E.accel] || ACCEL.none).mult,
+    puae_floppy_sound: S.floppySound ? "75" : "100",
+    puae_floppy_sound_type: "internal"
   };
 }
 
@@ -702,7 +726,7 @@ async function powerOn() {
     const resume = pendingResume; pendingResume = null;
     if (resume) {
       for (const t of ["df0", "df1", "dh0"]) setMounted(t, resume.ctx[t] ? await DB.get(resume.ctx[t]) : null);
-      E = Object.assign({}, S, resume.settings, { _profile: "" });
+      E = Object.assign({}, S, { accel: "none" }, resume.settings, { _profile: "" });
     } else E = await effectiveSettings();
     const romId = resume ? resume.ctx.rom : S.romId;
     skip.reset();
@@ -726,6 +750,8 @@ async function powerOn() {
        de la page dans le navigateur — un blocage de la page (enregistrement d'un gros disque) faisait alors échouer
        les écritures IDE suivantes. */
     const lines = ["nr_floppies=2", "floppy1type=0", "boot_rom_uae=disabled", "uaeboard=disabled"];
+    /* Une extension mémoire A1200 (carte trappe) porte une horloge sauvegardée par pile */
+    if (+E.fast > 0) lines.push("rtc=MSM6242B");
     if (arosExt) { machine.writeFile("/sys/aros-ext.bin", arosExt); lines.push("kickstart_ext_rom_file=/sys/aros-ext.bin"); }
     for (const tag of ["df0", "df1"]) {
       fsPath[tag] = null;
@@ -769,6 +795,7 @@ async function powerOff() {
 function onStarted() {
   starting = false; running = true; setPowerUi("on");
   $("#statMode").textContent = (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "")
+    + (ACCEL[E.accel] && ACCEL[E.accel].label ? ", " + ACCEL[E.accel].label : "")
     + (E.compat === "max" ? ", cycle exact" : "") + (E._profile ? ", profil " + E._profile : "");
   showCaptureHint();
 }
@@ -1130,14 +1157,14 @@ async function refreshIdleRom() {
 }
 
 function syncSettingsForm() {
-  for (const k of ["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat"]) {
+  for (const k of ["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel"]) {
     $$('#winSettings input[name="' + k + '"]').forEach(i => i.checked = i.value === S[k]);
   }
   $("#optCenter").checked = S.center; $("#optSkip").checked = S.autoskip;
-  $("#optCrt").checked = S.crt; $("#optSharp").checked = S.sharp; $("#optAutosave").checked = S.autosave;
+  $("#optCrt").checked = S.crt; $("#optSharp").checked = S.sharp; $("#optAutosave").checked = S.autosave; $("#optFloppySound").checked = !!S.floppySound;
   $("#restartHint").textContent = running ? "L'Amiga est allumé : ces réglages s'appliqueront au prochain allumage." : "Les réglages s'appliquent au prochain allumage.";
 }
-for (const k of ["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat"]) {
+for (const k of ["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel"]) {
   $$('#winSettings input[name="' + k + '"]').forEach(i => i.addEventListener("change", () => { S[k] = i.value; saveSettings(); if (k === "kbd" && S.kbdOpen) buildKeyboard(); }));
 }
 $("#optCenter").onchange = e => { S.center = e.target.checked; saveSettings(); };
@@ -1145,6 +1172,7 @@ $("#optSkip").onchange = e => { S.autoskip = e.target.checked; E.autoskip = S.au
 $("#optCrt").onchange = e => { S.crt = e.target.checked; saveSettings(); applyLook(); };
 $("#optSharp").onchange = e => { S.sharp = e.target.checked; saveSettings(); applyLook(); };
 $("#optAutosave").onchange = e => { S.autosave = e.target.checked; saveSettings(); };
+$("#optFloppySound").onchange = e => { S.floppySound = e.target.checked; saveSettings(); if (running) machine.setOption("puae_floppy_sound", S.floppySound ? "75" : "100"); };
 function applyLook() { $("#tube").classList.toggle("crt", S.crt); $("#tube").classList.toggle("sharp", S.sharp); }
 
 async function renderLib() {
@@ -1423,7 +1451,7 @@ function gameName(m = mounted) { return m.df0 ? m.df0.name : m.dh0 ? m.dh0.name 
 function stateCtx() {
   return { df0: mounted.df0 && mounted.df0.id, df1: mounted.df1 && mounted.df1.id, dh0: mounted.dh0 && mounted.dh0.id, rom: E._rom || S.romId };
 }
-const STATE_SETTINGS = ["compat", "cpu", "fast", "region", "joy", "floppy"];
+const STATE_SETTINGS = ["compat", "cpu", "fast", "region", "joy", "floppy", "accel"];
 
 async function statesFor(key) {
   return (await DB.all()).filter(r => r.kind === "state" && r.game === key).sort((a, b) => a.slot - b.slot);
@@ -1459,7 +1487,7 @@ function sameMachine(rec) {
   if (!running) return false;
   const c = stateCtx();
   if (c.dh0 !== rec.ctx.dh0 || c.rom !== rec.ctx.rom) return false;
-  return STATE_SETTINGS.filter(k => k !== "joy").every(k => String(E[k]) === String(rec.settings[k]));
+  return STATE_SETTINGS.filter(k => k !== "joy").every(k => String(E[k]) === String(rec.settings[k] ?? (k === "accel" ? "none" : undefined)));
 }
 async function resumeState(id) {
   const rec = await DB.get(id); if (!rec) return;

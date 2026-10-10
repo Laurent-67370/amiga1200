@@ -147,3 +147,11 @@ extinction (reprise au clavier) ; profil cycle exact + 8 Mo Fast + NTSC appliqu�
   reprise d'une sauvegarde est plus rapide), et la boucle calcule les images dues au rafraîchissement de l'écran, juste avant de
   les dessiner (un minuteur prend le relais onglet masqué) : de l'appui à l'image dessinée, 19,1 ms en moyenne avant, 16,3 ms après.
   Le reste vient de l'attente du début de l'image Amiga suivante (une toutes les 20 ms), qu'aucun réglage de la page ne réduit.
+- **Réglages par jeu WHDLoad** (`app/whddb-puae.js`) : la base `whdload_db.xml` d'Amiberry-XML-Builder (11 201 jeux, 8,6 Mo,
+  1 Mo compressé) n'est pas publiée avec le site, son dépôt n'indiquant pas de licence : le navigateur la télécharge depuis
+  GitHub (CORS ouvert), n'en garde que les champs utiles (CHIPSET=AGA, NTSC, CLOCK, CPU_EXACT, BLITTER=IMMEDIATE,
+  PRIMARY_CONTROL=MOUSE, PORT0/1=CD32 ; 1,6 Mo dans IndexedDB, hors export) et la rafraîchit tous les 30 jours. Recherche par
+  nom d'archive, puis SHA-1 du fichier, puis nom du .slave quand toutes ses entrées s'accordent. NTSC → `region`, CLOCK=MAX →
+  processeur accéléré, CLOCK>14 → 68030, CPU_EXACT → cycle exact, BLITTER → `puae_immediate_blits=immediate`, CD32 → manette
+  CD32 du cœur sur le port joystick (`retro_set_controller_port_device(0, 517)`). Le choix du .slave et ses options restent
+  à l'icône du jeu, comme dans la startup-sequence du cœur.

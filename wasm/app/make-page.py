@@ -640,6 +640,21 @@ rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Jeu
       <p>Ouvrez une archive <b>.lha</b> de jeu WHDLoad (bouton <b>Ouvrir un fichier…</b> de l'accueil, ou glissez-la sur la page) : elle rejoint la Bibliothèque et sa vignette lance le jeu directement, sans Workbench ni disque dur à préparer. WHDLoad est fourni ; l'Amiga 1200 démarre avec 8 Mo de Fast. Importez vos Kickstart 3.1 (A1200) et 1.3 (A500) : WHDLoad les trouve tout seul, beaucoup de jeux en ont besoin. Les sauvegardes des jeux (WHDSaves) sont gardées d'une partie à l'autre. <span class="kbd">F10</span> quitte le jeu (touche habituelle des installations WHDLoad).</p>
       <h3>Copier des fichiers sur le disque dur</h3>''')
 
+# Réglages par jeu WHDLoad : base d'Amiberry téléchargée par le navigateur
+rep("/* Profil par disque */", (APP / "whddb-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+rep('''        btn("Jouer", () => {''', '''        if (whdTags(r)) row.querySelector(".n").textContent += " — " + whdTags(r);
+        btn("Jouer", () => {''')
+rep('''      <h3>Lecteurs de disquettes</h3>
+      <div class="opt" data-setting="floppy">''', '''      <h3>Jeux WHDLoad</h3>
+      <div class="opt"><span>Base de réglages par jeu : <span id="whdDbStatus"></span></span><button class="gad small" id="whdDbUpdate" type="button">Mettre à jour</button></div>
+      <p class="hint">Pour chaque jeu, la base de l'émulateur Amiberry (projet Amiberry-XML-Builder) indique ce qu'il demande : NTSC, processeur plus rapide, cycle exact, souris ou manette CD32. Elle est téléchargée depuis GitHub, gardée dans ce navigateur et appliquée au lancement du jeu.</p>
+
+      <h3>Lecteurs de disquettes</h3>
+      <div class="opt" data-setting="floppy">''')
+rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Réglages par jeu WHDLoad</h3>
+      <p>Au lancement d'un jeu WHDLoad, l'émulateur consulte la base de réglages de l'émulateur Amiberry (plus de 11 000 jeux des collections WHDLoad, projet Amiberry-XML-Builder) : NTSC, processeur plus rapide, cycle exact, blitter immédiat, souris ou manette CD32 sont appliqués tout seuls. Le jeu est reconnu par le nom de son archive (gardez le nom d'origine), sinon par son empreinte. Ce que la base indique s'affiche sous la vignette du jeu. La base est téléchargée depuis GitHub au premier jeu, puis rafraîchie tous les 30 jours ou depuis les Réglages.</p>
+      <h3>Copier des fichiers sur le disque dur</h3>''')
+
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)
 assert not leftovers, f"restes de SAE : {sorted(set(leftovers))[:10]}"
 

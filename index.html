@@ -4,7 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Amiga 1200 · PUAE</title>
-<link rel="icon" href="data:,">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2b303b">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Amiga 1200">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="description" content="Émulateur Amiga 1200 (68EC020, chipset AGA, IDE Gayle) dans le navigateur.">
 <script src="coi.js"></script>
 <style>
@@ -25,6 +32,7 @@ body{
   color:#e8e6df; font-family:var(--font); font-size:15px; line-height:1.45;
 }
 button{font:inherit}
+[hidden]{display:none!important}
 .rig{max-width:980px;margin:0 auto;padding:24px 16px 48px}
 
 /* ---------- Monitor ---------- */
@@ -283,6 +291,9 @@ button{font:inherit}
     <button class="gad" id="btnSettings">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4h12M2 8h12M2 12h12"/><circle cx="5" cy="4" r="1.6" fill="#aaa"/><circle cx="11" cy="8" r="1.6" fill="#aaa"/><circle cx="7" cy="12" r="1.6" fill="#aaa"/></svg>
       Réglages</button>
+    <button class="gad" id="btnInstall" hidden title="Installer l'émulateur comme une application, utilisable hors ligne">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="1.5" width="8" height="13" rx="1.2"/><path d="M8 4.5v5M5.8 7.5 8 9.7l2.2-2.2"/></svg>
+      Installer</button>
     <button class="gad" id="btnHelp" aria-label="Aide">?</button>
   </nav>
 
@@ -527,6 +538,10 @@ button{font:inherit}
       <p>Les touches Amiga sont la touche Windows/Cmd, ou les boutons <b>Amiga gauche</b> et <b>Amiga droite</b> sous les lecteurs, qui restent enfoncés jusqu'à la touche suivante. <span class="kbd">Menu</span> correspond à Help. Le bouton <b>Clavier</b> affiche un clavier A1200 complet à l'écran, pratique sur tablette.</p>
       <h3>Écran tactile</h3>
       <p>L'écran se comporte comme un pavé tactile : glissez un doigt pour déplacer la souris, touchez pour cliquer, touchez deux fois et gardez le doigt posé pour glisser une fenêtre ou une icône. Pour les menus, posez deux doigts (bouton droit), glissez jusqu'à l'option et relevez.</p>
+      <h3>Installer l'application</h3>
+      <p>L'émulateur s'installe comme une application et fonctionne ensuite <b>sans connexion</b>, avec votre Bibliothèque et vos réglages.
+      <b>Android, ordinateur (Chrome, Edge)</b> : bouton <b>Installer</b> de la barre d'outils, ou menu du navigateur → « Installer l'application ».
+      <b>iPhone, iPad</b> : dans Safari, bouton Partager → « Sur l'écran d'accueil ». Les mises à jour arrivent seules, au lancement suivant une connexion.</p>
       <h3>Sauvegardes d'état</h3>
       <p>Le bouton <b>Sauvegardes</b> fige la machine entière dans l'un des 4 emplacements du jeu en cours (la disquette de DF0:, ou le disque dur). <b>Reprendre</b> la remet exactement dans cet état, avec les mêmes disques et réglages ; si besoin l'Amiga se rallume tout seul. Raccourcis : <span class="kbd">Ctrl</span>+<span class="kbd">Maj</span>+<span class="kbd">S</span> sauvegarde dans l'emplacement 1, <span class="kbd">Ctrl</span>+<span class="kbd">Maj</span>+<span class="kbd">R</span> le reprend.</p>
       <h3>Compatibilité et vitesse</h3>
@@ -1567,6 +1582,37 @@ DB.del = async id => {
   if (rec && rec.kind !== "state") for (const s of (await DB.all()).filter(x => x.kind === "state" && x.game === id)) await _dbDel(s.id);
   return _dbDel(id);
 };
+
+/* Application installable : bouton Installer (Chrome, Edge, Android) et état de la copie hors ligne */
+(function pwa() {
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  let deferred = null; const b = $("#btnInstall");
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferred = e; if (!standalone) b.hidden = false; });
+  window.addEventListener("appinstalled", () => { b.hidden = true; deferred = null; toast("Amiga 1200 est installé : il fonctionne aussi hors ligne."); });
+  b.onclick = async () => { if (!deferred) return; deferred.prompt(); try { await deferred.userChoice; } catch (x) {} deferred = null; b.hidden = true; };
+  if (!("serviceWorker" in navigator) || !window.caches) return;
+  /* Premier passage : prévenir quand tout est copié pour le hors ligne */
+  navigator.serviceWorker.ready.then(async () => {
+    let said = false; try { said = localStorage.getItem("a1200.offline") === "1"; } catch (x) {}
+    if (said) return;
+    for (let i = 0; i < 60; i++) {
+      for (const k of await caches.keys()) {
+        if (k.startsWith("a1200-") && await (await caches.open(k)).match("puae.wasm")) {
+          try { localStorage.setItem("a1200.offline", "1"); } catch (x) {}
+          if (!running) toast("L'émulateur est prêt à fonctionner hors ligne.");
+          return;
+        }
+      }
+      await new Promise(r => setTimeout(r, 2000));
+    }
+  });
+  /* Nouvelle version publiée : elle prend effet au prochain lancement */
+  let had = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (had) toast("Une nouvelle version de l'émulateur est prête : elle sera utilisée au prochain lancement.");
+    had = true;
+  });
+})();
 
 /* Profil par disque */
 let profTarget = null;

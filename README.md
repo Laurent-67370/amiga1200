@@ -63,7 +63,8 @@ La Bibliothèque est propre à chaque navigateur : importez votre Kickstart et v
   Kickstart, jeux WHDLoad, sauvegardes) ; *Importer…* sur l'autre appareil, ce qui y est déjà et plus récent est gardé
 - **Sauvegardes d'état** : 4 emplacements par jeu, avec vignette ; Ctrl+Maj+S / Ctrl+Maj+R
 - **Profils par disque** : modèle (A1200/A500), cycle exact, vitesse, carte accélératrice, mémoire Fast, PAL/NTSC, joystick, lecteurs
-- **Carte accélératrice** au choix : 68030 + FPU 68882 (28 MHz), 68040 (28 MHz) ou 68060 (42 MHz)
+- **Carte accélératrice** au choix : 68030 + FPU 68882 (28 MHz), 68040 (28 MHz) ou 68060 (42 MHz) ; même le 68060 tient
+  largement le temps réel (le cœur est environ 4 fois plus rapide qu'avant sur ces cartes)
 - Horloge sauvegardée (MSM6242B) avec la mémoire Fast, comme une carte trappe ; bruit des lecteurs en option
 - Kickstart Amiga Forever chiffrés avec `rom.key`
 - Clavier A1200 à l'écran (AZERTY ou QWERTY), souris tactile, manette USB, touches Amiga

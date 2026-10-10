@@ -617,6 +617,10 @@ rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Plu
       <p>Dans la Bibliothèque, <b>Exporter tout…</b> enregistre tout dans un seul fichier .tar : disquettes, disques durs, Kickstart, jeux WHDLoad, sauvegardes d'état et de jeux. Sur l'autre appareil, <b>Importer…</b> (ou glissez le fichier sur la page) les ajoute ; ce qui y est déjà et plus récent est gardé. Le fichier reste lisible par 7-Zip ou tar.</p>
       <h3>Copier des fichiers sur le disque dur</h3>''')
 
+# Habillage selon le modèle : Workbench 3.1 (A1200), Workbench 1.3 (A500), arc-en-ciel Amiga, Boing Ball
+rep("</style>", (APP / "theme-puae.css").read_text(encoding="utf-8") + "</style>")
+rep("/* Profil par disque */", (APP / "theme-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+
 # Jeux WHDLoad en un geste : une archive .lha, et on joue (sans Workbench ni disque dur)
 rep("/* Profil par disque */", (APP / "whdload-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 rep('''  if (sessionStorage.getItem("a1200.autostart")) { sessionStorage.removeItem("a1200.autostart"); powerOn(); }''',

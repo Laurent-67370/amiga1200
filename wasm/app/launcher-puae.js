@@ -83,7 +83,7 @@ async function renderLauncher() {
     box.appendChild(lEl("div", "l-title", "Reprendre là où vous en étiez"));
     const grid = lEl("div", "l-grid");
     for (const r of disks.slice(0, LAUNCH_MAX)) {
-      const tile = lEl("div", "l-tile");
+      const tile = lEl("div", "l-tile k-" + r.kind); /* liseré coloré selon le type : disquette, disque dur, jeu WHDLoad */
       const inDrive = ["df0", ...HD_TAGS].some(t => mounted[t] && mounted[t].id === r.id);
       if (inDrive) tile.classList.add("in");
       const pick = lEl("button", "l-pick");

@@ -41,6 +41,8 @@ La Bibliothèque est propre à chaque navigateur : importez votre Kickstart et v
 ## Fonctions
 
 - Accueil : étapes au premier passage, derniers disques en vignettes, Kickstart utilisé toujours visible
+- Habillage selon le modèle : couleurs du Workbench 3.1 pour l'A1200, du Workbench 1.3 (bleu et orange) pour l'A500,
+  arc-en-ciel du logo Amiga et Boing Ball sur l'accueil
 - Disquettes `.adf`, `.dms`, `.adz`, archives `.zip` et `.gz` ; DF0: et DF1:, insertion à chaud, disquettes vierges formatées
 - Disque dur IDE `.hdf` jusqu'à **2 Go** (512 Mo sur téléphone et tablette), par exemple avec des jeux WHDLoad installés :
   image avec table de partitions (RDB), ou image d'une seule partition FFS/OFS (« partition hardfile » de WinUAE),

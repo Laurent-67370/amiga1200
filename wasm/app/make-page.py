@@ -93,7 +93,8 @@ rep("const btn = (b, d) => { if (running && SAER && SAER.input) SAER.input.regis
     "const btn = (b, d) => { if (running && machine) machine.mouseButton(b, d); };")
 rep("if ((x || y) && running) SAER.input.registerEvent(0, SAEC_Input_Event_MouseMove, x, y);",
     "if ((x || y) && running && machine) machine.mouseMove(x, y);")
-page = page.replace("SAEC_Input_Button_1", "0").replace("SAEC_Input_Button_2", "1")
+# Boutons au format des événements souris du navigateur : 0 gauche, 2 droit
+page = page.replace("SAEC_Input_Button_1", "0").replace("SAEC_Input_Button_2", "2")
 
 # 7. Boutons
 rep('$("#btnReset").onclick = () => { if (running) { releaseMods(); sae.reset(false, true); } };',
@@ -204,6 +205,10 @@ rep('$("#optAutosave").checked = S.autosave;', '$("#optAutosave").checked = S.au
 rep('$("#optAutosave").onchange = e => { S.autosave = e.target.checked; saveSettings(); };',
     '$("#optAutosave").onchange = e => { S.autosave = e.target.checked; saveSettings(); };\n'
     '$("#optFloppySound").onchange = e => { S.floppySound = e.target.checked; saveSettings(); if (running) machine.setOption("puae_floppy_sound", S.floppySound ? "75" : "100"); };')
+
+# Souris : rappel des deux boutons dans l'aide
+rep("Cliquez dans l'écran pour capturer la souris, <span class=\"kbd\">Échap</span> pour la libérer.</p>",
+    "Cliquez dans l'écran pour capturer la souris, <span class=\"kbd\">Échap</span> pour la libérer. Une fois capturée, le bouton gauche sélectionne et le bouton droit (gardé enfoncé) ouvre la barre de menus, comme sur l'Amiga ; sur un pavé tactile, cliquez à deux doigts. Sans souris : <span class=\"kbd\">Page préc.</span> (Amiga gauche) + <span class=\"kbd\">Alt</span> gauche = bouton gauche, + <span class=\"kbd\">Alt Gr</span> = bouton droit.</p>")
 
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)
 assert not leftovers, f"restes de SAE : {sorted(set(leftovers))[:10]}"

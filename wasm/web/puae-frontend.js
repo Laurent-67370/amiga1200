@@ -209,7 +209,7 @@ export class PuaeMachine {
     return !!k;
   }
   mouseMove(dx, dy) { if (this.running) this.M._fe_mouse_move(Math.round(dx), Math.round(dy)); }
-  mouseButton(btn, down) { /* 0 gauche, 1 droit, 2 milieu */
+  mouseButton(btn, down) { /* comme MouseEvent.button : 0 gauche, 1 milieu, 2 droit */
     const bit = btn === 0 ? 1 : btn === 2 ? 2 : 4;
     this.mouseButtons = down ? this.mouseButtons | bit : this.mouseButtons & ~bit;
     if (this.running) this.M._fe_mouse_buttons(this.mouseButtons);

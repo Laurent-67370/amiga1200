@@ -1,69 +1,61 @@
 # Émulateur Amiga 1200
 
-Un Amiga 1200 complet dans le navigateur, en une seule page HTML : processeur 68EC020, chipset AGA,
-2 Mo de Chip RAM, contrôleur IDE Gayle, deux lecteurs de disquettes.
+Un Amiga 1200 complet dans le navigateur : processeur 68EC020, chipset AGA, 2 Mo de Chip RAM,
+contrôleur IDE Gayle, deux lecteurs de disquettes. Le moteur est celui de WinUAE ([PUAE](https://github.com/libretro/libretro-uae)),
+compilé en WebAssembly.
 
-Ouvrez `index.html`, ou déposez-le tel quel sur n'importe quel hébergement web : aucun serveur particulier n'est nécessaire.
+**https://laurent-67370.github.io/amiga1200/**
+
+L'ancienne version, au cœur JavaScript SAE, reste disponible pour comparer : https://laurent-67370.github.io/amiga1200/sae/
+Les deux partagent la même Bibliothèque et les mêmes réglages (stockage local du navigateur).
 
 ## Démarrer
 
-1. **Réglages → Importer un Kickstart** : votre ROM Kickstart 3.1 A1200 (40.068). Sans ROM, la machine démarre sur AROS, un Kickstart libre intégré.
-2. Glissez une disquette `.adf` sur la page ou sur la fente du lecteur.
+1. **Réglages → Importer un Kickstart** : votre ROM Kickstart 3.1 A1200 (40.068). Sans ROM, la machine démarre sur AROS
+   (version d'août 2026), un Kickstart libre.
+2. Glissez une disquette `.adf` (ou une archive `.zip`) sur la page ou sur la fente du lecteur.
 3. **Allumer**.
 
-Les ROM et disquettes Workbench d'origine ne sont pas fournies. Vos fichiers restent dans le navigateur (IndexedDB) et ne sont envoyés nulle part.
+Les ROM et disquettes Workbench d'origine ne sont pas fournies. Vos fichiers restent dans le navigateur (IndexedDB)
+et ne sont envoyés nulle part. Un navigateur récent sur ordinateur est recommandé (Chrome, Edge, Firefox) :
+la page se recharge une fois au premier passage pour activer l'isolation nécessaire au WebAssembly multi-fils.
 
 ## Fonctions
 
-- Disquettes `.adf`, `.dms`, `.adz` et ADF étendus dans DF0: et DF1:, création de disquettes vierges formatées
-- Archives `.zip` et `.gz` ouvertes directement ; un `.zip` de plusieurs disquettes remplit la bibliothèque
-- Disque dur `.hdf` / `.hdz` jusqu'à 512 Mo sur DH0:, création d'un disque vierge à partitionner avec HDToolBox
-- Enregistrement automatique des disques modifiés (quelques secondes après chaque écriture, à l'extinction et en quittant l'onglet), bibliothèque locale, téléchargement des disques modifiés
+- Disquettes `.adf`, `.dms`, `.adz`, archives `.zip` et `.gz` ; DF0: et DF1:, insertion à chaud, disquettes vierges formatées
+- Disque dur IDE `.hdf` jusqu'à 512 Mo ; **Nouveau** crée un disque partitionné (RDB) et formaté (FFS), prêt pour le Workbench
+- Enregistrement automatique des disques modifiés dans la Bibliothèque, téléchargement
+- **Sauvegardes d'état** : 4 emplacements par jeu, avec vignette ; Ctrl+Maj+S / Ctrl+Maj+R
+- **Profils par disque** : cycle exact, vitesse, mémoire Fast, PAL/NTSC, joystick, lecteurs
 - Kickstart Amiga Forever chiffrés avec `rom.key`
-- Mémoire Fast 4 ou 8 Mo, processeur 14 MHz ou maximum, PAL/NTSC, trois résolutions
-- Joystick au clavier ou manette USB, touches Amiga virtuelles, Ctrl-Amiga-Amiga
-- Clavier A1200 complet à l'écran (libellés AZERTY ou QWERTY) et souris tactile : l'écran sert de pavé tactile, deux doigts pour le bouton droit
-- Centrage automatique de l'image
-- Mode **Compatibilité maximale** (prélecture et caches du 68020, blitter au cycle près) pour les démos et jeux capricieux
-- **Saut d'images automatique** : quand le navigateur ne suit pas, l'image est dessinée moins souvent pour que le son et la vitesse de jeu restent à 50 Hz
-- **Profils par disque** : compatibilité, vitesse, mémoire, région, joystick et lecteurs propres à un jeu, appliqués quand sa disquette est dans DF0: ou son disque sur DH0:
-- LED Power, Drive et HD, plein écran, capture PNG, effet moniteur cathodique
+- Clavier A1200 à l'écran (AZERTY ou QWERTY), souris tactile, manette USB, touches Amiga
+- Saut d'images automatique, centrage de l'image, effet moniteur, plein écran, capture
 
 ## Clavier et souris
 
 Le clavier suit la position physique des touches : choisissez le keymap `f` dans les Préférences Input du Workbench.
-Cliquez dans l'écran pour capturer la souris, Échap pour la libérer. Les touches Amiga sont la touche Windows/Cmd
-ou les boutons sous les lecteurs.
-
-## Limites
-
-- Le 68020 n'est pas émulé au cycle près (SAE ne le permet pas) : la vitesse « 14 MHz » est une approximation fidèle mais pas exacte.
-- Pas de sauvegarde d'état de la machine : le cœur SAE garde son état dans des fermetures JavaScript qu'on ne peut pas figer ni restaurer.
-- Archives `.lha` / `.lzx` et images `.ipf` non prises en charge.
+Cliquez dans l'écran pour capturer la souris, Échap pour la libérer. Inser = Help, Page préc. / Page suiv. = touches Amiga.
 
 ## Construire
 
-```
-python3 build.py
-```
-
-Concatène et minifie le cœur `vendor/sae`, intègre les ROM AROS compressées et l'interface `src/template.html`
-pour produire `index.html`.
-
-## Structure
+Tout est construit par la GitHub Action `.github/workflows/puae-wasm.yml` à chaque modification :
+le cœur PUAE (Emscripten), la page principale, l'ancienne version, un banc d'essai, puis la publication.
 
 | Chemin | Contenu |
 |---|---|
-| `index.html` | Page finale, autonome |
-| `src/template.html` | Interface (HTML, CSS, JavaScript) |
-| `vendor/sae/` | Cœur d'émulation SAE (GPL v2) |
-| `vendor/aros/` | ROM AROS (AROS Public License) |
-| `build.py` | Script de construction |
+| `src/template.html` | Interface commune (écran, boîtier, lecteurs, Bibliothèque, réglages) |
+| `wasm/` | Version principale : frontal libretro (`frontend.c`), page (`app/`), fichiers web (`web/`), compilation (`build.sh`) |
+| `vendor/puae/` | Cœur PUAE en sous-module, avec `wasm/patches/` |
+| `vendor/sae/`, `build.py` | Ancienne version : cœur SAE, construit dans `sae/index.html` |
+| `vendor/aros/` | ROM AROS libres |
+| `index.html`, `puae.*`, `*.js`, `sae/` | Site publié (généré) |
+
+Détails techniques et historique du portage : `wasm/README.md`.
 
 ## Licences
 
-- Cœur d'émulation : [SAE](https://github.com/naTmeg/ScriptedAmigaEmulator) de Rupert Hausberger, dérivé de WinUAE, GNU GPL v2.
-- Kickstart de secours : AROS, AROS Public License.
+- Cœur PUAE (libretro-uae, dérivé de WinUAE) et cœur SAE (R. Hausberger) : GNU GPL v2.
+- AROS : AROS Public License.
 - L'ensemble est distribué sous GNU GPL v2 (voir `LICENSE`).
 
 Amiga est une marque de ses détenteurs respectifs ; ce projet n'y est pas affilié.

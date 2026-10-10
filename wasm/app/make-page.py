@@ -171,6 +171,10 @@ rep("<p>Un disque vierge, comme sorti de sa boîte. Partitionnez-le ensuite avec
 rep("<li>Démarrez sur la disquette Install 3.1, lancez HDToolBox, partitionnez, puis formatez DH0: depuis le Workbench.</li>",
     "<li>Le disque arrive déjà partitionné et formaté : démarrez sur la disquette Install 3.1.</li>")
 
+# Lien vers l'ancienne version, conservée sous sae/
+note = "Vos fichiers restent dans ce navigateur (stockage local) et ne sont envoyés nulle part."
+rep(note, note + '\n    <br><a href="sae/">Ancienne version (cœur SAE)</a>, conservée pour comparer : elle partage la même Bibliothèque.')
+
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)
 assert not leftovers, f"restes de SAE : {sorted(set(leftovers))[:10]}"
 

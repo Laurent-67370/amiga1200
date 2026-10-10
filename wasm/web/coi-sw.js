@@ -5,6 +5,8 @@ self.addEventListener("activate", e => e.waitUntil(self.clients.claim()));
 self.addEventListener("fetch", e => {
   const r = e.request;
   if (r.cache === "only-if-cached" && r.mode !== "same-origin") return;
+  /* L'ancienne version (sae/) n'a pas besoin d'isolation, et ses polices Google y seraient refusées */
+  if (new URL(r.url).pathname.includes("/sae/") || (r.referrer && new URL(r.referrer).pathname.includes("/sae/"))) return;
   e.respondWith(fetch(r).then(res => {
     if (res.status === 0) return res;
     const h = new Headers(res.headers);

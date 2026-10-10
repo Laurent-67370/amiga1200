@@ -1,5 +1,7 @@
 build/
 node_modules/
+wasm/dist/
+wasm/obj/
 *.adf
 *.hdf
 *.rom

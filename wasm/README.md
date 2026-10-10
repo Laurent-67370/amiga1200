@@ -77,3 +77,11 @@ actif, disque créé par « Nouveau » amorçable.
 
 Vérifié dans Chromium : « echo AAA », sauvegarde, « echo BBB », reprise → seul AAA à l'écran, à chaud comme après
 extinction (reprise au clavier) ; profil cycle exact + 8 Mo Fast + NTSC appliqué au démarrage.
+
+## Étape 6 : bascule (terminée)
+
+- Le travail de la branche `puae` est fusionné dans `main`.
+- La version PUAE est publiée à la racine du site, l'ancienne version SAE dans `sae/` (construite par `build.py`),
+  et l'ancienne adresse d'essai `/puae/` redirige vers l'accueil.
+- Le service worker d'isolation laisse passer `sae/` sans en-têtes (polices Google, pas de fils d'exécution).
+- Une autre branche poussée est publiée dans `/<nom de la branche>/` pour les essais.

@@ -1,10 +1,16 @@
-name: Cœur PUAE en WebAssembly
+name: Construire et publier le site
 
+# main : version principale (cœur PUAE) à la racine, ancienne version (SAE) dans sae/.
+# Autres branches (essais) : publiées dans /<nom de la branche>/.
+# Les publications sont faites avec GITHUB_TOKEN : elles ne relancent pas ce workflow.
 on:
   push:
-    branches: [puae, puae-exp]
-    paths: ["wasm/**", "vendor/puae", ".github/workflows/puae-wasm.yml"]
+    paths: ["wasm/**", "vendor/**", "src/**", "build.py", ".github/workflows/puae-wasm.yml"]
   workflow_dispatch:
+
+concurrency:
+  group: publication
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -58,20 +64,38 @@ jobs:
           done
           test $ok = 1
 
-      - name: Publier la page d'essai dans /puae/ (branche main, GitHub Pages)
+      - name: Construire l'ancienne version (SAE)
+        run: python3 build.py
+
+      - name: Publier
         run: |
           git fetch --depth 1 origin main
           git worktree add ../site-main origin/main
-          DIR="${GITHUB_REF_NAME}"   # puae → /puae/, puae-exp → /puae-exp/ (essais)
-          rm -rf "../site-main/$DIR" && mkdir -p "../site-main/$DIR"
-          cp wasm/dist/site/* "../site-main/$DIR/"
-          cd ../site-main
-          git add "$DIR"
+          SITE=../site-main
+          if [ "$GITHUB_REF_NAME" = "main" ]; then
+            # Version principale à la racine
+            for f in index.html essai.html puae.js puae.wasm puae-frontend.js adf.js hdf.js coi.js coi-sw.js aros-rom.bin.gz aros-ext.bin.gz; do
+              cp "wasm/dist/site/$f" "$SITE/$f"
+            done
+            mkdir -p "$SITE/sae" && cp sae/index.html "$SITE/sae/index.html"
+            # Ancienne adresse d'essai : redirection vers l'accueil
+            rm -rf "$SITE/puae" && mkdir -p "$SITE/puae"
+            printf '%s\n' '<!DOCTYPE html><meta charset="utf-8"><title>Amiga 1200</title>' \
+              '<meta http-equiv="refresh" content="0; url=../">' \
+              '<p>La version PUAE est maintenant la page principale : <a href="../">Amiga 1200</a>.</p>' > "$SITE/puae/index.html"
+            ADD=". "; URL="https://laurent-67370.github.io/amiga1200/"
+          else
+            DIR="$GITHUB_REF_NAME"
+            rm -rf "$SITE/$DIR" && mkdir -p "$SITE/$DIR" && cp wasm/dist/site/* "$SITE/$DIR/"
+            ADD="$DIR"; URL="https://laurent-67370.github.io/amiga1200/$DIR/"
+          fi
+          cd "$SITE"
+          git add -A $ADD
           if git diff --cached --quiet; then echo "rien à publier"; exit 0; fi
           git -c user.name="github-actions[bot]" -c user.email="41898099+github-actions[bot]@users.noreply.github.com" \
-            commit -m "Page d'essai PUAE ($DIR) : ${GITHUB_SHA::7}"
+            commit -m "Publication ($GITHUB_REF_NAME) : ${GITHUB_SHA::7}"
           for i in 1 2 3; do git push origin HEAD:main && break; git pull --rebase origin main; done
-          echo "::notice title=Publié::https://laurent-67370.github.io/amiga1200/$DIR/"
+          echo "::notice title=Publié::$URL"
 
       - uses: actions/upload-artifact@v4
         with:

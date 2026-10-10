@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Construit index.html : un seul fichier autonome (cœur SAE minifié + ROM AROS intégrées).
+"""Construit sae/index.html : l'ancienne version, un seul fichier autonome (cœur SAE minifié + ROM AROS intégrées).
+La version principale (cœur PUAE) est construite par wasm/build.sh.
 
 Prérequis : Python 3 et Node.js (pour terser, récupéré via npx).
 Usage : python3 build.py
@@ -27,5 +28,10 @@ page = (ROOT / "src/template.html").read_text(encoding="utf-8")
 page = page.replace("/*__SAE_CORE__*/", core_min)
 page = page.replace("__AROS_ROM__", gz64("vendor/aros/aros-amiga-m68k-rom.bin"))
 page = page.replace("__AROS_EXT__", gz64("vendor/aros/aros-amiga-m68k-ext.bin"))
-(ROOT / "index.html").write_text(page, encoding="utf-8")
-print(f"index.html : {len(page.encode()) / 1048576:.2f} Mo")
+page = page.replace("<title>Amiga 1200</title>", "<title>Amiga 1200 · SAE</title>", 1)
+note = "Vos fichiers restent dans ce navigateur (stockage local) et ne sont envoyés nulle part."
+assert page.count(note) == 1
+page = page.replace(note, note + '\n    <br>Ancienne version, conservée pour comparer. <a href="../">Revenir à la version principale</a> (cœur PUAE, plus fidèle).')
+out = ROOT / "sae" / "index.html"; out.parent.mkdir(exist_ok=True)
+out.write_text(page, encoding="utf-8")
+print(f"sae/index.html : {len(page.encode()) / 1048576:.2f} Mo")

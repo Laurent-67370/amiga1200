@@ -3,109 +3,1438 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Amiga 1200 · cœur PUAE (essai)</title>
+<title>Amiga 1200 · PUAE</title>
 <link rel="icon" href="data:,">
+<meta name="description" content="Émulateur Amiga 1200 (68EC020, chipset AGA, IDE Gayle) dans le navigateur.">
 <script src="coi.js"></script>
 <style>
-  :root { --wb-grey:#aaa; --wb-blue:#6688bb; }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: #2a2f3a; color: #e8e6df; font: 15px/1.45 system-ui, sans-serif; }
-  main { max-width: 960px; margin: 0 auto; padding: 20px 16px 40px; }
-  h1 { font-size: 20px; margin: 0 0 4px; }
-  p.lead { margin: 0 0 14px; color: #b8c0cc; }
-  .screen { background: #000; aspect-ratio: 4 / 3; border-radius: 10px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-  /* L'Amiga affichait ses pixels étirés en 4:3 : le canvas remplit l'écran 4:3 au lieu de garder ses proportions brutes. */
-  canvas { width: 100%; height: 100%; object-fit: fill; image-rendering: auto; display: block; }
-  .bar { margin-top: 12px; background: var(--wb-grey); color: #000; padding: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
-         border: 1px solid; border-color: #fff #000 #000 #fff; }
-  button, label.file { appearance: none; background: var(--wb-grey); color: #000; font: inherit; font-size: 14px; padding: 5px 10px; cursor: pointer;
-         border: 2px solid; border-color: #fff #000 #000 #fff; }
-  button:active { border-color: #000 #fff #fff #000; }
-  button.primary { background: var(--wb-blue); color: #fff; }
-  button:disabled { color: #666; }
-  label.file input { display: none; }
-  select { font: inherit; font-size: 14px; }
-  .stat { margin-left: auto; font-variant-numeric: tabular-nums; font-size: 13px; }
-  .led { display: inline-block; width: 18px; height: 6px; background: #3a3a2e; margin: 0 3px 0 8px; vertical-align: 1px; }
-  .led.on.g { background: #4dff6a; } .led.on.a { background: #ffb020; }
-  .names { font-size: 13px; color: #222; }
-  pre { background: #11141a; color: #9aa3ad; padding: 10px; max-height: 180px; overflow: auto; font-size: 12px; margin-top: 12px; }
-  .warn { background: #5a3a20; padding: 10px; margin-bottom: 12px; display: none; }
+:root{
+  --room-top:#3b4252; --room-bot:#1f2430;
+  --plastic:#d8d2c2; --plastic-hi:#ebe6d9; --plastic-lo:#b3ac99; --plastic-edge:#8f8875;
+  --key:#4a4a4c;
+  --wb-grey:#aaaaaa; --wb-light:#ffffff; --wb-dark:#000000; --wb-blue:#6688bb; --wb-text:#000;
+  --led-green:#4dff6a; --led-amber:#ffb020; --led-off:#3a3a2e;
+  --screen-off:#0d1014;
+  --font:"Archivo", "Helvetica Neue", Arial, sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  min-height:100vh;
+  background:radial-gradient(ellipse at 50% 0%, var(--room-top), var(--room-bot) 70%);
+  color:#e8e6df; font-family:var(--font); font-size:15px; line-height:1.45;
+}
+button{font:inherit}
+.rig{max-width:980px;margin:0 auto;padding:24px 16px 48px}
+
+/* ---------- Monitor ---------- */
+.monitor{
+  background:linear-gradient(180deg,var(--plastic-hi),var(--plastic) 40%,var(--plastic-lo));
+  border-radius:18px 18px 10px 10px; padding:26px 30px 16px;
+  box-shadow:0 2px 0 var(--plastic-hi) inset, 0 -3px 0 var(--plastic-edge) inset, 0 18px 40px rgba(0,0,0,.45);
+}
+.bezel{
+  background:#2b2b2a; border-radius:14px; padding:14px;
+  box-shadow:inset 0 3px 8px rgba(0,0,0,.8), 0 1px 0 var(--plastic-hi);
+}
+.tube{
+  position:relative;touch-action:none; aspect-ratio:4/3; border-radius:18px/22px; overflow:hidden;
+  background:var(--screen-off);
+  box-shadow:inset 0 0 40px rgba(0,0,0,.9);
+}
+.tube canvas{position:absolute;inset:0;width:100%!important;height:100%!important;display:block;image-rendering:auto;background:#000}
+.tube.sharp canvas{image-rendering:pixelated}
+.crt::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,.45) 100%);
+  mix-blend-mode:multiply;
+}
+.glare{position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(135deg, rgba(255,255,255,.07), transparent 35%);}
+.idle{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:14px;text-align:center;padding:24px;color:#9aa3ad;
+}
+.idle h1{margin:0;font-size:clamp(22px,4vw,34px);font-weight:700;font-stretch:115%;letter-spacing:.02em;color:#d6dbe0}
+.idle p{margin:0;max-width:46ch}
+.idle .rom-line{font-size:13px;color:#7c8792}
+.capture-hint{
+  position:absolute;left:50%;bottom:12px;transform:translateX(-50%);
+  background:rgba(0,0,0,.65);color:#fff;font-size:12.5px;padding:5px 12px;border-radius:12px;
+  pointer-events:none;transition:opacity .4s;
+}
+.monitor-foot{display:flex;align-items:center;justify-content:space-between;margin-top:10px;color:#5c574b;font-size:12px}
+.monitor-foot .brand{font-weight:700;font-stretch:120%;letter-spacing:.08em}
+.monitor-foot .stat{display:flex;gap:14px;font-variant-numeric:tabular-nums}
+.pwr-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--led-off);vertical-align:-1px;margin-left:8px;box-shadow:inset 0 1px 1px rgba(0,0,0,.5)}
+.pwr-dot.on{background:var(--led-green);box-shadow:0 0 8px var(--led-green)}
+
+/* ---------- A1200 wedge ---------- */
+.wedge{
+  position:relative;margin:22px 10px 0;height:88px;
+  background:linear-gradient(180deg,var(--plastic-hi) 0,var(--plastic) 30%,var(--plastic-lo) 100%);
+  border-radius:8px 8px 4px 4px;
+  clip-path:polygon(2% 0,98% 0,100% 100%,0 100%);
+  box-shadow:0 14px 28px rgba(0,0,0,.4);
+  display:flex;align-items:center;padding:0 5%;gap:18px;color:#4c4739;
+}
+.wedge .keysrow{flex:1;height:30px;border-radius:3px;
+  background:repeating-linear-gradient(90deg,var(--key) 0 26px,#2f2f31 26px 29px);
+  box-shadow:inset 0 2px 3px rgba(0,0,0,.6);opacity:.9}
+.wedge .name{font-weight:700;font-stretch:125%;font-size:15px;letter-spacing:.12em;white-space:nowrap}
+.leds{display:flex;gap:12px;align-items:center}
+.led{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;color:#5c574b}
+.led i{width:22px;height:6px;border-radius:2px;background:var(--led-off);box-shadow:inset 0 1px 2px rgba(0,0,0,.6)}
+.led.green.on i{background:var(--led-green);box-shadow:0 0 10px var(--led-green)}
+.led.green.dim i{background:#2f8a3c}
+.led.amber.on i{background:var(--led-amber);box-shadow:0 0 10px var(--led-amber)}
+.slot{
+  position:absolute;right:-1px;top:28px;width:16px;height:46px;border-radius:3px 0 0 3px;
+  background:linear-gradient(90deg,#1c1c1a,#3a382f);cursor:pointer;
+}
+.slot:hover,.slot.drop{box-shadow:0 0 0 2px var(--led-amber)}
+
+/* ---------- Workbench gadgets ---------- */
+.wb{
+  background:var(--wb-grey);color:var(--wb-text);
+  border:1px solid; border-color:var(--wb-light) var(--wb-dark) var(--wb-dark) var(--wb-light);
+}
+.gad{
+  appearance:none;background:var(--wb-grey);color:#000;cursor:pointer;
+  border:2px solid;border-color:var(--wb-light) var(--wb-dark) var(--wb-dark) var(--wb-light);
+  padding:6px 10px;display:inline-flex;align-items:center;gap:6px;font-size:14px;line-height:1.2;white-space:nowrap;
+}
+.gad:active,.gad[aria-pressed="true"]{border-color:var(--wb-dark) var(--wb-light) var(--wb-light) var(--wb-dark);background:#9a9a9a}
+.gad:focus-visible{outline:2px dashed var(--wb-blue);outline-offset:2px}
+.gad[disabled]{color:#666;cursor:default}
+.gad.primary{background:var(--wb-blue);color:#fff}
+.gad.primary:active{background:#55779f}
+.gad svg{width:16px;height:16px;flex:none}
+.gad.small{padding:3px 8px;font-size:13px}
+
+.toolbar{margin-top:26px;padding:8px;display:flex;flex-wrap:wrap;gap:5px}
+.toolbar .sep{flex:1}
+
+.drives{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.drive{padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.drive.drop{outline:3px solid var(--led-amber)}
+.drive-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.drive-head b{font-size:15px}
+.drive-head small{color:#333;font-variant-numeric:tabular-nums}
+.drive .media{background:#fff;border:1px solid;border-color:var(--wb-dark) var(--wb-light) var(--wb-light) var(--wb-dark);
+  padding:5px 8px;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:30px}
+.drive .media.empty{color:#666;background:#ddd}
+.drive .acts{display:flex;flex-wrap:wrap;gap:5px}
+
+.keys{margin-top:12px;padding:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.keys .lbl{font-size:13px;margin-right:4px}
+
+.vkbd{margin-top:8px;padding:8px;display:flex;flex-direction:column;gap:4px;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.vkbd[hidden]{display:none}
+.vrow{display:flex;gap:4px}
+.vk{flex:1 1 0;min-width:0;height:40px;padding:0 2px;justify-content:center;font-size:14px;overflow:hidden;
+  background:#d6d2c6;border:2px solid;border-color:#fff #555 #555 #fff;cursor:pointer;color:#111}
+.vk.dark{background:#8d8a82;color:#fff}
+.vk[aria-pressed="true"],.vk.down{background:#6688bb;color:#fff;border-color:#334 #fff #fff #334}
+.vk small{font-size:10px;opacity:.75;margin-left:2px}
+.vk .s{display:none}
+.touch-tip{display:none;margin-top:8px;font-size:12.5px;color:#9aa3ad}
+.is-touch .touch-tip{display:block}
+.footnote{margin-top:18px;color:#9aa3ad;font-size:12.5px;max-width:80ch}
+.footnote a{color:#b9c8dc}
+
+/* ---------- Workbench windows (modals) ---------- */
+.veil{position:fixed;inset:0;background:rgba(10,14,22,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+.veil.open{display:flex}
+.win{width:min(640px,100%);max-height:calc(100vh - 32px);display:flex;flex-direction:column;box-shadow:6px 6px 0 rgba(0,0,0,.35)}
+.titlebar{
+  display:flex;align-items:center;gap:8px;padding:3px 4px 3px 8px;color:#000;font-weight:600;
+  background:var(--wb-blue);
+  border-bottom:1px solid #000;
+}
+.titlebar .t{background:var(--wb-blue);padding:0 6px;color:#fff}
+.titlebar .stripes{flex:1;height:10px;background:repeating-linear-gradient(0deg,#fff 0 1px,transparent 1px 3px);opacity:.55}
+.closebox{width:22px;height:18px;border:2px solid;border-color:#fff #000 #000 #fff;background:var(--wb-grey);cursor:pointer;padding:0;position:relative}
+.closebox::after{content:"";position:absolute;inset:4px 5px;border:2px solid #000;background:#fff}
+.win .body{padding:14px 16px;overflow:auto}
+.win h3{margin:16px 0 6px;font-size:15px}
+.win h3:first-child{margin-top:0}
+.win p{margin:0 0 10px}
+.opt{display:flex;flex-wrap:wrap;gap:6px 14px;margin:4px 0 8px}
+.opt label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.opt input{accent-color:var(--wb-blue)}
+.hint{font-size:13px;color:#222}
+.win .actions{display:flex;justify-content:space-between;gap:8px;padding:10px 16px;border-top:1px solid #fff}
+.lib-list{display:flex;flex-direction:column;gap:4px;margin:6px 0 10px}
+.lib-row{display:flex;align-items:center;gap:8px;background:#bbb;padding:4px 6px;border:1px solid;border-color:#fff #000 #000 #fff}
+.lib-row .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lib-row .s{font-size:12px;color:#222;font-variant-numeric:tabular-nums}
+.lib-empty{font-size:13.5px;color:#222;padding:4px 0 8px}
+.kbd{display:inline-block;border:1px solid #000;background:#ddd;padding:0 5px;font-size:12.5px;border-radius:2px}
+.help-list{margin:0 0 10px;padding-left:20px}
+.help-list li{margin-bottom:6px}
+
+.toast{
+  position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);opacity:0;
+  background:var(--wb-grey);color:#000;border:2px solid;border-color:#fff #000 #000 #fff;
+  padding:8px 14px;z-index:60;transition:.25s;max-width:calc(100% - 32px);box-shadow:4px 4px 0 rgba(0,0,0,.35)
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{background:#e9b7a6}
+
+.dropzone{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;
+  background:rgba(102,136,187,.35);border:4px dashed #fff;color:#fff;font-size:22px;font-weight:700;pointer-events:none}
+.dropzone.on{display:flex}
+
+/* fullscreen */
+.tube:fullscreen{border-radius:0;background:#000;aspect-ratio:auto}
+.tube:fullscreen canvas{object-fit:contain}
+.tube:-webkit-full-screen{border-radius:0;background:#000}
+
+@media (max-width:760px){
+  .rig{display:flex;flex-direction:column}
+  .rig>.monitor{order:0}.rig>.vkbd{order:1}.rig>.keys{order:2}.rig>.touch-tip{order:3}
+  .rig>.wedge{order:4}.rig>.toolbar{order:5}.rig>.drives{order:6}.rig>.footnote{order:7}
+  .monitor{padding:14px 12px 10px;border-radius:12px}
+  .bezel{padding:8px}
+  .wedge{height:64px;margin:16px 4px 0;padding:0 6%}
+  .wedge .keysrow{display:none}
+  .drives{grid-template-columns:1fr}
+  .toolbar .sep{display:none}
+  .monitor-foot .stat{display:none}
+}
+@media (max-width:560px){.vk{height:38px;font-size:12px}.vk .l{display:none}.vk .s{display:inline}.vk small{display:none}.vrow{gap:2px}.vkbd{padding:4px;gap:3px}.idle p,.idle .rom-line{display:none}.idle h1{font-size:22px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
-<main>
-  <h1>Amiga 1200 avec le cœur PUAE</h1>
-  <p class="lead">Page d'essai de l'étape 2 : le moteur de WinUAE compilé en WebAssembly. Sans Kickstart, la machine démarre sur AROS. Cliquez dans l'écran pour capturer la souris, Échap pour la libérer.</p>
-  <div class="warn" id="warn"></div>
-  <div class="screen"><canvas id="screen" width="720" height="568"></canvas></div>
+<main class="rig">
 
-  <div class="bar">
-    <label class="file">Kickstart…<input type="file" id="fKick" accept=".rom,.bin"></label>
-    <label class="file">rom.key…<input type="file" id="fKey" accept=".key"></label>
-    <label class="file">Disquette DF0:…<input type="file" id="fDisk" accept=".adf,.dms,.adz,.zip"></label>
-    <select id="compat" title="Précision"><option value="normal">Rapide</option><option value="exact">Cycle exact</option></select>
-    <button class="primary" id="bStart">Allumer</button>
-    <span class="names" id="names">Kickstart : AROS · DF0: vide</span>
-  </div>
-  <div class="bar">
-    <button id="bReset" disabled>Réinitialiser</button>
-    <button id="bPause" disabled>Pause</button>
-    <button id="bMute" disabled>Couper le son</button>
-    <button id="bSave" disabled>Sauver l'état</button>
-    <button id="bLoad" disabled>Restaurer l'état</button>
-    <span class="stat"><span id="fps">—</span>
-      <span class="led g" id="lPow"></span>Power<span class="led a" id="lDf"></span>DF0<span class="led a" id="lHd"></span>HD</span>
-  </div>
-  <pre id="log"></pre>
+  <section class="monitor" aria-label="Moniteur">
+    <div class="bezel">
+      <div class="tube crt" id="tube">
+        <canvas id="amigaScreen" width="720" height="568" aria-label="Écran de l'Amiga"></canvas>
+        <div class="idle" id="idle">
+          <h1>Amiga 1200</h1>
+          <p>68EC020 à 14 MHz, chipset AGA, 2 Mo de Chip RAM. Glissez une disquette .adf, une archive .zip ou un disque dur .hdf n'importe où sur la page, puis allumez.</p>
+          <button class="gad primary" id="idlePower">Allumer</button>
+          <div class="rom-line" id="idleRom"></div>
+        </div>
+        <div class="glare"></div>
+        <div class="capture-hint" id="captureHint" style="opacity:0">Cliquez dans l'écran pour utiliser la souris. Échap pour la libérer.</div>
+      </div>
+    </div>
+    <div class="monitor-foot">
+      <span class="brand">AMIGA 1200<span class="pwr-dot" id="monLed"></span></span>
+      <span class="stat"><span id="statFps">—</span><span id="statCpu"></span><span id="statMode"></span></span>
+    </div>
+  </section>
+
+  <p class="touch-tip">Écran tactile : glissez un doigt pour déplacer la souris, touchez pour cliquer, touchez deux fois puis glissez pour déplacer une fenêtre. Posez deux doigts pour le bouton droit (menus) et glissez vers l'option voulue.</p>
+
+  <section class="wedge" aria-label="Boîtier Amiga 1200">
+    <span class="name">AMIGA 1200</span>
+    <span class="keysrow" aria-hidden="true"></span>
+    <div class="leds">
+      <span class="led green" id="ledPower"><i></i>Power</span>
+      <span class="led amber" id="ledDf"><i></i>Drive</span>
+      <span class="led amber" id="ledHd"><i></i>HD</span>
+    </div>
+    <span class="slot" id="slot" title="Lecteur interne DF0: — cliquez pour insérer une disquette"></span>
+  </section>
+
+  <nav class="toolbar wb" aria-label="Commandes">
+    <button class="gad primary" id="btnPower">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 1v6M4.2 3.5a6 6 0 1 0 7.6 0"/></svg>
+      <span>Allumer</span></button>
+    <button class="gad" id="btnReset" disabled title="Ctrl + Amiga + Amiga">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 8a5.5 5.5 0 1 0 1.8-4.1M2 1.5v3.5h3.5"/></svg>
+      Réinitialiser</button>
+    <button class="gad" id="btnPause" disabled aria-pressed="false">
+      <svg viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="2" width="3.5" height="12"/><rect x="9.5" y="2" width="3.5" height="12"/></svg>
+      <span>Pause</span></button>
+    <button class="gad" id="btnMute" aria-pressed="false">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 6h3l4-3.5v11L5 10H2z"/><path d="M11 5.5a3.5 3.5 0 0 1 0 5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+      <span>Son</span></button>
+    <button class="gad" id="btnFull">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M1.5 5.5v-4h4M10.5 1.5h4v4M14.5 10.5v4h-4M5.5 14.5h-4v-4"/></svg>
+      Plein écran</button>
+    <button class="gad" id="btnShot" disabled>
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1.5" y="4" width="13" height="9.5"/><circle cx="8" cy="8.7" r="2.6"/><path d="M5 4l1.2-2h3.6L11 4"/></svg>
+      Capture</button>
+    <span class="sep"></span>
+    <button class="gad" id="btnLib">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="1.5" width="12" height="13"/><rect x="4.5" y="1.5" width="7" height="4.5"/><rect x="4" y="9" width="8" height="5.5"/></svg>
+      Bibliothèque</button>
+    <button class="gad" id="btnSettings">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4h12M2 8h12M2 12h12"/><circle cx="5" cy="4" r="1.6" fill="#aaa"/><circle cx="11" cy="8" r="1.6" fill="#aaa"/><circle cx="7" cy="12" r="1.6" fill="#aaa"/></svg>
+      Réglages</button>
+    <button class="gad" id="btnHelp" aria-label="Aide">?</button>
+  </nav>
+
+  <section class="drives" aria-label="Lecteurs">
+    <div class="drive wb" id="drive-df0" data-unit="df0">
+      <div class="drive-head"><b>DF0:</b><small id="trk-df0">lecteur interne</small></div>
+      <div class="media empty" id="name-df0">Aucune disquette</div>
+      <div class="acts">
+        <button class="gad small" data-act="insert">Insérer…</button>
+        <button class="gad small" data-act="eject" disabled>Éjecter</button>
+        <button class="gad small" data-act="blank">Vierge</button>
+        <button class="gad small" data-act="download" disabled>Télécharger</button>
+        <button class="gad small" data-act="profile" disabled title="Réglages propres à ce disque">Profil</button>
+      </div>
+    </div>
+    <div class="drive wb" id="drive-df1" data-unit="df1">
+      <div class="drive-head"><b>DF1:</b><small id="trk-df1">lecteur externe</small></div>
+      <div class="media empty" id="name-df1">Aucune disquette</div>
+      <div class="acts">
+        <button class="gad small" data-act="insert">Insérer…</button>
+        <button class="gad small" data-act="eject" disabled>Éjecter</button>
+        <button class="gad small" data-act="blank">Vierge</button>
+        <button class="gad small" data-act="download" disabled>Télécharger</button>
+        <button class="gad small" data-act="profile" disabled title="Réglages propres à ce disque">Profil</button>
+      </div>
+    </div>
+    <div class="drive wb" id="drive-dh0" data-unit="dh0">
+      <div class="drive-head"><b>DH0:</b><small id="trk-dh0">IDE interne 2,5"</small></div>
+      <div class="media empty" id="name-dh0">Aucun disque dur</div>
+      <div class="acts">
+        <button class="gad small" data-act="insert">Choisir…</button>
+        <button class="gad small" data-act="eject" disabled>Retirer</button>
+        <button class="gad small" data-act="blank">Nouveau</button>
+        <button class="gad small" data-act="download" disabled>Télécharger</button>
+        <button class="gad small" data-act="profile" disabled title="Réglages propres à ce disque">Profil</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="keys wb" aria-label="Touches spéciales Amiga">
+    <button class="gad small" id="kbdToggle" aria-pressed="false" aria-controls="vkbd">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3.5" width="14" height="9"/><path d="M3.5 6.5h1M6 6.5h1M8.5 6.5h1M11 6.5h1.5M4 10h8"/></svg>
+      Clavier</button>
+    <button class="gad small" data-latch="MetaLeft" aria-pressed="false" title="Touche Amiga gauche, maintenue jusqu'à la touche suivante">Amiga gauche</button>
+    <button class="gad small" data-latch="MetaRight" aria-pressed="false" title="Touche Amiga droite, maintenue jusqu'à la touche suivante">Amiga droite</button>
+    <button class="gad small" data-key="ContextMenu">Help</button>
+    <button class="gad small" data-key="Delete">Del</button>
+    <button class="gad small" data-key="Escape">Esc</button>
+    <button class="gad small" data-combo="MetaLeft+KeyM" title="Amiga gauche + M : écran suivant">Écran suivant</button>
+    <button class="gad small" id="kCAA" disabled title="Ctrl + Amiga + Amiga">Ctrl-Amiga-Amiga</button>
+  </section>
+
+  <section class="vkbd wb" id="vkbd" aria-label="Clavier Amiga" hidden></section>
+
+  <p class="footnote">
+    Cœur d'émulation : <a href="https://github.com/libretro/libretro-uae" rel="noopener">PUAE</a> (libretro-uae, licence GPL v2), le moteur de WinUAE compilé en WebAssembly.
+    Kickstart de secours : AROS (AROS Public License), intégré au cœur. Les ROM Kickstart et disquettes Workbench d'origine ne sont pas fournies : importez les vôtres.
+    Vos fichiers restent dans ce navigateur (stockage local) et ne sont envoyés nulle part.
+  </p>
 </main>
+
+<!-- Fichiers cachés -->
+<input type="file" id="filePick" hidden>
+
+<!-- Fenêtre : Réglages -->
+<div class="veil" id="winSettings" role="dialog" aria-modal="true" aria-labelledby="tSettings">
+  <div class="win wb">
+    <div class="titlebar"><button class="closebox" data-close aria-label="Fermer"></button><span class="t" id="tSettings">Réglages de l'Amiga 1200</span><span class="stripes"></span></div>
+    <div class="body">
+      <h3>Kickstart</h3>
+      <div id="romChoices" class="lib-list"></div>
+      <div class="opt">
+        <button class="gad small" id="setImportRom">Importer un Kickstart…</button>
+        <button class="gad small" id="setImportKey">Importer rom.key…</button>
+      </div>
+      <p class="hint" id="keyStatus"></p>
+
+      <h3>Mémoire</h3>
+      <div class="opt" data-setting="fast">
+        <label><input type="radio" name="fast" value="0"> 2 Mo Chip (d'origine)</label>
+        <label><input type="radio" name="fast" value="4"> + 4 Mo Fast</label>
+        <label><input type="radio" name="fast" value="8"> + 8 Mo Fast</label>
+      </div>
+      <p class="hint">L'extension mémoire ajoute aussi l'horloge sauvegardée, comme une carte trappe.</p>
+
+      <h3>Compatibilité</h3>
+      <div class="opt" data-setting="compat">
+        <label><input type="radio" name="compat" value="normal"> Rapide (recommandé)</label>
+        <label><input type="radio" name="compat" value="max"> Cycle exact</label>
+      </div>
+      <p class="hint">Cycle exact : processeur et puces émulés au cycle près, comme WinUAE. Le plus fidèle pour les démos et jeux capricieux, mais plus gourmand.</p>
+
+      <h3>Processeur</h3>
+      <div class="opt" data-setting="cpu">
+        <label><input type="radio" name="cpu" value="orig"> 14 MHz (d'origine)</label>
+        <label><input type="radio" name="cpu" value="max"> Accéléré (×5)</label>
+      </div>
+
+      <h3>Affichage</h3>
+      <div class="opt" data-setting="region">
+        <label><input type="radio" name="region" value="pal"> PAL 50 Hz</label>
+        <label><input type="radio" name="region" value="ntsc"> NTSC 60 Hz</label>
+      </div>
+      <div class="opt" data-setting="res">
+        <label><input type="radio" name="res" value="lores"> Basse résolution</label>
+        <label><input type="radio" name="res" value="hires"> Haute résolution</label>
+        <label><input type="radio" name="res" value="shires"> Super-haute résolution</label>
+      </div>
+      <div class="opt">
+        <label><input type="checkbox" id="optCrt"> Effet moniteur cathodique</label>
+        <label><input type="checkbox" id="optSharp"> Pixels nets</label>
+        <label><input type="checkbox" id="optCenter"> Centrer l'image automatiquement</label>
+        <label><input type="checkbox" id="optSkip"> Sauter des images si l'ordinateur ne suit pas</label>
+      </div>
+
+      <h3>Clavier à l'écran</h3>
+      <div class="opt" data-setting="kbd">
+        <label><input type="radio" name="kbd" value="azerty"> AZERTY (keymap f)</label>
+        <label><input type="radio" name="kbd" value="qwerty"> QWERTY (keymap usa)</label>
+      </div>
+      <p class="hint">Les touches envoient la position physique du clavier A1200 : choisissez les libellés qui correspondent au keymap du Workbench.</p>
+
+      <h3>Joystick (port 2)</h3>
+      <div class="opt" data-setting="joy">
+        <label><input type="radio" name="joy" value="keys"> Flèches + Ctrl droit</label>
+        <label><input type="radio" name="joy" value="pad"> Manette USB</label>
+        <label><input type="radio" name="joy" value="none"> Aucun</label>
+      </div>
+      <p class="hint">Avec « Flèches », les flèches pilotent aussi le joystick : choisissez « Aucun » pour un usage bureautique.</p>
+
+      <h3>Lecteurs de disquettes</h3>
+      <div class="opt" data-setting="floppy">
+        <label><input type="radio" name="floppy" value="orig"> Vitesse d'origine (plus compatible)</label>
+        <label><input type="radio" name="floppy" value="turbo"> Turbo</label>
+      </div>
+      <div class="opt">
+        <label><input type="checkbox" id="optAutosave"> Enregistrer les disques modifiés à l'extinction</label>
+      </div>
+      <p class="hint" id="restartHint">Les réglages s'appliquent au prochain allumage.</p>
+    </div>
+    <div class="actions"><span></span><button class="gad primary" data-close>OK</button></div>
+  </div>
+</div>
+
+<!-- Fenêtre : Bibliothèque -->
+<div class="veil" id="winLib" role="dialog" aria-modal="true" aria-labelledby="tLib">
+  <div class="win wb">
+    <div class="titlebar"><button class="closebox" data-close aria-label="Fermer"></button><span class="t" id="tLib">Bibliothèque</span><span class="stripes"></span></div>
+    <div class="body" id="libBody"></div>
+    <div class="actions">
+      <button class="gad" id="libImport">Ajouter des fichiers…</button>
+      <button class="gad primary" data-close>Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Fenêtre : Nouveau disque dur -->
+<div class="veil" id="winHd" role="dialog" aria-modal="true" aria-labelledby="tHd">
+  <div class="win wb" style="width:min(460px,100%)">
+    <div class="titlebar"><button class="closebox" data-close aria-label="Fermer"></button><span class="t" id="tHd">Nouveau disque dur</span><span class="stripes"></span></div>
+    <div class="body">
+      <p>Un disque vierge, comme sorti de sa boîte. Partitionnez-le ensuite avec HDToolBox (disquette Install) puis formatez-le depuis le Workbench.</p>
+      <div class="opt" id="hdSizes">
+        <label><input type="radio" name="hdsize" value="64"> 64 Mo</label>
+        <label><input type="radio" name="hdsize" value="128" checked> 128 Mo</label>
+        <label><input type="radio" name="hdsize" value="256"> 256 Mo</label>
+        <label><input type="radio" name="hdsize" value="512"> 512 Mo</label>
+      </div>
+    </div>
+    <div class="actions"><button class="gad" data-close>Annuler</button><button class="gad primary" id="hdCreate">Créer le disque</button></div>
+  </div>
+</div>
+
+<!-- Fenêtre : Profil de disque -->
+<div class="veil" id="winProfile" role="dialog" aria-modal="true" aria-labelledby="tProfile">
+  <div class="win wb" style="width:min(560px,100%)">
+    <div class="titlebar"><button class="closebox" data-close aria-label="Fermer"></button><span class="t" id="tProfile">Profil du disque</span><span class="stripes"></span></div>
+    <div class="body">
+      <p id="profIntro"></p>
+      <div class="opt"><label><input type="checkbox" id="profOn"> Utiliser des réglages propres à ce disque</label></div>
+      <div id="profFields">
+        <h3>Compatibilité</h3>
+        <div class="opt"><label><input type="radio" name="p_compat" value="normal"> Rapide</label><label><input type="radio" name="p_compat" value="max"> Maximale</label></div>
+        <h3>Processeur</h3>
+        <div class="opt"><label><input type="radio" name="p_cpu" value="orig"> 14 MHz</label><label><input type="radio" name="p_cpu" value="max"> Aussi vite que possible</label></div>
+        <h3>Mémoire</h3>
+        <div class="opt"><label><input type="radio" name="p_fast" value="0"> 2 Mo Chip</label><label><input type="radio" name="p_fast" value="4"> + 4 Mo Fast</label><label><input type="radio" name="p_fast" value="8"> + 8 Mo Fast</label></div>
+        <h3>Région</h3>
+        <div class="opt"><label><input type="radio" name="p_region" value="pal"> PAL 50 Hz</label><label><input type="radio" name="p_region" value="ntsc"> NTSC 60 Hz</label></div>
+        <h3>Joystick (port 2)</h3>
+        <div class="opt"><label><input type="radio" name="p_joy" value="keys"> Flèches + Ctrl droit</label><label><input type="radio" name="p_joy" value="pad"> Manette USB</label><label><input type="radio" name="p_joy" value="none"> Aucun</label></div>
+        <h3>Lecteurs de disquettes</h3>
+        <div class="opt"><label><input type="radio" name="p_floppy" value="orig"> Vitesse d'origine</label><label><input type="radio" name="p_floppy" value="turbo"> Turbo</label></div>
+      </div>
+      <p class="hint">Le profil s'applique à l'allumage quand ce disque est dans DF0: ou branché sur DH0: ; il passe avant les Réglages généraux.</p>
+    </div>
+    <div class="actions"><button class="gad" data-close>Annuler</button><button class="gad primary" id="profSave">Enregistrer le profil</button></div>
+  </div>
+</div>
+
+<!-- Fenêtre : Aide -->
+<div class="veil" id="winHelp" role="dialog" aria-modal="true" aria-labelledby="tHelp">
+  <div class="win wb">
+    <div class="titlebar"><button class="closebox" data-close aria-label="Fermer"></button><span class="t" id="tHelp">Mode d'emploi</span><span class="stripes"></span></div>
+    <div class="body">
+      <h3>Démarrer comme un vrai A1200</h3>
+      <ol class="help-list">
+        <li>Ouvrez <b>Réglages</b> et importez votre Kickstart 3.1 A1200 (40.068). Il est conservé dans ce navigateur. Sans Kickstart, l'émulateur démarre sur AROS, une réimplémentation libre.</li>
+        <li>Glissez la disquette <b>Workbench</b> (.adf) sur la page ou sur la fente du lecteur, à droite du boîtier.</li>
+        <li>Cliquez sur <b>Allumer</b>. Pour changer de disquette en cours de route, utilisez <b>Insérer…</b> sous DF0:.</li>
+      </ol>
+      <h3>Installer sur disque dur</h3>
+      <ol class="help-list">
+        <li>Sous DH0:, cliquez sur <b>Nouveau</b> et choisissez une taille.</li>
+        <li>Démarrez sur la disquette Install 3.1, lancez HDToolBox, partitionnez, puis formatez DH0: depuis le Workbench.</li>
+        <li>Lancez l'installation. À l'extinction, le disque dur est enregistré dans la Bibliothèque.</li>
+      </ol>
+      <h3>Clavier et souris</h3>
+      <p>Le clavier suit la position des touches : choisissez le keymap <i>f</i> (français) dans les Préférences Input du Workbench. Cliquez dans l'écran pour capturer la souris, <span class="kbd">Échap</span> pour la libérer.</p>
+      <p>Les touches Amiga sont la touche Windows/Cmd, ou les boutons <b>Amiga gauche</b> et <b>Amiga droite</b> sous les lecteurs, qui restent enfoncés jusqu'à la touche suivante. <span class="kbd">Menu</span> correspond à Help. Le bouton <b>Clavier</b> affiche un clavier A1200 complet à l'écran, pratique sur tablette.</p>
+      <h3>Écran tactile</h3>
+      <p>L'écran se comporte comme un pavé tactile : glissez un doigt pour déplacer la souris, touchez pour cliquer, touchez deux fois et gardez le doigt posé pour glisser une fenêtre ou une icône. Pour les menus, posez deux doigts (bouton droit), glissez jusqu'à l'option et relevez.</p>
+      <h3>Compatibilité et vitesse</h3>
+      <p>Le mode <b>Rapide</b> convient à la plupart des logiciels. Si un jeu ou une démo affiche des défauts, essayez <b>Compatibilité maximale</b> dans Réglages, ou mieux, dans le <b>Profil</b> de sa disquette : le réglage ne servira qu'à lui. Quand l'ordinateur ne suit pas, l'émulateur saute des images pour garder le son et la vitesse de jeu justes ; le compteur sous l'écran indique alors « 1 image sur 2 ».</p>
+      <h3>Enregistrement des disques</h3>
+      <p>Quand l'Amiga écrit sur une disquette ou le disque dur, la copie de la Bibliothèque est mise à jour quelques secondes après la fin de l'écriture, ainsi qu'à l'extinction et quand vous quittez l'onglet. L'heure du dernier enregistrement s'affiche sur le lecteur.</p>
+      <h3>Formats acceptés</h3>
+      <p>Disquettes .adf, .dms, .adz et ADF étendus. Disques durs .hdf ou .hdz (jusqu'à 512 Mo). Kickstart .rom, y compris les ROM Amiga Forever accompagnées de rom.key. Les archives .zip et .gz sont ouvertes directement ; si un .zip contient plusieurs disquettes, la première est insérée et les autres vont dans la Bibliothèque. Les archives .lha et .lzx doivent être extraites avant.</p>
+    </div>
+    <div class="actions"><span></span><button class="gad primary" data-close>Compris</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="dropzone" id="dropzone">Déposez le fichier : disquette, disque dur ou Kickstart</div>
 
 <script src="puae.js"></script>
 <script type="module">
 import { PuaeMachine } from "./puae-frontend.js";
-const $ = s => document.querySelector(s);
-const log = t => { const l = $("#log"); l.textContent += t + "\n"; l.scrollTop = l.scrollHeight; };
-const files = { kick: null, key: null, disk: null };
-let m = null, state = null;
-window.__puae = { get machine() { return m; }, log };
+import { makeBlankAdf } from "./adf.js";
 
-if (!window.crossOriginIsolated) {
-  const w = $("#warn"); w.style.display = "block";
-  w.textContent = "Isolation inter-origines inactive : rechargez la page une fois. Sans elle, les fils d'exécution du cœur ne peuvent pas démarrer.";
+/* =========================================================
+   Petits utilitaires
+   ========================================================= */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+
+function u8ToStr(u8) {
+  let s = ""; const C = 0x8000;
+  for (let i = 0; i < u8.length; i += C) s += String.fromCharCode.apply(null, u8.subarray(i, i + C));
+  return s;
 }
-const read = f => f.arrayBuffer().then(b => new Uint8Array(b));
-const showNames = () => $("#names").textContent =
-  `Kickstart : ${files.kick ? files.kick.name : "AROS"}${files.key ? " + rom.key" : ""} · DF0: ${files.disk ? files.disk.name : "vide"}`;
-$("#fKick").onchange = async e => { const f = e.target.files[0]; if (f) { files.kick = { name: f.name, bytes: await read(f) }; showNames(); } };
-$("#fKey").onchange = async e => { const f = e.target.files[0]; if (f) { files.key = { name: f.name, bytes: await read(f) }; showNames(); } };
-$("#fDisk").onchange = async e => {
-  const f = e.target.files[0]; if (!f) return;
-  files.disk = { name: f.name, bytes: await read(f) }; showNames();
-  if (m && m.running) log(m.insertDisk(f.name, files.disk.bytes) ? `${f.name} insérée dans DF0:` : "Changement de disquette refusé par le cœur");
+function strToU8(s) {
+  const u = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i) & 255;
+  return u;
+}
+async function gunzipB64(b64) {
+  const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  const stream = new Blob([bin]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+function fmtSize(n) {
+  if (n >= 1048576) return (n / 1048576).toLocaleString("fr-FR", { maximumFractionDigits: 1 }) + " Mo";
+  return Math.round(n / 1024).toLocaleString("fr-FR") + " Ko";
+}
+function crc32u8(u8) {
+  let c, crc = 0xffffffff;
+  const t = crc32u8.t || (crc32u8.t = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })());
+  for (let i = 0; i < u8.length; i++) crc = t[(crc ^ u8[i]) & 255] ^ (crc >>> 8);
+  return (crc ^ 0xffffffff) >>> 0;
+}
+let toastTimer;
+function toast(msg, err) {
+  const t = $("#toast");
+  t.textContent = msg; t.classList.toggle("err", !!err); t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), err ? 6000 : 3200);
+}
+function download(u8, name) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([u8], { type: "application/octet-stream" }));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
+/* =========================================================
+   Stockage local (IndexedDB) : ROM, disquettes, disques durs
+   ========================================================= */
+const DB = {
+  db: null,
+  open() {
+    return new Promise((res, rej) => {
+      const r = indexedDB.open("amiga1200", 1);
+      r.onupgradeneeded = () => r.result.createObjectStore("files", { keyPath: "id" });
+      r.onsuccess = () => { this.db = r.result; res(); };
+      r.onerror = () => rej(r.error);
+    });
+  },
+  tx(mode, fn) {
+    return new Promise((res, rej) => {
+      const t = this.db.transaction("files", mode); const st = t.objectStore("files");
+      const r = fn(st); t.oncomplete = () => res(r && r.result); t.onerror = () => rej(t.error);
+    });
+  },
+  put(rec) { return this.tx("readwrite", s => s.put(rec)); },
+  get(id) { return this.tx("readonly", s => s.get(id)); },
+  del(id) { return this.tx("readwrite", s => s.delete(id)); },
+  all() { return this.tx("readonly", s => s.getAll()); }
+};
+async function recToStr(rec) { return u8ToStr(new Uint8Array(await rec.blob.arrayBuffer())); }
+function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+/* =========================================================
+   Réglages persistants
+   ========================================================= */
+const DEFAULTS = { fast: "0", cpu: "orig", region: "pal", res: "hires", joy: "none", floppy: "orig",
+  crt: true, sharp: false, autosave: true, center: true, kbd: "azerty", kbdOpen: false, compat: "normal", autoskip: true, romId: "aros", keyId: null, df0: null, df1: null, dh0: null, muted: false };
+let S = Object.assign({}, DEFAULTS);
+try { Object.assign(S, JSON.parse(localStorage.getItem("a1200.settings") || "{}")); } catch (e) {}
+function saveSettings() { try { localStorage.setItem("a1200.settings", JSON.stringify(S)); } catch (e) {} }
+
+/* =========================================================
+   Émulateur : cœur PUAE (WinUAE) en WebAssembly
+   ========================================================= */
+let machine = null;
+let running = false, paused = false, starting = false;
+const mounted = { df0: null, df1: null, dh0: null }; /* {id, name} des médias en place */
+/* Où chaque média vit dans le système de fichiers du cœur pendant la session */
+const fsPath = { df0: null, df1: null, dh0: null };
+const DRIVE_NUM = { df0: 0, df1: 1 };
+
+/* Empreintes connues des Kickstart A1200 (CRC32 du fichier) */
+const KNOWN_ROMS = {
+  0x1483a091: "Kickstart 3.1 (40.068) A1200",
+  0x6c9b07d2: "Kickstart 3.0 (39.106) A1200"
 };
 
-$("#bStart").onclick = async () => {
-  $("#bStart").disabled = true;
-  try {
-    const t0 = performance.now();
-    m = await PuaeMachine.create({ canvas: $("#screen"), factory: window.createPuae, onLog: log,
-      onStats: s => {
-        $("#fps").textContent = s.fps.toFixed(1) + " images/s";
-        $("#lPow").classList.toggle("on", !!s.leds.power); $("#lDf").classList.toggle("on", !!s.leds.df0); $("#lHd").classList.toggle("on", !!s.leds.hd);
-      } });
-    log(`Module chargé en ${Math.round(performance.now() - t0)} ms`);
-    await m.start({ model: "A1200OG", kickstart: files.kick && files.kick.bytes, romKey: files.key && files.key.bytes,
-                    df0: files.disk, compat: $("#compat").value });
-    log(`Démarré : ${m.fps.toFixed(2)} images/s visées, son à ${m.rate} Hz`);
-    ["#bReset", "#bPause", "#bMute", "#bSave", "#bLoad"].forEach(s => $(s).disabled = false);
-    $("#bStart").textContent = "Allumé";
-  } catch (e) { log("Erreur : " + (e.message || e)); $("#bStart").disabled = false; }
+/* ---- Profils par disque : réglages propres à un jeu, appliqués au démarrage ---- */
+const PROFILE_KEYS = ["compat", "cpu", "fast", "region", "joy", "floppy"];
+let E = Object.assign({}, S); /* réglages effectifs de la session en cours */
+async function bootProfileRec() {
+  for (const t of ["df0", "dh0"]) {
+    if (!mounted[t]) continue;
+    const r = await DB.get(mounted[t].id);
+    if (r && r.profile) return r;
+  }
+  return null;
+}
+async function effectiveSettings() {
+  const e = Object.assign({}, S);
+  const r = await bootProfileRec();
+  if (r) { for (const k of PROFILE_KEYS) if (r.profile[k] !== undefined) e[k] = r.profile[k]; e._profile = r.name.replace(/\.(adf|dms|hdf)$/i, ""); }
+  return e;
+}
+
+/* ---- Saut d'images : le cœur dessine une image sur deux quand l'ordinateur ne suit pas,
+        pour garder le son et la vitesse de jeu à leur cadence réelle ---- */
+const skip = {
+  level: 1, low: 0, high: 0,
+  reset() { this.level = 1; this.low = 0; this.high = 0; },
+  set(l) { this.level = l; if (machine) machine.setOption("puae_gfx_framerate", l > 1 ? "2" : "disabled"); },
+  update(load) {
+    if (!E.autoskip) { if (this.level !== 1) this.set(1); return; }
+    if (load > 95) { this.high = 0; if (++this.low >= 2 && this.level < 2) { this.set(2); this.low = 0; } }
+    else if (load < 60) { this.low = 0; if (++this.high >= 10 && this.level > 1) { this.set(1); this.high = 0; } }
+    else { this.low = 0; this.high = 0; }
+  }
 };
-$("#bReset").onclick = () => m.reset();
-$("#bPause").onclick = () => { m.pause(!m.paused); $("#bPause").textContent = m.paused ? "Reprendre" : "Pause"; };
-$("#bMute").onclick = () => { m.setMuted(!m.muted); $("#bMute").textContent = m.muted ? "Rétablir le son" : "Couper le son"; };
-$("#bSave").onclick = () => { const t = performance.now(); state = m.saveState(); log(state ? `État sauvé : ${(state.length / 1048576).toFixed(1)} Mo en ${Math.round(performance.now() - t)} ms` : "Sauvegarde refusée"); };
-$("#bLoad").onclick = () => { if (!state) return log("Aucun état sauvé"); log(m.loadState(state) ? "État restauré" : "Restauration refusée"); };
+
+function safeName(n) { return n.replace(/[\/\\:,]/g, "_"); }
+
+/* Options du cœur d'après les réglages effectifs */
+function coreOptions() {
+  return {
+    puae_model: "A1200OG",
+    puae_fastmem_size: String(+E.fast || 0),
+    puae_cpu_throttle: E.cpu === "max" ? "4000.0" : "0.0",
+    puae_cpu_compatibility: E.compat === "max" ? "exact" : "normal",
+    puae_video_standard: E.region === "ntsc" ? "NTSC" : "PAL",
+    puae_video_resolution: S.res === "lores" ? "lores" : S.res === "shires" ? "superhires" : "hires",
+    puae_crop: S.center ? "auto" : "disabled",
+    puae_floppy_speed: E.floppy === "turbo" ? "0" : "100",
+    puae_gfx_framerate: "disabled"
+  };
+}
+
+async function powerOn() {
+  if (running || starting) return;
+  /* Le cœur ne se rallume pas dans la même page : on recharge et on rallume aussitôt. */
+  if (machine) { sessionStorage.setItem("a1200.autostart", "1"); location.reload(); return; }
+  if (!window.crossOriginIsolated) { toast("La page doit être rechargée une fois pour activer l'émulateur (isolation du navigateur).", true); return; }
+  starting = true; setPowerUi("starting");
+  try {
+    E = await effectiveSettings();
+    skip.reset();
+    machine = await PuaeMachine.create({
+      canvas: $("#amigaScreen"), factory: window.createPuae,
+      onLog: t => { if (/error|erreur|fail/i.test(t)) console.warn(t); },
+      onStats: onStats, onFrame: onLeds
+    });
+    /* Kickstart */
+    let kick = null, key = null;
+    if (S.romId !== "aros") {
+      const r = await DB.get(S.romId);
+      if (r) kick = new Uint8Array(await r.blob.arrayBuffer()); else { S.romId = "aros"; saveSettings(); }
+      if (kick && S.keyId) { const k = await DB.get(S.keyId); if (k) key = new Uint8Array(await k.blob.arrayBuffer()); }
+    }
+    /* Médias écrits dans le système de fichiers du cœur + configuration au format WinUAE */
+    const lines = ["nr_floppies=2", "floppy1type=0"];
+    for (const tag of ["df0", "df1"]) {
+      fsPath[tag] = null;
+      if (!mounted[tag]) continue;
+      const r = await DB.get(mounted[tag].id);
+      if (!r) { setMounted(tag, null); continue; }
+      fsPath[tag] = "/media/" + tag + "/" + safeName(r.name);
+      machine.writeFile(fsPath[tag], new Uint8Array(await r.blob.arrayBuffer()));
+      lines.push(`floppy${DRIVE_NUM[tag]}=${fsPath[tag]}`);
+    }
+    fsPath.dh0 = null;
+    if (mounted.dh0) {
+      const r = await DB.get(mounted.dh0.id);
+      if (r) {
+        fsPath.dh0 = "/media/dh0/" + safeName(r.name);
+        machine.writeFile(fsPath.dh0, new Uint8Array(await r.blob.arrayBuffer()));
+        /* Disque IDE brut sur le contrôleur Gayle : géométrie lue sur le disque, comme un vrai A1200 */
+        lines.push(`hardfile2=rw,DH0:${fsPath.dh0},0,0,0,512,0,,ide0_mainboard,0`);
+      } else setMounted("dh0", null);
+    }
+    machine.writeFile("/cfg/a1200.uae", new TextEncoder().encode(lines.join("\n") + "\n"));
+    for (const t in fsPath) seen[t] = fsPath[t] ? machine.fileMtime(fsPath[t]) : 0;
+
+    await machine.start({ model: "A1200OG", kickstart: kick, romKey: key, content: "/cfg/a1200.uae", options: coreOptions() });
+    machine.setMuted(!!S.muted);
+    machine.inputBlocked = false;
+    onStarted();
+  } catch (e) {
+    console.error(e); starting = false; setPowerUi("off");
+    toast("Démarrage impossible : " + (e && e.message ? e.message : e), true);
+  }
+}
+async function powerOff() {
+  if (!running) return;
+  if (S.autosave) await saveAllDisks(true);
+  machine.stop();
+  onStopped();
+}
+function onStarted() {
+  starting = false; running = true; setPowerUi("on");
+  $("#statMode").textContent = (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "")
+    + (E.compat === "max" ? ", cycle exact" : "") + (E._profile ? ", profil " + E._profile : "");
+  showCaptureHint();
+}
+function onStopped() {
+  running = false; starting = false; setPaused(false); setPowerUi("off");
+  ["#ledDf", "#ledHd"].forEach(s => $(s).classList.remove("on"));
+  $("#ledPower").classList.remove("on", "dim");
+  $("#statFps").textContent = "—"; $("#statCpu").textContent = ""; $("#statMode").textContent = "";
+  for (const t in dirty) { dirty[t] = false; refreshDriveLabel(t); }
+  releaseMods();
+}
+function onStats(s) {
+  skip.update(s.load);
+  $("#statFps").textContent = paused ? "en pause" : s.fps.toFixed(1) + " ips" + (skip.level > 1 ? " (1 image sur 2)" : "");
+  $("#statCpu").textContent = paused ? "" : "charge " + Math.round(s.load) + " %";
+}
+function onLeds(l) {
+  const p = $("#ledPower"); p.classList.toggle("on", !!l.power); p.classList.toggle("dim", !l.power && running);
+  $("#ledDf").classList.toggle("on", !!(l.df0 || l.df1));
+  $("#ledHd").classList.toggle("on", !!l.hd);
+  for (const [tag, on] of [["df0", l.df0], ["df1", l.df1], ["dh0", l.hd]]) {
+    const el = $("#trk-" + tag);
+    if (on) { el.textContent = "lecture ou écriture…"; lastActivity[tag] = Date.now(); }
+    else if (el.textContent === "lecture ou écriture…") el.textContent = driveLabel(tag);
+  }
+}
+function setPaused(p) {
+  paused = p; const b = $("#btnPause");
+  b.setAttribute("aria-pressed", p ? "true" : "false"); b.querySelector("span").textContent = p ? "Reprendre" : "Pause";
+}
+function setPowerUi(st) {
+  const b = $("#btnPower"), on = st === "on";
+  b.querySelector("span").textContent = st === "starting" ? "Démarrage…" : on ? "Éteindre" : "Allumer";
+  b.disabled = st === "starting";
+  b.classList.toggle("primary", !on);
+  ["#btnReset", "#btnPause", "#btnShot", "#kCAA"].forEach(s => $(s).disabled = !on);
+  $("#idle").style.display = on || st === "starting" ? "none" : "flex";
+  $("#monLed").classList.toggle("on", on);
+}
+
+/* Accès de diagnostic depuis la console du navigateur : __a1200.machine, __a1200.fsPath… */
+window.__a1200 = {
+  get machine() { return machine; }, get running() { return running; },
+  fsPath, mounted, DB, get dirty() { return dirty; }, get settings() { return E; }
+};
+/* =========================================================
+   Médias : insertion, éjection, sauvegarde
+   ========================================================= */
+function setMounted(tag, rec) {
+  mounted[tag] = rec ? { id: rec.id, name: rec.name } : null;
+  S[tag] = rec ? rec.id : null; saveSettings();
+  dirty[tag] = false; savedAt[tag] = null; refreshDriveLabel(tag);
+  const n = $("#name-" + tag);
+  n.textContent = rec ? rec.name : (tag === "dh0" ? "Aucun disque dur" : "Aucune disquette");
+  n.classList.toggle("empty", !rec); n.title = rec ? rec.name : "";
+  const card = $("#drive-" + tag);
+  card.querySelector('[data-act="eject"]').disabled = !rec;
+  card.querySelector('[data-act="download"]').disabled = !rec;
+  card.querySelector('[data-act="profile"]').disabled = !rec;
+}
+
+async function mountMedia(tag, rec) {
+  if (tag === "dh0") {
+    setMounted("dh0", rec);
+    if (running) toast("Disque dur prêt : il sera branché au prochain allumage.");
+    else toast(rec.name + " branché sur DH0:");
+    return;
+  }
+  if (running) {
+    if (mounted[tag]) await ejectMedia(tag, true);
+    const path = "/media/" + tag + "/" + safeName(rec.name);
+    machine.writeFile(path, new Uint8Array(await rec.blob.arrayBuffer()));
+    fsPath[tag] = path; seen[tag] = machine.fileMtime(path);
+    machine.driveInsert(DRIVE_NUM[tag], path);
+  }
+  setMounted(tag, rec);
+  toast(rec.name + " insérée dans " + tag.toUpperCase() + ":");
+}
+
+async function ejectMedia(tag, silent) {
+  if (!mounted[tag]) return;
+  if (tag === "dh0") {
+    if (running) { toast("Éteignez l'Amiga avant de retirer le disque dur.", true); return; }
+    setMounted("dh0", null); return;
+  }
+  if (running && fsPath[tag]) {
+    if (S.autosave) await saveDisk(tag, true, true);
+    machine.driveEject(DRIVE_NUM[tag]);
+    const old = fsPath[tag]; fsPath[tag] = null;
+    setTimeout(() => machine && machine.removeFile(old), 500); /* le cœur relâche le fichier à la trame suivante */
+  }
+  if (!silent) toast(mounted[tag].name + " éjectée");
+  setMounted(tag, null);
+}
+
+/* ---- Écritures de l'Amiga : on surveille la date de modification des fichiers du cœur ---- */
+const dirty = { df0: false, df1: false, dh0: false };
+const dirtySince = { df0: 0, df1: 0, dh0: 0 };     /* première écriture non enregistrée */
+const seen = { df0: 0, df1: 0, dh0: 0 };       /* date du fichier lors du dernier enregistrement */
+const lastActivity = { df0: 0, df1: 0, dh0: 0 }; /* dernier allumage de la LED du lecteur */
+const savedAt = { df0: null, df1: null, dh0: null };
+const BASE_LABEL = { df0: "lecteur interne", df1: "lecteur externe", dh0: "IDE interne 2,5\"" };
+function driveLabel(tag) {
+  if (dirty[tag]) return "modifié, enregistrement…";
+  if (savedAt[tag]) return "enregistré à " + savedAt[tag].toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  return BASE_LABEL[tag];
+}
+function refreshDriveLabel(tag) { const el = $("#trk-" + tag); if (el) el.textContent = driveLabel(tag); }
+function checkDirty() {
+  if (!running) return;
+  for (const t of ["df0", "df1", "dh0"]) {
+    if (!fsPath[t]) continue;
+    const m = machine.fileMtime(fsPath[t]);
+    if (m && m !== seen[t] && !dirty[t]) { dirty[t] = true; dirtySince[t] = Date.now(); refreshDriveLabel(t); }
+  }
+}
+
+/* Écrit le contenu courant du média dans la bibliothèque si l'Amiga l'a modifié */
+let saving = false;
+async function saveDisk(tag, quiet, force) {
+  checkDirty();
+  const m = mounted[tag]; if (!m || !running || !fsPath[tag] || (!dirty[tag] && !force)) return false;
+  const mtime = machine.fileMtime(fsPath[tag]);
+  if (mtime === seen[tag]) { dirty[tag] = false; refreshDriveLabel(tag); return false; }
+  const rec = await DB.get(m.id); if (!rec) return false;
+  if (!/\.(adf|hdf)$/i.test(rec.name)) { dirty[tag] = false; seen[tag] = mtime; return false; } /* DMS, ADF étendus : lecture seule */
+  const data = machine.readFile(fsPath[tag]);
+  rec.blob = new Blob([data]); rec.size = data.length; rec.crc = tag === "dh0" ? undefined : crc32u8(data); rec.updated = Date.now();
+  await DB.put(rec);
+  seen[tag] = mtime; dirty[tag] = false;
+  savedAt[tag] = new Date(); refreshDriveLabel(tag);
+  if (!quiet) toast(rec.name + " enregistrée");
+  return true;
+}
+async function saveAllDisks(quiet) {
+  if (saving) return; saving = true;
+  let n = 0;
+  try { for (const t of ["df0", "df1", "dh0"]) if (await saveDisk(t, true)) n++; }
+  finally { saving = false; }
+  if (n && quiet) toast(n === 1 ? "1 disque modifié enregistré" : n + " disques modifiés enregistrés");
+}
+/* Enregistrement automatique : dès que le lecteur est au repos depuis 3 secondes,
+   ou au plus tard 20 secondes après la première écriture si le lecteur ne s'arrête pas */
+setInterval(async () => {
+  if (!running || !S.autosave || saving) return;
+  checkDirty();
+  const now = Date.now();
+  const ready = ["df0", "df1", "dh0"].filter(t => dirty[t] && (now - lastActivity[t] > 3000 || now - dirtySince[t] > 20000));
+  if (!ready.length) return;
+  saving = true;
+  try { for (const t of ready) await saveDisk(t, true); } finally { saving = false; }
+}, 2000);
+/* Onglet masqué ou fermé : on enregistre tout de suite ce qui est en attente */
+function flushNow() { if (running && S.autosave) { checkDirty(); if (Object.values(dirty).some(Boolean)) saveAllDisks(false); } }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flushNow(); });
+window.addEventListener("pagehide", flushNow);
+
+async function downloadMedia(tag) {
+  const m = mounted[tag]; if (!m) return;
+  let data = running && fsPath[tag] ? machine.readFile(fsPath[tag]) : null;
+  if (!data) { const rec = await DB.get(m.id); data = new Uint8Array(await rec.blob.arrayBuffer()); }
+  download(data, m.name);
+}
+
+/* Disquette vierge, formatée FFS comme par la commande Format du Workbench */
+async function blankFloppy(tag) {
+  const all = await DB.all();
+  let i = 1; while (all.some(r => r.name === "Vierge " + i + ".adf")) i++;
+  const u8 = makeBlankAdf("Vierge " + i, true);
+  const rec = { id: newId(), kind: "adf", name: "Vierge " + i + ".adf", size: u8.length, blob: new Blob([u8]), crc: crc32u8(u8), added: Date.now() };
+  await DB.put(rec);
+  await mountMedia(tag, rec);
+}
+
+/* Disque dur vierge */
+async function blankHd(mb) {
+  const size = mb * 1048576;
+  const all = await DB.all();
+  let i = 1; while (all.some(r => r.name === "Disque " + mb + " Mo" + (i > 1 ? " " + i : "") + ".hdf")) i++;
+  const name = "Disque " + mb + " Mo" + (i > 1 ? " " + i : "") + ".hdf";
+  const rec = { id: newId(), kind: "hdf", name, size, blob: new Blob([new Uint8Array(size)]), crc: undefined, added: Date.now() };
+  await DB.put(rec);
+  if (running) { toast(name + " créé : il sera branché au prochain allumage."); setMounted("dh0", rec); }
+  else { setMounted("dh0", rec); toast(name + " créé et branché sur DH0:"); }
+}
+
+/* =========================================================
+   Import de fichiers
+   ========================================================= */
+function guessKind(name, u8) {
+  const n = name.toLowerCase();
+  if (n.endsWith(".key")) return "key";
+  if (/\.(adf|dms)$/.test(n)) return "adf";
+  if (/\.hdf$/.test(n)) return "hdf";
+  if (/\.(rom|bin)$/.test(n) || /kick/.test(n)) return "rom";
+  if (u8.length >= 11 && u8ToStr(u8.subarray(0, 11)) === "AMIROMTYPE1") return "rom";
+  if (u8.length === 901120 || u8.length === 1802240) return "adf";
+  if (u8.length === 262144 || u8.length === 524288) return "rom";
+  if (u8.length > 2000000) return "hdf";
+  return null;
+}
+/* ---- Archives : .zip (stocké ou deflate), .gz / .adz / .hdz (gzip) ---- */
+async function inflate(u8, format) {
+  const stream = new Blob([u8]).stream().pipeThrough(new DecompressionStream(format));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+async function unzip(u8) {
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  let eocd = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd < 0) throw new Error("archive ZIP illisible");
+  const count = dv.getUint16(eocd + 10, true);
+  let p = dv.getUint32(eocd + 16, true);
+  const out = [];
+  for (let n = 0; n < count; n++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) break;
+    const flags = dv.getUint16(p + 8, true), method = dv.getUint16(p + 10, true);
+    const csize = dv.getUint32(p + 20, true);
+    const nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+    const loc = dv.getUint32(p + 42, true);
+    const name = new TextDecoder((flags & 0x800) ? "utf-8" : "latin1").decode(u8.subarray(p + 46, p + 46 + nlen));
+    p += 46 + nlen + xlen + clen;
+    if (name.endsWith("/") || /(^|\/)(__MACOSX|\.)/.test(name)) continue;
+    if (flags & 1) throw new Error("archive protégée par mot de passe");
+    const start = loc + 30 + dv.getUint16(loc + 26, true) + dv.getUint16(loc + 28, true);
+    const raw = u8.subarray(start, start + csize);
+    let data;
+    if (method === 0) data = raw.slice();
+    else if (method === 8) data = await inflate(raw, "deflate-raw");
+    else throw new Error("méthode de compression non gérée dans " + name);
+    out.push({ name: name.split("/").pop(), data });
+  }
+  return out;
+}
+/* Renvoie la liste des fichiers utilisables, archives décompressées */
+async function expandFile(name, u8) {
+  const n = name.toLowerCase();
+  if (n.endsWith(".zip")) {
+    const items = [];
+    for (const e of await unzip(u8)) items.push(...await expandFile(e.name, e.data));
+    return items;
+  }
+  if (/\.(gz|adz|hdz)$/.test(n)) {
+    const data = await inflate(u8, "gzip");
+    const inner = n.endsWith(".adz") ? name.slice(0, -4) + ".adf" : n.endsWith(".hdz") ? name.slice(0, -4) + ".hdf" : name.slice(0, -3);
+    return expandFile(inner, data);
+  }
+  if (/\.(lha|lzh|lzx|rar|7z)$/.test(n)) throw new Error(name + " : format d'archive non géré, extrayez-la d'abord (.zip, .adz et .gz sont acceptés)");
+  return [{ name, data: u8 }];
+}
+async function importFile(file, target) {
+  let items;
+  try { items = await expandFile(file.name, new Uint8Array(await file.arrayBuffer())); }
+  catch (e) { toast(e.message || String(e), true); return; }
+  items = items.filter(i => guessKind(i.name, i.data));
+  if (!items.length) { toast("Aucun fichier Amiga reconnu dans " + file.name + ".", true); return; }
+  if (items.length === 1) return importBytes(items[0].name, items[0].data, target, true);
+  /* Plusieurs disquettes : la première va dans le lecteur, les autres dans la bibliothèque */
+  items.sort((a, b) => a.name.localeCompare(b.name, "fr", { numeric: true }));
+  let mountedOne = false, n = 0;
+  for (const it of items) {
+    const k = guessKind(it.name, it.data);
+    const mount = (k === "adf" || k === "hdf") && !mountedOne;
+    if (mount) mountedOne = true;
+    await importBytes(it.name, it.data, target, mount, true); n++;
+  }
+  toast(n + " fichiers ajoutés à la bibliothèque depuis " + file.name + (mountedOne ? ", le premier est inséré." : "."));
+  if ($("#winLib").classList.contains("open")) renderLib();
+}
+async function importBytes(name, u8, target, mount, quiet) {
+  const file = { name };
+  const kind = guessKind(name, u8);
+  if (!kind) { toast("Format de " + name + " non reconnu.", true); return; }
+  if (kind === "hdf" && u8.length > 512 * 1048576) { toast("Disque dur trop gros (512 Mo maximum).", true); return; }
+  const rec = { id: newId(), kind, name: file.name, size: u8.length, blob: new Blob([u8]), crc: crc32u8(u8), added: Date.now() };
+  if (kind === "rom" && quiet) { await loadKeyForExamine(); rec.label = describeRom(rec.name, u8).label; await DB.put(rec); return; }
+  if (kind === "key" && quiet) { await DB.put(rec); if (!S.keyId) { S.keyId = rec.id; saveSettings(); } return; }
+  if (kind === "rom") {
+    await loadKeyForExamine();
+    const info = describeRom(rec.name, u8);
+    rec.label = info.label;
+    await DB.put(rec);
+    S.romId = rec.id; saveSettings();
+    toast("Kickstart sélectionné : " + info.label + (running ? ". Éteignez puis rallumez pour l'utiliser." : ""), info.warn);
+    renderRomChoices(); refreshIdleRom();
+    return;
+  }
+  if (kind === "key") {
+    await DB.put(rec); S.keyId = rec.id; saveSettings(); renderRomChoices();
+    toast("rom.key importé : les Kickstart Amiga Forever peuvent être décodés.");
+    return;
+  }
+  await DB.put(rec);
+  if (mount) {
+    if (kind === "hdf") await mountMedia("dh0", rec);
+    else await mountMedia(target === "df1" ? "df1" : "df0", rec);
+  }
+  if (!quiet && $("#winLib").classList.contains("open")) renderLib();
+}
+function describeRom(name, u8) {
+  if (u8.length >= 11 && u8ToStr(u8.subarray(0, 11)) === "AMIROMTYPE1")
+    return { label: name + " (Amiga Forever, rom.key nécessaire)", warn: !S.keyId };
+  const known = KNOWN_ROMS[crc32u8(u8)];
+  if (known) return { label: known, warn: false };
+  if (u8.length !== 262144 && u8.length !== 524288) return { label: name + " (taille inhabituelle)", warn: true };
+  return { label: name + " (version non répertoriée)", warn: false };
+}
+async function loadKeyForExamine() {}
+
+function pickFile(accept, cb) {
+  const inp = $("#filePick");
+  inp.value = ""; inp.accept = accept; inp.multiple = false;
+  inp.onchange = () => { if (inp.files[0]) cb(inp.files[0]); };
+  inp.click();
+}
+
+/* =========================================================
+   Fenêtres
+   ========================================================= */
+let openWin = null;
+function showWin(id) {
+  closeWin();
+  const w = $("#" + id); w.classList.add("open"); openWin = w; if (machine) machine.inputBlocked = true;
+  const first = w.querySelector(".body button, .body input, .actions button"); if (first) first.focus();
+}
+function closeWin() { if (openWin) { openWin.classList.remove("open"); openWin = null; } if (machine) machine.inputBlocked = false; }
+$$(".veil").forEach(v => {
+  v.addEventListener("click", e => { if (e.target === v || e.target.closest("[data-close]")) closeWin(); });
+});
+
+async function renderRomChoices() {
+  const box = $("#romChoices");
+  const roms = (await DB.all()).filter(r => r.kind === "rom").sort((a, b) => a.added - b.added);
+  box.innerHTML = "";
+  const row = (id, label, size, canDelete) => {
+    const r = document.createElement("label"); r.className = "lib-row";
+    r.innerHTML = '<input type="radio" name="rom"><span class="n"></span><span class="s"></span>';
+    r.querySelector("input").checked = S.romId === id;
+    r.querySelector("input").onchange = () => { S.romId = id; saveSettings(); refreshIdleRom(); };
+    r.querySelector(".n").textContent = label; r.querySelector(".s").textContent = size;
+    if (canDelete) {
+      const b = document.createElement("button"); b.className = "gad small"; b.textContent = "Supprimer";
+      b.onclick = async ev => { ev.preventDefault(); await DB.del(id); if (S.romId === id) { S.romId = "aros"; saveSettings(); } renderRomChoices(); refreshIdleRom(); };
+      r.appendChild(b);
+    }
+    box.appendChild(r);
+  };
+  row("aros", "AROS (libre, intégré)", "1 Mo", false);
+  roms.forEach(r => row(r.id, r.label || r.name, fmtSize(r.size), true));
+  const key = S.keyId ? await DB.get(S.keyId) : null;
+  $("#keyStatus").textContent = key ? "rom.key présent : les Kickstart Amiga Forever chiffrés sont pris en charge." : "";
+}
+async function refreshIdleRom() {
+  let t = "Kickstart : AROS (libre). Importez votre Kickstart 3.1 dans Réglages pour retrouver l'A1200 d'origine.";
+  if (S.romId !== "aros") { const r = await DB.get(S.romId); if (r) t = "Kickstart : " + (r.label || r.name); }
+  $("#idleRom").textContent = t;
+}
+
+function syncSettingsForm() {
+  for (const k of ["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat"]) {
+    $$('#winSettings input[name="' + k + '"]').forEach(i => i.checked = i.value === S[k]);
+  }
+  $("#optCenter").checked = S.center; $("#optSkip").checked = S.autoskip;
+  $("#optCrt").checked = S.crt; $("#optSharp").checked = S.sharp; $("#optAutosave").checked = S.autosave;
+  $("#restartHint").textContent = running ? "L'Amiga est allumé : ces réglages s'appliqueront au prochain allumage." : "Les réglages s'appliquent au prochain allumage.";
+}
+for (const k of ["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat"]) {
+  $$('#winSettings input[name="' + k + '"]').forEach(i => i.addEventListener("change", () => { S[k] = i.value; saveSettings(); if (k === "kbd" && S.kbdOpen) buildKeyboard(); }));
+}
+$("#optCenter").onchange = e => { S.center = e.target.checked; saveSettings(); };
+$("#optSkip").onchange = e => { S.autoskip = e.target.checked; E.autoskip = S.autoskip; saveSettings(); if (!S.autoskip && running) skip.set(1); };
+$("#optCrt").onchange = e => { S.crt = e.target.checked; saveSettings(); applyLook(); };
+$("#optSharp").onchange = e => { S.sharp = e.target.checked; saveSettings(); applyLook(); };
+$("#optAutosave").onchange = e => { S.autosave = e.target.checked; saveSettings(); };
+function applyLook() { $("#tube").classList.toggle("crt", S.crt); $("#tube").classList.toggle("sharp", S.sharp); }
+
+async function renderLib() {
+  const body = $("#libBody");
+  const all = (await DB.all()).sort((a, b) => b.added - a.added);
+  const groups = [["adf", "Disquettes"], ["hdf", "Disques durs"], ["rom", "Kickstart"], ["key", "Clés Amiga Forever"]];
+  body.innerHTML = "";
+  if (!all.length) {
+    body.innerHTML = '<p class="lib-empty">La bibliothèque est vide. Ajoutez des disquettes .adf, des disques .hdf ou votre Kickstart : ils restent dans ce navigateur pour les prochaines fois.</p>';
+    return;
+  }
+  for (const [kind, title] of groups) {
+    const items = all.filter(r => r.kind === kind); if (!items.length) continue;
+    const h = document.createElement("h3"); h.textContent = title; body.appendChild(h);
+    const list = document.createElement("div"); list.className = "lib-list"; body.appendChild(list);
+    for (const r of items) {
+      const row = document.createElement("div"); row.className = "lib-row";
+      row.innerHTML = '<span class="n"></span><span class="s"></span>';
+      row.querySelector(".n").textContent = (r.label || r.name) + (r.profile ? " (profil)" : ""); row.querySelector(".n").title = r.name;
+      row.querySelector(".s").textContent = fmtSize(r.size);
+      const btn = (txt, fn, dis) => { const b = document.createElement("button"); b.className = "gad small"; b.textContent = txt; b.disabled = !!dis; b.onclick = fn; row.appendChild(b); };
+      const inUse = Object.keys(mounted).find(t => mounted[t] && mounted[t].id === r.id);
+      if (kind === "adf") {
+        btn("DF0:", async () => { await mountMedia("df0", r); renderLib(); }, inUse);
+        btn("DF1:", async () => { await mountMedia("df1", r); renderLib(); }, inUse);
+      } else if (kind === "hdf") {
+        btn("DH0:", async () => { if (running) { toast("Éteignez l'Amiga pour changer de disque dur.", true); return; } await mountMedia("dh0", r); renderLib(); }, inUse);
+      } else if (kind === "rom") {
+        btn(S.romId === r.id ? "Utilisé" : "Utiliser", async () => { S.romId = r.id; saveSettings(); refreshIdleRom(); renderLib(); toast("Kickstart choisi" + (running ? " : il servira au prochain allumage." : ".")); }, S.romId === r.id);
+      }
+      btn("Télécharger", async () => download(new Uint8Array(await r.blob.arrayBuffer()), r.name));
+      btn("Supprimer", async () => {
+        if (inUse) { toast("Éjectez d'abord ce média.", true); return; }
+        if (!confirm("Supprimer « " + r.name + " » de la bibliothèque ?")) return;
+        await DB.del(r.id);
+        if (S.romId === r.id) { S.romId = "aros"; saveSettings(); refreshIdleRom(); }
+        if (S.keyId === r.id) { S.keyId = null; saveSettings(); }
+        renderLib();
+      });
+      list.appendChild(row);
+    }
+  }
+}
+
+/* =========================================================
+   Clavier : touches Amiga virtuelles
+   ========================================================= */
+function sendKey(code, down) {
+  if (!running || !machine) return;
+  machine.key(code, down);
+}
+/* Joystick au clavier : flèches + Ctrl droit (tir), Maj droite (2e bouton) */
+const JOY_KEYS = { ArrowUp: 4, ArrowDown: 5, ArrowLeft: 6, ArrowRight: 7, ControlRight: 0, ShiftRight: 8 };
+let joyKeys = 0;
+function joyKey(e) {
+  if (!running || E.joy !== "keys" || !(e.code in JOY_KEYS) || openWin) return;
+  const bit = 1 << JOY_KEYS[e.code];
+  joyKeys = e.type === "keydown" ? joyKeys | bit : joyKeys & ~bit;
+  machine.setJoy(0, joyKeys);
+}
+window.addEventListener("keydown", joyKey);
+window.addEventListener("keyup", joyKey);
+/* Modificateurs « verrouillés » : un appui les enfonce jusqu'à la prochaine touche */
+const MODS = ["ShiftLeft", "ShiftRight", "ControlLeft", "AltLeft", "AltRight", "MetaLeft", "MetaRight"];
+const latched = new Set();
+function paintLatch(code) { $$('[data-latch="' + code + '"]').forEach(b => b.setAttribute("aria-pressed", latched.has(code) ? "true" : "false")); }
+function toggleLatch(code) {
+  if (!running) return;
+  if (latched.has(code)) { latched.delete(code); sendKey(code, false); } else { latched.add(code); sendKey(code, true); }
+  paintLatch(code);
+}
+function releaseMods() {
+  for (const c of [...latched]) { latched.delete(c); sendKey(c, false); paintLatch(c); }
+  $$("[data-latch]").forEach(b => b.setAttribute("aria-pressed", "false"));
+}
+function tap(codes) {
+  if (!running) return;
+  codes.forEach(c => sendKey(c, true));
+  setTimeout(() => { codes.slice().reverse().forEach(c => sendKey(c, false)); releaseMods(); }, 90);
+}
+$$("[data-key]").forEach(b => b.onclick = () => tap([b.dataset.key]));
+$$("[data-combo]").forEach(b => b.onclick = () => tap(b.dataset.combo.split("+")));
+/* Les modificateurs virtuels s'appliquent aussi à la prochaine touche réelle */
+document.addEventListener("keyup", e => { if (latched.size && !MODS.includes(e.code)) setTimeout(releaseMods, 30); });
+
+/* ---- Clavier Amiga à l'écran : touches à la position du clavier A1200 ---- */
+/* [code, libellé QWERTY, libellé AZERTY (keymap f), largeur, sombre] */
+const VK_SHORT = { ShiftLeft: "⇧", ShiftRight: "⇧", MetaLeft: "A", MetaRight: "A", Enter: "⏎", CapsLock: "⇪", ContextMenu: "?", ControlLeft: "Ctl", Tab: "⇥", Escape: "Esc" };
+const VK_ROWS = [
+  [["Escape","Esc",,1.3,1],["F1","F1",,1,1],["F2","F2",,1,1],["F3","F3",,1,1],["F4","F4",,1,1],["F5","F5",,1,1],["F6","F6",,1,1],["F7","F7",,1,1],["F8","F8",,1,1],["F9","F9",,1,1],["F10","F10",,1,1],["Delete","Del",,1.2,1],["ContextMenu","Help",,1.2,1]],
+  [["Backquote","`"],["Digit1","1","1<small>&amp;</small>"],["Digit2","2","2<small>é</small>"],["Digit3","3","3<small>\"</small>"],["Digit4","4","4<small>'</small>"],["Digit5","5","5<small>(</small>"],["Digit6","6","6<small>§</small>"],["Digit7","7","7<small>è</small>"],["Digit8","8","8<small>!</small>"],["Digit9","9","9<small>ç</small>"],["Digit0","0","0<small>à</small>"],["Minus","-"],["Equal","="],["Backslash","\\"],["Backspace","⌫",,1.4,1]],
+  [["Tab","Tab",,1.5,1],["KeyQ","Q","A"],["KeyW","W","Z"],["KeyE","E"],["KeyR","R"],["KeyT","T"],["KeyY","Y"],["KeyU","U"],["KeyI","I"],["KeyO","O"],["KeyP","P"],["BracketLeft","["],["BracketRight","]"],["Enter","Return",,1.6,1]],
+  [["ControlLeft","Ctrl",,1.2,1],["CapsLock","Caps",,1.2,1],["KeyA","A","Q"],["KeyS","S"],["KeyD","D"],["KeyF","F"],["KeyG","G"],["KeyH","H"],["KeyJ","J"],["KeyK","K"],["KeyL","L"],["Semicolon",";","M"],["Quote","'"]],
+  [["ShiftLeft","Shift",,1.5,1],["IntlBackslash","<"],["KeyZ","Z","W"],["KeyX","X"],["KeyC","C"],["KeyV","V"],["KeyB","B"],["KeyN","N"],["KeyM","M",","],["Comma",",",";"],["Period",".",":"],["Slash","/"],["ShiftRight","Shift",,1.5,1],["ArrowUp","↑",,1,1]],
+  [["AltLeft","Alt",,1.1,1],["MetaLeft","Amiga",,1.4,1],["Space","",,6],["MetaRight","Amiga",,1.4,1],["AltRight","Alt",,1.1,1],["ArrowLeft","←",,1,1],["ArrowDown","↓",,1,1],["ArrowRight","→",,1,1]]
+];
+function buildKeyboard() {
+  const box = $("#vkbd"); box.innerHTML = "";
+  for (const row of VK_ROWS) {
+    const r = document.createElement("div"); r.className = "vrow";
+    for (const [code, q, a, w = 1, dark] of row) {
+      const b = document.createElement("button");
+      b.className = "vk" + (dark ? " dark" : ""); b.type = "button"; b.dataset.code = code;
+      b.style.flexGrow = w;
+      const label = S.kbd === "azerty" && a ? a : q;
+      b.innerHTML = VK_SHORT[code] ? '<span class="l">' + label + '</span><span class="s">' + VK_SHORT[code] + '</span>' : label;
+      b.setAttribute("aria-label", code === "Space" ? "Espace" : label.replace(/<[^>]+>/g, " "));
+      if (MODS.includes(code)) { b.dataset.latch = code; b.setAttribute("aria-pressed", latched.has(code) ? "true" : "false"); }
+      r.appendChild(b);
+    }
+    box.appendChild(r);
+  }
+}
+(function wireKeyboard() {
+  const box = $("#vkbd"); let held = null;
+  const up = () => { if (!held) return; sendKey(held.dataset.code, false); held.classList.remove("down"); held = null; releaseMods(); };
+  box.addEventListener("pointerdown", e => {
+    const b = e.target.closest(".vk"); if (!b) return;
+    e.preventDefault();
+    if (!running) { toast("Allumez l'Amiga pour utiliser le clavier."); return; }
+    if (b.dataset.latch) { toggleLatch(b.dataset.code); return; }
+    up(); held = b; b.classList.add("down"); sendKey(b.dataset.code, true);
+    try { b.setPointerCapture(e.pointerId); } catch (x) {}
+  });
+  box.addEventListener("pointerup", up); box.addEventListener("pointercancel", up); box.addEventListener("lostpointercapture", up);
+  box.addEventListener("contextmenu", e => e.preventDefault());
+})();
+function setKeyboardOpen(open) {
+  S.kbdOpen = open; saveSettings();
+  if (open) buildKeyboard();
+  $("#vkbd").hidden = !open; $("#kbdToggle").setAttribute("aria-pressed", open ? "true" : "false");
+}
+$("#kbdToggle").onclick = () => setKeyboardOpen(!S.kbdOpen);
+$$("[data-latch]").forEach(b => { if (!b.classList.contains("vk")) b.onclick = () => toggleLatch(b.dataset.latch); });
+
+/* ---- Souris tactile : l'écran sert de pavé tactile ---- */
+const isTouch = matchMedia("(pointer: coarse)").matches || ("ontouchstart" in window && navigator.maxTouchPoints > 0);
+if (isTouch) document.body.classList.add("is-touch");
+(function touchMouse() {
+  const tube = $("#tube");
+  const SPEED = 1.8;
+  const t = { last: null, start: 0, moved: 0, lastTap: 0, lmb: false, rmb: false, multi: false, acc: [0, 0], raf: 0 };
+  const btn = (b, d) => { if (running && machine) machine.mouseButton(b, d); };
+  const flush = () => {
+    t.raf = 0;
+    const x = Math.round(t.acc[0]), y = Math.round(t.acc[1]);
+    t.acc[0] -= x; t.acc[1] -= y;
+    if ((x || y) && running && machine) machine.mouseMove(x, y);
+  };
+  const move = (dx, dy) => { t.acc[0] += dx * SPEED; t.acc[1] += dy * SPEED; if (!t.raf) t.raf = requestAnimationFrame(flush); };
+  const center = list => { let x = 0, y = 0; for (const p of list) { x += p.clientX; y += p.clientY; } return [x / list.length, y / list.length]; };
+  tube.addEventListener("touchstart", e => {
+    if (!running) return;
+    e.preventDefault();
+    const n = e.touches.length;
+    t.last = center(e.touches);
+    if (n === 1 && !t.multi) {
+      t.start = Date.now(); t.moved = 0;
+      if (Date.now() - t.lastTap < 320) { t.lmb = true; btn(0, true); } /* double-tap maintenu : glisser */
+    } else if (n >= 2 && !t.rmb) {
+      t.multi = true; t.rmb = true; btn(1, true);
+    }
+  }, { passive: false });
+  tube.addEventListener("touchmove", e => {
+    if (!running || !t.last) return;
+    e.preventDefault();
+    const c = center(e.touches), dx = c[0] - t.last[0], dy = c[1] - t.last[1];
+    t.last = c; t.moved += Math.abs(dx) + Math.abs(dy);
+    move(dx, dy);
+  }, { passive: false });
+  const end = e => {
+    if (!running) return;
+    e.preventDefault();
+    if (e.touches.length) { t.last = center(e.touches); return; }
+    if (t.rmb) { btn(1, false); t.rmb = false; }
+    if (t.lmb) { btn(0, false); t.lmb = false; t.lastTap = 0; }
+    else if (!t.multi && Date.now() - t.start < 250 && t.moved < 12) {
+      btn(0, true); setTimeout(() => btn(0, false), 60);
+      t.lastTap = Date.now();
+    }
+    t.multi = false; t.last = null;
+  };
+  tube.addEventListener("touchend", end, { passive: false });
+  tube.addEventListener("touchcancel", end, { passive: false });
+})();
+
+/* Quand une fenêtre est ouverte, le clavier va à la page et pas à l'Amiga */
+window.addEventListener("keydown", e => {
+  if (openWin) { if (e.key === "Escape") closeWin(); e.stopPropagation(); }
+}, true);
+window.addEventListener("keyup", e => { if (openWin) e.stopPropagation(); }, true);
+
+/* =========================================================
+   Boutons
+   ========================================================= */
+$("#btnPower").onclick = () => running ? powerOff() : powerOn();
+$("#idlePower").onclick = () => powerOn();
+$("#btnReset").onclick = () => { if (running) { releaseMods(); machine.reset(); } };
+/* Ctrl + Amiga + Amiga : la réinitialisation au clavier de la vraie machine */
+$("#kCAA").onclick = () => { if (running) { releaseMods(); tap(["ControlLeft", "MetaLeft", "MetaRight"]); } };
+$("#btnPause").onclick = () => { if (running) { machine.pause(!paused); setPaused(!paused); if (paused) { $("#statFps").textContent = "en pause"; $("#statCpu").textContent = ""; } } };
+$("#btnMute").onclick = () => {
+  S.muted = !S.muted; saveSettings();
+  $("#btnMute").setAttribute("aria-pressed", S.muted ? "true" : "false");
+  $("#btnMute span").textContent = S.muted ? "Muet" : "Son";
+  if (running) machine.setMuted(S.muted);
+};
+$("#btnFull").onclick = () => {
+  const t = $("#tube");
+  if (document.fullscreenElement || document.webkitFullscreenElement) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  else (t.requestFullscreen || t.webkitRequestFullscreen).call(t);
+};
+$("#btnShot").onclick = () => {
+  const c = $("#amigaScreen");
+  c.toBlob(b => {
+    if (!b) return;
+    const a = document.createElement("a"); a.href = URL.createObjectURL(b);
+    const d = new Date(); a.download = "amiga1200-" + d.toISOString().slice(0, 19).replace(/[:T]/g, "-") + ".png";
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }, "image/png");
+};
+$("#btnSettings").onclick = () => { syncSettingsForm(); renderRomChoices(); showWin("winSettings"); };
+$("#btnLib").onclick = () => { renderLib(); showWin("winLib"); };
+$("#btnHelp").onclick = () => showWin("winHelp");
+$("#libImport").onclick = () => {
+  const inp = $("#filePick"); inp.value = ""; inp.accept = ".adf,.dms,.adz,.zip,.gz,.hdf,.hdz,.rom,.bin,.key"; inp.multiple = true;
+  inp.onchange = async () => { for (const f of inp.files) await addToLibrary(f); renderLib(); };
+  inp.click();
+};
+async function addToLibrary(file) {
+  let items;
+  try { items = await expandFile(file.name, new Uint8Array(await file.arrayBuffer())); }
+  catch (e) { toast(e.message || String(e), true); return; }
+  let n = 0;
+  for (const it of items) if (guessKind(it.name, it.data)) { await importBytes(it.name, it.data, null, false, true); n++; }
+  if (!n) toast("Aucun fichier Amiga reconnu dans " + file.name + ".", true);
+}
+$("#setImportRom").onclick = () => pickFile(".rom,.bin", f => importFile(f));
+$("#setImportKey").onclick = () => pickFile(".key", f => importFile(f));
+$("#hdCreate").onclick = async () => {
+  const mb = +($('input[name="hdsize"]:checked') || {}).value || 128;
+  closeWin(); toast("Création du disque…");
+  await blankHd(mb);
+};
+
+$$(".drive").forEach(card => {
+  const tag = card.dataset.unit;
+  card.addEventListener("click", async e => {
+    const b = e.target.closest("[data-act]"); if (!b) return;
+    const act = b.dataset.act;
+    if (act === "insert") pickFile(tag === "dh0" ? ".hdf,.hdz,.zip,.gz" : ".adf,.dms,.adz,.zip,.gz", f => importFile(f, tag));
+    else if (act === "eject") ejectMedia(tag);
+    else if (act === "download") downloadMedia(tag);
+    else if (act === "profile") openProfile(tag);
+    else if (act === "blank") {
+      if (tag === "dh0") { if (running) { toast("Éteignez l'Amiga pour brancher un nouveau disque dur.", true); return; } showWin("winHd"); }
+      else blankFloppy(tag);
+    }
+  });
+});
+$("#slot").onclick = () => pickFile(".adf,.dms,.adz,.zip,.gz", f => importFile(f, "df0"));
+
+/* Profil par disque */
+let profTarget = null;
+async function openProfile(tag) {
+  const m = mounted[tag]; if (!m) return;
+  const rec = await DB.get(m.id); if (!rec) return;
+  profTarget = rec.id;
+  const base = Object.assign({}, S, rec.profile || {});
+  $("#profIntro").textContent = rec.name;
+  $("#profOn").checked = !!rec.profile;
+  for (const k of PROFILE_KEYS) $$('input[name="p_' + k + '"]').forEach(i => i.checked = i.value === String(base[k]));
+  $("#profFields").style.opacity = rec.profile ? "1" : ".5";
+  showWin("winProfile");
+}
+$("#profOn").onchange = e => { $("#profFields").style.opacity = e.target.checked ? "1" : ".5"; };
+$("#profFields").addEventListener("change", () => { $("#profOn").checked = true; $("#profFields").style.opacity = "1"; });
+$("#profSave").onclick = async () => {
+  const rec = await DB.get(profTarget); if (!rec) { closeWin(); return; }
+  if ($("#profOn").checked) {
+    rec.profile = {};
+    for (const k of PROFILE_KEYS) { const i = $('input[name="p_' + k + '"]:checked'); if (i) rec.profile[k] = i.value; }
+  } else delete rec.profile;
+  await DB.put(rec); closeWin();
+  toast(rec.profile ? "Profil enregistré pour " + rec.name + (running ? " : il s'appliquera au prochain allumage." : ".") : "Profil retiré : " + rec.name + " utilise les Réglages généraux.");
+  if ($("#winLib").classList.contains("open")) renderLib();
+};
+
+/* Glisser-déposer */
+let dragDepth = 0, dropTarget = null;
+window.addEventListener("dragenter", e => { if (e.dataTransfer && [...e.dataTransfer.types].includes("Files")) { dragDepth++; $("#dropzone").classList.add("on"); } });
+window.addEventListener("dragleave", () => { if (--dragDepth <= 0) { dragDepth = 0; $("#dropzone").classList.remove("on"); } });
+window.addEventListener("dragover", e => {
+  e.preventDefault();
+  const card = document.elementFromPoint(e.clientX, e.clientY);
+  const d = card && (card.closest(".drive") || (card.id === "slot" ? card : null));
+  $$(".drive, #slot").forEach(x => x.classList.toggle("drop", x === d));
+  dropTarget = d ? (d.dataset.unit || "df0") : null;
+});
+window.addEventListener("drop", async e => {
+  e.preventDefault(); dragDepth = 0; $("#dropzone").classList.remove("on");
+  $$(".drive, #slot").forEach(x => x.classList.remove("drop"));
+  const files = [...(e.dataTransfer.files || [])];
+  for (const f of files) await importFile(f, dropTarget);
+});
+
+/* Souris : rappel discret */
+let hintTimer;
+function showCaptureHint() {
+  const h = $("#captureHint");
+  h.textContent = isTouch ? "Glissez un doigt pour déplacer la souris, touchez pour cliquer, deux doigts pour les menus."
+                          : "Cliquez dans l'écran pour utiliser la souris. Échap pour la libérer.";
+  h.style.opacity = "1";
+  clearTimeout(hintTimer); hintTimer = setTimeout(() => h.style.opacity = "0", 5000);
+}
+document.addEventListener("pointerlockchange", () => { if (!document.pointerLockElement && running) showCaptureHint(); });
+
+window.addEventListener("beforeunload", e => {
+  if (running && (!S.autosave || Object.values(dirty).some(Boolean))) { e.preventDefault(); e.returnValue = ""; }
+});
+
+/* =========================================================
+   Démarrage de la page
+   ========================================================= */
+(async function init() {
+  applyLook();
+  $("#btnMute").setAttribute("aria-pressed", S.muted ? "true" : "false");
+  $("#btnMute span").textContent = S.muted ? "Muet" : "Son";
+  try {
+    await DB.open();
+    for (const t of ["df0", "df1", "dh0"]) {
+      if (S[t]) { const r = await DB.get(S[t]); setMounted(t, r || null); }
+    }
+  } catch (e) {
+    toast("Stockage local indisponible : les fichiers ne seront pas conservés.", true);
+  }
+  refreshIdleRom();
+  setPowerUi("off");
+  setKeyboardOpen(!!S.kbdOpen);
+  if (sessionStorage.getItem("a1200.autostart")) { sessionStorage.removeItem("a1200.autostart"); powerOn(); }
+})();
 </script>
 </body>
 </html>

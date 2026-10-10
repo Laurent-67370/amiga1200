@@ -45,12 +45,14 @@ registerProcessor('ring', Ring);`;
 
 export class PuaeMachine {
   /** @param {object} opts { canvas, factory: createPuae, onLog?, onStats? } */
-  static async create({ canvas, factory, onLog, onStats }) {
+  static async create({ canvas, factory, onLog, onStats, onFrame }) {
     const M = await factory({
       print: t => onLog && onLog(t),
       printErr: t => onLog && onLog(t),
     });
-    return new PuaeMachine(M, canvas, onStats);
+    const m = new PuaeMachine(M, canvas, onStats);
+    m.onFrame = onFrame || null;
+    return m;
   }
 
   constructor(M, canvas, onStats) {
@@ -100,8 +102,9 @@ export class PuaeMachine {
     this.setOption("puae_floppy_sound", cfg.floppySound ? "75" : "100");
     this.setOption("puae_physicalmouse", "enabled");
     this.setOption("puae_floppy_speed", "100");
-    let path = "";
-    if (cfg.df0) { path = "/disks/" + cfg.df0.name.replace(/[\/\\]/g, "_"); this.writeFile(path, cfg.df0.bytes); }
+    for (const [k, v] of Object.entries(cfg.options || {})) this.setOption(k, v);
+    let path = cfg.content || "";
+    if (!path && cfg.df0) { path = "/disks/" + cfg.df0.name.replace(/[\/\\]/g, "_"); this.writeFile(path, cfg.df0.bytes); }
     const ok = this._call("fe_start", path);
     if (!ok) throw new Error("le cœur a refusé de démarrer (Kickstart ou disquette illisible ?)");
     this.fps = M._fe_fps() || 50;
@@ -110,26 +113,53 @@ export class PuaeMachine {
     this.running = true;
     this._t = performance.now(); this._acc = 0; this._frames = 0; this._statT = this._t;
     this._attachInput();
-    requestAnimationFrame(t => this._tick(t));
+    /* L'émulation suit sa propre horloge, indépendante de l'affichage : un écran lent ou chargé
+       ne ralentit pas l'Amiga. L'image est dessinée au rythme de l'écran. */
+    this._timer = setInterval(() => this._step(performance.now()), 4);
+    const draw = () => { if (!this.running) return; requestAnimationFrame(draw); if (this._newFrame) { this._newFrame = false; this._draw(); } };
+    requestAnimationFrame(draw);
   }
 
   /* ---------- boucle : on rattrape le temps réel au rythme exact de l'Amiga ---------- */
-  _tick(now) {
+  _step(now) {
     if (!this.running) return;
-    requestAnimationFrame(t => this._tick(t));
     if (this.paused) { this._t = now; return; }
     this._acc += (now - this._t) / 1000; this._t = now;
     const step = 1 / this.fps;
     let n = 0;
     if (this._acc > 0.25) this._acc = step; /* onglet en arrière-plan : on ne rattrape pas tout */
+    const r0 = performance.now();
     while (this._acc >= step && n < 4) { this._pollGamepads(); this.M._fe_run(); this._acc -= step; n++; this._frames++; }
-    if (n) { this._draw(); this._pumpAudio(); }
+    this._busy = (this._busy || 0) + performance.now() - r0;
+    if (n) { this._newFrame = true; this._pumpAudio(); if (this.onFrame) this.onFrame(this.leds()); }
     if (now - this._statT >= 1000) {
-      const M = this.M;
-      this.onStats({ fps: this._frames * 1000 / (now - this._statT), leds: { power: M._fe_led(LED.POWER), df0: M._fe_led(LED.DF0), df1: M._fe_led(LED.DF1), hd: M._fe_led(LED.HDONLY) } });
-      this._frames = 0; this._statT = now;
+      /* charge = part du temps réel passée à émuler : au-delà de 100 %, la machine ralentit */
+      const load = this._frames ? this._busy / (this._frames * step * 1000) * 100 : 0;
+      this.onStats({ fps: this._frames * 1000 / (now - this._statT), load, leds: this.leds() });
+      this._frames = 0; this._busy = 0; this._statT = now;
     }
   }
+
+  leds() {
+    const M = this.M;
+    return { power: M._fe_led(LED.POWER), df0: M._fe_led(LED.DF0), df1: M._fe_led(LED.DF1), hd: M._fe_led(LED.HDONLY) };
+  }
+  /** Arrête la machine : boucle, son, écouteurs. Le module ne se relance pas : recharger la page pour rallumer. */
+  stop() {
+    this.running = false;
+    clearInterval(this._timer);
+    if (this.ac) { try { this.ac.close(); } catch (e) {} this.ac = null; }
+    window.removeEventListener("keydown", this._onKey);
+    window.removeEventListener("keyup", this._onKey);
+    document.removeEventListener("mousemove", this._onMove);
+    if (document.pointerLockElement === this.canvas) document.exitPointerLock();
+  }
+  /** Date de dernière écriture d'un fichier (ms), pour repérer ce que l'Amiga a modifié. */
+  fileMtime(path) { try { const st = this.M.FS.stat(path); return +st.mtime; } catch (e) { return 0; } }
+  removeFile(path) { try { this.M.FS.unlink(path); } catch (e) {} }
+  /** Lecteurs DF0: à DF3: */
+  driveInsert(num, path) { this._call("fe_drive_insert", num, path); }
+  driveEject(num) { this.M._fe_drive_eject(num); }
 
   _draw() {
     const M = this.M, w = M._fe_video_w(), h = M._fe_video_h();

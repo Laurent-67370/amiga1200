@@ -1084,6 +1084,9 @@ async function powerOn() {
     const lines = ["nr_floppies=2", "floppy1type=0", "boot_rom_uae=disabled", "uaeboard=disabled"];
     /* Une extension mémoire A1200 (carte trappe) porte une horloge sauvegardée par pile */
     if (+E.fast > 0) lines.push("rtc=MSM6242B");
+    /* Carte accélératrice sans MMU, comme une Blizzard vue par AmigaOS (qui ne s'en sert pas) : le cœur active la MMU
+       dès le 68030, et son émulation passe par setjmp/longjmp, très coûteux en WebAssembly (68040 : 22 ms par image) */
+    if (modelOf(E) !== "a500" && E.accel && E.accel !== "none") lines.push("mmu_model=0");
     if (arosExt) { machine.writeFile("/sys/aros-ext.bin", arosExt); lines.push("kickstart_ext_rom_file=/sys/aros-ext.bin"); }
     for (const tag of ["df0", "df1"]) {
       fsPath[tag] = null;

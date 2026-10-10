@@ -55,7 +55,7 @@ La Bibliothèque est propre à chaque navigateur : importez votre Kickstart et v
 - Archives `.lha` acceptées aussi pour les disquettes qu'elles contiennent
 - Enregistrement automatique des disques modifiés dans la Bibliothèque, téléchargement
 - **Sauvegardes d'état** : 4 emplacements par jeu, avec vignette ; Ctrl+Maj+S / Ctrl+Maj+R
-- **Profils par disque** : cycle exact, vitesse, carte accélératrice, mémoire Fast, PAL/NTSC, joystick, lecteurs
+- **Profils par disque** : modèle (A1200/A500), cycle exact, vitesse, carte accélératrice, mémoire Fast, PAL/NTSC, joystick, lecteurs
 - **Carte accélératrice** au choix : 68030 + FPU 68882 (28 MHz), 68040 (28 MHz) ou 68060 (42 MHz)
 - Horloge sauvegardée (MSM6242B) avec la mémoire Fast, comme une carte trappe ; bruit des lecteurs en option
 - Kickstart Amiga Forever chiffrés avec `rom.key`
@@ -93,7 +93,7 @@ le cœur PUAE (Emscripten), la page principale, l'ancienne version, un banc d'es
 | Chemin | Contenu |
 |---|---|
 | `src/template.html` | Interface commune (écran, boîtier, lecteurs, Bibliothèque, réglages) |
-| `wasm/` | Version principale : frontal libretro (`frontend.c`), page (`app/` : moteur, médias, sauvegardes, accueil), fichiers web (`web/` : frontal JS, disques, service worker, manifeste, icônes), compilation (`build.sh`) |
+| `wasm/` | Version principale : frontal libretro (`frontend.c`), page (`app/` : moteur, médias, sauvegardes, accueil, copie de fichiers, commandes tactiles), fichiers web (`web/` : frontal JS, disques RDB/FFS, archives LhA, service worker, manifeste, icônes), compilation (`build.sh`) |
 | `vendor/puae/` | Cœur PUAE en sous-module, avec `wasm/patches/` |
 | `vendor/sae/`, `build.py` | Ancienne version : cœur SAE, construit dans `sae/index.html` |
 | `vendor/aros/` | ROM AROS libres |

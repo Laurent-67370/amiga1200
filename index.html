@@ -523,7 +523,7 @@ button{font:inherit}
         <li>Lancez l'installation. À l'extinction, le disque dur est enregistré dans la Bibliothèque.</li>
       </ol>
       <h3>Clavier et souris</h3>
-      <p>Le clavier suit la position des touches : choisissez le keymap <i>f</i> (français) dans les Préférences Input du Workbench. Cliquez dans l'écran pour capturer la souris, <span class="kbd">Échap</span> pour la libérer.</p>
+      <p>Le clavier suit la position des touches : choisissez le keymap <i>f</i> (français) dans les Préférences Input du Workbench. Cliquez dans l'écran pour capturer la souris, <span class="kbd">Échap</span> pour la libérer. Une fois capturée, le bouton gauche sélectionne et le bouton droit (gardé enfoncé) ouvre la barre de menus, comme sur l'Amiga ; sur un pavé tactile, cliquez à deux doigts. Sans souris : <span class="kbd">Page préc.</span> (Amiga gauche) + <span class="kbd">Alt</span> gauche = bouton gauche, + <span class="kbd">Alt Gr</span> = bouton droit.</p>
       <p>Les touches Amiga sont la touche Windows/Cmd, ou les boutons <b>Amiga gauche</b> et <b>Amiga droite</b> sous les lecteurs, qui restent enfoncés jusqu'à la touche suivante. <span class="kbd">Menu</span> correspond à Help. Le bouton <b>Clavier</b> affiche un clavier A1200 complet à l'écran, pratique sur tablette.</p>
       <h3>Écran tactile</h3>
       <p>L'écran se comporte comme un pavé tactile : glissez un doigt pour déplacer la souris, touchez pour cliquer, touchez deux fois et gardez le doigt posé pour glisser une fenêtre ou une icône. Pour les menus, posez deux doigts (bouton droit), glissez jusqu'à l'option et relevez.</p>
@@ -1333,7 +1333,7 @@ if (isTouch) document.body.classList.add("is-touch");
       t.start = Date.now(); t.moved = 0;
       if (Date.now() - t.lastTap < 320) { t.lmb = true; btn(0, true); } /* double-tap maintenu : glisser */
     } else if (n >= 2 && !t.rmb) {
-      t.multi = true; t.rmb = true; btn(1, true);
+      t.multi = true; t.rmb = true; btn(2, true);
     }
   }, { passive: false });
   tube.addEventListener("touchmove", e => {
@@ -1347,7 +1347,7 @@ if (isTouch) document.body.classList.add("is-touch");
     if (!running) return;
     e.preventDefault();
     if (e.touches.length) { t.last = center(e.touches); return; }
-    if (t.rmb) { btn(1, false); t.rmb = false; }
+    if (t.rmb) { btn(2, false); t.rmb = false; }
     if (t.lmb) { btn(0, false); t.lmb = false; t.lastTap = 0; }
     else if (!t.multi && Date.now() - t.start < 250 && t.moved < 12) {
       btn(0, true); setTimeout(() => btn(0, false), 60);

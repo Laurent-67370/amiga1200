@@ -172,3 +172,11 @@ extinction (reprise au clavier) ; profil cycle exact + 8 Mo Fast + NTSC appliqu�
   (TRY/CATCH de `newcpu.c`) repose sur setjmp/longjmp, qu'Emscripten émule par défaut en JavaScript : chaque appel fait
   depuis cette boucle, donc chaque instruction, passait par JavaScript (`invoke_*`, près de la moitié du temps). Le cœur est
   compilé avec `-sSUPPORT_LONGJMP=wasm` (exceptions WebAssembly : Chrome 95, Firefox 100, Safari 15.2 et suivants).
+- **CD32** (`app/cd32-puae.js`) : modèle `CD32` du cœur (préréglage 2 Mo, 68EC020, Akiko), image passée par `cdimage0=` dans la
+  configuration, sans lecteur de disquettes ni disque dur. ROM reconnues à l'import (CRC du Kickstart CD32 40.060 et de son
+  extension, version 40.60 dans l'en-tête, ROM complète d'1 Mo) et rangées sans devenir le Kickstart de l'A1200 ; l'extension
+  est écrite sous le nom `kick40060.CD32.ext` attendu par le cœur, en clair si elle était chiffrée (rom.key). CD rangés par
+  morceaux de 8 Mo, une sous-entrée par fichier (`<id>/<n>#<morceau>`) ; un `.cue` retrouve ses pistes parmi les fichiers
+  choisis ou déposés avec lui. Manette CD32 du cœur sur le port joystick, gâchettes L/R de la manette USB, bouton Play tactile.
+  Vérifié avec une ROM d'essai (les deux moitiés d'AROS) : démarrage en CD32, AROS attend un CD amorçable ; import .iso et
+  .cue + 2 pistes, export puis import de la Bibliothèque. Pas de vraie ROM CD32 ni de jeu pour aller plus loin.

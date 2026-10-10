@@ -49,7 +49,13 @@ async function exportLibrary() {
       const path = tarName(n++, r.name || r.id); addFile(path, r.blob, when);
       m.blob = { $file: path };
     }
-    if (Array.isArray(r.files)) m.files = r.files.map(f => {
+    if (r.kind === "cd") m.files = [];
+    if (r.kind === "cd") for (const [k, f] of r.files.entries()) {
+      /* Pistes d'un CD : chacune en un seul fichier, rangée par morceaux à l'import */
+      const path = tarName(n++, f.name); addFile(path, await recBlob(cdFileRec(r, k)), when);
+      m.files.push({ name: f.name, size: f.size, $hd: path });
+    }
+    else if (Array.isArray(r.files)) m.files = r.files.map(f => {
       if (!f.blob) return f;
       const path = tarName(n++, f.path || "fichier"); addFile(path, f.blob, when);
       return Object.assign({}, f, { blob: { $file: path } });
@@ -114,7 +120,10 @@ async function importLibrary(file) {
       if (old && (old.updated || old.added || 0) > (m.updated || m.added || 0)) { kept++; continue; }
       const r = Object.assign({}, m);
       if (r.blob && r.blob.$file) r.blob = slice(r.blob);
-      if (Array.isArray(r.files)) r.files = r.files.map(f => f.blob && f.blob.$file ? Object.assign({}, f, { blob: slice(f.blob) }) : f);
+      if (r.kind === "cd") {
+        if (old && old.files) for (const [k] of old.files.entries()) { const fr = cdFileRec(old, k); for (let i = 0; i < (fr.chunks || 0); i++) await DB.del(chunkId(fr, i)); }
+        for (const [k, f] of r.files.entries()) { const fr = { id: r.id + "/" + k }; await storeChunks(fr, slice(f.$hd)); r.files[k] = { name: f.name, size: fr.size, chunks: fr.chunks }; }
+      } else if (Array.isArray(r.files)) r.files = r.files.map(f => f.blob && f.blob.$file ? Object.assign({}, f, { blob: slice(f.blob) }) : f);
       if (r.$hd) { const blob = slice(r.$hd); delete r.$hd; await storeChunks(r, blob); }
       /* Morceaux de l'ancien disque qui dépassent le nouveau */
       if (old && old.chunks) for (let i = r.chunks || 0; i < old.chunks; i++) await DB.del(chunkId(old, i));

@@ -33,6 +33,7 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
 .l-tile.k-adf{border-top-color:var(--rb5)}
 .l-tile.k-hdf{border-top-color:var(--rb4)}
 .l-tile.k-whd{border-top-color:var(--rb1)}
+.l-tile.k-cd{border-top-color:var(--rb3)}
 .l-tile.in{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .l-steps li::before{background:var(--accent);color:var(--accent-ink)}
 [data-model="a500"] .launch{background:radial-gradient(ellipse at 50% 0%,#0d3f7c,#020c1c 75%)}

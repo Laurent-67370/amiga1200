@@ -61,7 +61,7 @@ async function renderLauncher() {
   kick.appendChild(kBtn);
 
   /* Disques : les plus récemment utilisés d'abord */
-  const disks = all.filter(r => r.kind === "adf" || r.kind === "hdf" || r.kind === "whd").sort((a, b) => (b.used || b.added) - (a.used || a.added));
+  const disks = all.filter(r => r.kind === "adf" || r.kind === "hdf" || r.kind === "whd" || r.kind === "cd").sort((a, b) => (b.used || b.added) - (a.used || a.added));
   const thumbs = {};
   for (const s of all.filter(r => r.kind === "state").sort((a, b) => a.updated - b.updated)) thumbs[s.game] = s;
   box.innerHTML = "";
@@ -87,13 +87,13 @@ async function renderLauncher() {
       const inDrive = ["df0", ...HD_TAGS].some(t => mounted[t] && mounted[t].id === r.id);
       if (inDrive) tile.classList.add("in");
       const pick = lEl("button", "l-pick");
-      pick.title = (r.kind === "whd" ? "Jouer : " : "Insérer et allumer : ") + r.name;
+      pick.title = (r.kind === "whd" || r.kind === "cd" ? "Jouer : " : "Insérer et allumer : ") + r.name;
       const img = lEl("span", "l-img");
       const st = thumbs[r.id];
       if (st && st.thumb) { const i = new Image(); i.src = st.thumb; i.alt = ""; img.appendChild(i); }
-      else img.innerHTML = r.kind === "whd" ? ICON_WHD : r.kind === "hdf" ? ICON_HD : ICON_FLOPPY;
-      const nm = lEl("span", "l-name"); nm.textContent = r.name.replace(/\.(adf|adz|dms|hdf|lha|lzh)$/i, "");
-      const sub = lEl("span", "l-sub"); sub.textContent = (r.kind === "whd" ? "jeu WHDLoad" + (whdTags(r) ? " · " + whdTags(r) : "") : inDrive ? (r.kind === "hdf" ? "branché" : "dans le lecteur") : r.kind === "hdf" ? "disque dur" : "disquette") + (r.used ? " · " + whenUsed(r.used) : "");
+      else img.innerHTML = r.kind === "cd" ? ICON_CD : r.kind === "whd" ? ICON_WHD : r.kind === "hdf" ? ICON_HD : ICON_FLOPPY;
+      const nm = lEl("span", "l-name"); nm.textContent = r.name.replace(/\.(adf|adz|dms|hdf|lha|lzh|cue|iso)$/i, "");
+      const sub = lEl("span", "l-sub"); sub.textContent = (r.kind === "cd" ? "CD32" : r.kind === "whd" ? "jeu WHDLoad" + (whdTags(r) ? " · " + whdTags(r) : "") : inDrive ? (r.kind === "hdf" ? "branché" : "dans le lecteur") : r.kind === "hdf" ? "disque dur" : "disquette") + (r.used ? " · " + whenUsed(r.used) : "");
       pick.append(img, nm, sub);
       pick.onclick = () => launchWith(r);
       tile.appendChild(pick);

@@ -250,6 +250,7 @@ export class PuaeMachine {
       if (b(12) || ay < -0.5) m |= 1 << 4; if (b(13) || ay > 0.5) m |= 1 << 5;
       if (b(14) || ax < -0.5) m |= 1 << 6; if (b(15) || ax > 0.5) m |= 1 << 7;
       if (b(9)) m |= 1 << 3; if (b(8)) m |= 1 << 2;
+      if (b(4)) m |= 1 << 10; if (b(5)) m |= 1 << 11; /* gâchettes L et R (manette CD32) */
       this.M._fe_joy(i === 0 ? 0 : 1, m | this.joyMask[i === 0 ? 0 : 1]);
     }
   }

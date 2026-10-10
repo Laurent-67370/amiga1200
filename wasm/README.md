@@ -33,7 +33,7 @@ Machine : serveur partagé de GitHub, plus lent qu'un PC de bureau récent.
 Testé dans Chromium : AROS démarre, 50 images/s au rythme réel, son à 44,1 kHz, sauvegarde d'état 2,2 Mo en 8 ms puis restauration.
 Raccourcis : Inser = Help, Page préc. / Page suiv. = Amiga gauche / droite. Étape suivante : écran, son, clavier et souris dans le navigateur.
 
-## Étape 3 : interface complète (en cours)
+## Étape 3 : interface complète (terminée)
 
 - `app/make-page.py` génère `index.html` à partir de l'interface actuelle (`src/template.html`) en ne remplaçant
   que les parties qui parlent au cœur : `app/engine-puae.js` (allumage, configuration WinUAE `.uae`, LED, charge)
@@ -43,3 +43,11 @@ Raccourcis : Inser = Help, Page préc. / Page suiv. = Amiga gauche / droite. Ét
   du navigateur n'est accessible que de là ; le fil IDE bloquait le démarrage avec un disque dur).
 - Bibliothèque et réglages partagés avec la version SAE (même site, même stockage local).
 - Page d'essai brute conservée : `/puae/essai.html`.
+
+Testé dans Chromium (bureau et mobile tactile) : 50 images/s, disquette vierge et archive .zip dans DF0:,
+insertion à chaud dans DF1:, éjection, écriture enregistrée automatiquement dans la Bibliothèque, extinction
+puis rallumage (la page se recharge).
+
+Limite constatée : avec un disque dur branché, l'AROS intégré à PUAE reste sur l'écran gris de démarrage,
+en natif comme dans le navigateur, alors que le contrôleur IDE répond. À vérifier avec un vrai Kickstart 3.1
+(étape 4).

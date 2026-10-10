@@ -85,3 +85,17 @@ extinction (reprise au clavier) ; profil cycle exact + 8 Mo Fast + NTSC appliqu�
   et l'ancienne adresse d'essai `/puae/` redirige vers l'accueil.
 - Le service worker d'isolation laisse passer `sae/` sans en-têtes (polices Google, pas de fils d'exécution).
 - Une autre branche poussée est publiée dans `/<nom de la branche>/` pour les essais.
+
+## Après la bascule
+
+- **Matériel** : carte accélératrice au choix (68030 + 68882 à 28 MHz, 68040 à 28 MHz, 68060 à 42 MHz, options
+  `puae_cpu_model`, `puae_fpu_model`, `puae_cpu_multiplier`), horloge MSM6242B (`rtc=`) dès que la mémoire Fast est
+  active, bruit des lecteurs (`puae_floppy_sound`, réglable à chaud). La carte fait partie des profils et des sauvegardes.
+- **Souris** : les deux doigts de l'écran tactile envoyaient le bouton du milieu ; ils envoient le bouton droit.
+- **Application installable et hors ligne** : `web/manifest.webmanifest`, icônes, et `web/coi-sw.js` qui, en plus des
+  en-têtes d'isolation, copie le site dans le cache du navigateur (copie locale d'abord, réseau sinon). Sa version est
+  le résumé des fichiers publiés, calculé par `build.sh` : chaque publication renouvelle la copie et efface l'ancienne.
+- **Accueil** (`app/launcher-puae.js`) : quand l'Amiga est éteint, l'écran affiche le Kickstart utilisé, trois étapes
+  au premier passage, puis les derniers disques en vignettes (insérer et allumer en une touche, reprise de la dernière
+  sauvegarde d'état). Les commandes qui ne servent qu'allumé sont masquées.
+

@@ -11,18 +11,36 @@ Les deux partagent la même Bibliothèque et les mêmes réglages (stockage loca
 
 ## Démarrer
 
-1. **Réglages → Importer un Kickstart** : votre ROM Kickstart 3.1 A1200 (40.068). Sans ROM, la machine démarre sur AROS
-   (version d'août 2026), un Kickstart libre.
-2. Glissez une disquette `.adf` (ou une archive `.zip`) sur la page ou sur la fente du lecteur.
+L'écran du moniteur sert d'accueil tant que l'Amiga est éteint :
+
+1. **Kickstart** : sans ROM, la machine démarre sur AROS (version d'août 2026), un Kickstart libre. Pour retrouver
+   l'A1200 d'origine, **Importer le mien…** et choisissez votre ROM Kickstart 3.1 A1200 (40.068).
+2. **Une disquette** : **Ouvrir une disquette…** (`.adf`, ou une archive `.zip`), ou glissez-la sur la page.
+   Elle est rangée dans la Bibliothèque pour les fois suivantes.
 3. **Allumer**.
 
+Ensuite, l'accueil présente les derniers disques utilisés en vignettes : une touche insère le disque et allume
+l'Amiga ; un jeu qui a une sauvegarde d'état montre sa capture et propose **Reprendre la sauvegarde**.
+
 Les ROM et disquettes Workbench d'origine ne sont pas fournies. Vos fichiers restent dans le navigateur (IndexedDB)
-et ne sont envoyés nulle part. Un navigateur récent sur ordinateur est recommandé (Chrome, Edge, Firefox) :
-la page se recharge une fois au premier passage pour activer l'isolation nécessaire au WebAssembly multi-fils.
+et ne sont envoyés nulle part. La page se recharge une fois au premier passage pour activer l'isolation nécessaire
+au WebAssembly multi-fils.
+
+## Installer l'application (hors ligne)
+
+L'émulateur est une application web installable (PWA) : une fois installé, il a son icône, s'ouvre en plein écran
+et fonctionne **sans connexion**. Tout le site (environ 16 Mo) est copié sur l'appareil à la première visite ;
+une nouvelle version publiée est téléchargée seule et prend effet au lancement suivant.
+
+- **Android, ordinateur (Chrome, Edge)** : bouton **Installer** de la barre d'outils, ou menu du navigateur → « Installer l'application ».
+  Ouvrez la page dans Chrome lui-même : le navigateur intégré d'une autre application (lien ouvert depuis une messagerie) ne sait pas installer.
+- **iPhone, iPad** : dans Safari, Partager → « Sur l'écran d'accueil ».
+
+La Bibliothèque est propre à chaque navigateur : importez votre Kickstart et vos disquettes une fois dans l'application installée.
 
 ## Fonctions
 
-- **Application installable, hors ligne** : bouton *Installer* (Chrome, Edge, Android) ou, sur iPhone/iPad, Safari → Partager → « Sur l'écran d'accueil ». Tout le site est copié sur l'appareil ; les mises à jour arrivent au lancement suivant une connexion.
+- Accueil : étapes au premier passage, derniers disques en vignettes, Kickstart utilisé toujours visible
 - Disquettes `.adf`, `.dms`, `.adz`, archives `.zip` et `.gz` ; DF0: et DF1:, insertion à chaud, disquettes vierges formatées
 - Disque dur IDE `.hdf` jusqu'à 512 Mo ; **Nouveau** crée un disque partitionné (RDB) et formaté (FFS), prêt pour le Workbench
 - Enregistrement automatique des disques modifiés dans la Bibliothèque, téléchargement
@@ -37,7 +55,13 @@ la page se recharge une fois au premier passage pour activer l'isolation nécess
 ## Clavier et souris
 
 Le clavier suit la position physique des touches : choisissez le keymap `f` dans les Préférences Input du Workbench.
-Cliquez dans l'écran pour capturer la souris, Échap pour la libérer. Inser = Help, Page préc. / Page suiv. = touches Amiga.
+Inser = Help, Page préc. / Page suiv. = touches Amiga.
+
+- **Souris** : cliquez dans l'écran pour la capturer, Échap pour la libérer. Bouton gauche pour sélectionner,
+  bouton droit maintenu pour la barre de menus, comme sur l'Amiga ; sur un pavé tactile, clic à deux doigts.
+- **Sans souris** (fonction du Kickstart) : Amiga gauche + Alt gauche = bouton gauche, + Alt droite = bouton droit.
+- **Écran tactile** : un doigt déplace la souris, une touche clique, deux touches puis glisser déplace une fenêtre,
+  deux doigts posés = bouton droit (glissez jusqu'à l'option du menu et relevez).
 
 ## Construire
 
@@ -47,7 +71,7 @@ le cœur PUAE (Emscripten), la page principale, l'ancienne version, un banc d'es
 | Chemin | Contenu |
 |---|---|
 | `src/template.html` | Interface commune (écran, boîtier, lecteurs, Bibliothèque, réglages) |
-| `wasm/` | Version principale : frontal libretro (`frontend.c`), page (`app/`), fichiers web (`web/`), compilation (`build.sh`) |
+| `wasm/` | Version principale : frontal libretro (`frontend.c`), page (`app/` : moteur, médias, sauvegardes, accueil), fichiers web (`web/` : frontal JS, disques, service worker, manifeste, icônes), compilation (`build.sh`) |
 | `vendor/puae/` | Cœur PUAE en sous-module, avec `wasm/patches/` |
 | `vendor/sae/`, `build.py` | Ancienne version : cœur SAE, construit dans `sae/index.html` |
 | `vendor/aros/` | ROM AROS libres |

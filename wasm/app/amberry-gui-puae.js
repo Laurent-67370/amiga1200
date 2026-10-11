@@ -28,6 +28,8 @@ const AB_ICON = {
   quit: "M4 3h10v4h-2V5H6v14h6v-2h2v4H4zm12 5l5 4-5 4v-3h-6v-2h6z",
   reload: "M12 4V1l4 4-4 4V6a6 6 0 106 6h2a8 8 0 11-8-8z",
   help: "M12 2a10 10 0 110 20 10 10 0 010-20zm-1 14v2h2v-2zm1-10a4 4 0 00-4 4h2a2 2 0 114 0c0 2-3 2-3 5h2c0-2 3-2.5 3-5a4 4 0 00-4-4z",
+  folder: "M2 5h7l2 2h11v13H2zm2 4v9h16V9z",
+  board: "M3 3h18v18H3zm2 2v14h14V5zm2 2h4v4H7zm6 0h4v2h-4zm0 4h4v2h-4zm-6 2h4v4H7zm6 2h4v2h-4z",
   search: "M10 3a7 7 0 015.6 11.2l5.2 5.2-1.4 1.4-5.2-5.2A7 7 0 1110 3zm0 2a5 5 0 100 10 5 5 0 000-10z"
 };
 const abSvg = n => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${AB_ICON[n]}"/></svg>`;
@@ -35,23 +37,26 @@ const abSvg = n => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${AB_IC
 const AB_PANELS = [
   { id: "play", label: "Jouer", group: "Général", icon: "play", simple: true, hosts: ["idle"] },
   { id: "quick", label: "Démarrage rapide", group: "Général", icon: "rocket", hosts: ["settings"], secs: ["Modèle"] },
-  { id: "configs", label: "Configurations", group: "Général", icon: "file", simple: true, hosts: ["lib"] },
+  { id: "configs", label: "Configurations", group: "Général", icon: "file", simple: true, hosts: ["configs"] },
+  { id: "library", label: "Bibliothèque", group: "Général", icon: "folder", simple: true, hosts: ["lib"] },
   { id: "whdload", label: "WHDLoad", group: "Général", icon: "download", hosts: ["settings"], secs: ["Jeux WHDLoad"] },
   { id: "about", label: "À propos", group: "Général", icon: "info", simple: true, hosts: ["about", "help"] },
   { id: "cpu", label: "Processeur et FPU", group: "Matériel", icon: "chip", hosts: ["settings"], secs: ["Cœur d'émulation", "Processeur", "Carte accélératrice", "Compatibilité"] },
   { id: "rom", label: "ROM", group: "Matériel", icon: "sim", hosts: ["settings"], secs: ["Kickstart"] },
+  { id: "chipset", label: "Chipset", group: "Matériel", icon: "board", hosts: ["settings"], secs: ["Chipset"] },
   { id: "ram", label: "Mémoire", group: "Matériel", icon: "memory", hosts: ["settings"], secs: ["Mémoire"] },
   { id: "floppy", label: "Lecteurs de disquettes", group: "Stockage", icon: "floppy", hosts: ["drives", "settings"], secs: ["Lecteurs de disquettes"] },
   { id: "hd", label: "Disques durs/CD", group: "Stockage", icon: "hdd", hosts: ["drives"] },
   { id: "rtg", label: "Carte RTG", group: "Extensions", icon: "tv", hosts: ["settings"], secs: ["Carte graphique RTG"] },
   { id: "display", label: "Affichage", group: "Sortie", icon: "desktop", simple: true, hosts: ["settings"], secs: ["Affichage"] },
   { id: "sound", label: "Son", group: "Sortie", icon: "volume", hosts: ["sound"] },
-  { id: "input", label: "Entrées", group: "Entrées / ports", icon: "gamepad", simple: true, hosts: ["settings"], secs: ["Joystick", "Clavier à l'écran"] },
+  { id: "input", label: "Entrées", group: "Entrées / ports", icon: "gamepad", simple: true, hosts: ["settings", "ctl"], secs: ["Joystick", "Clavier à l'écran"] },
   { id: "misc", label: "Divers", group: "Utilitaires", icon: "wrench", hosts: ["settings"], secs: ["MIDI"] },
   { id: "states", label: "Sauvegardes d'état", group: "Utilitaires", icon: "bookmark", hosts: ["states"] }
 ];
 const AB_HOST_SEL = { idle: "#idle", settings: "#winSettings", lib: "#winLib", states: "#winStates", help: "#winHelp", drives: ".drives" };
-const AB_WIN_PANEL = { winSettings: "quick", winLib: "configs", winStates: "states", winHelp: "about" };
+const AB_OWN = { about: "#abAbout", sound: "#abSound", configs: "#abConfigs", ctl: "#abCtl" }; /* éléments propres à l'interface */
+const AB_WIN_PANEL = { winSettings: "quick", winLib: "library", winStates: "states", winHelp: "about" };
 
 const ab = { el: null, panel: null, homes: new Map(), pausedByGui: false, open: false };
 
@@ -142,9 +147,7 @@ function abNav() {
 
 /* Les éléments de la page entrent dans l'interface à son ouverture, et retrouvent leur place à sa fermeture */
 function abHost(name) {
-  if (name === "about") return $("#abAbout");
-  if (name === "sound") return $("#abSound");
-  return $(AB_HOST_SEL[name]);
+  return $(AB_OWN[name] || AB_HOST_SEL[name]);
 }
 function abAdopt() {
   const park = ab.el.querySelector(".ab-park");
@@ -172,6 +175,8 @@ function abRefresh(name) {
     else if (name === "states" && typeof renderStates === "function") renderStates();
     else if (name === "idle" && typeof renderLauncher === "function") renderLauncher();
     else if (name === "sound") $("#abMute").checked = !!S.muted;
+    else if (name === "ctl") renderCtl();
+    else if (name === "configs") renderCfgs();
   } catch (e) { console.warn(e); }
 }
 function abShow(id) {
@@ -228,7 +233,7 @@ async function abAction(a) {
 /* Raccordements : boutons de la page, fenêtres, allumage et extinction, F12 */
 { const _sw = showWin; showWin = id => { if (AB_WIN_PANEL[id]) return abOpen(AB_WIN_PANEL[id]); return _sw(id); }; }
 $("#btnSettings").onclick = () => abOpen("quick");
-$("#btnLib").onclick = () => abOpen("configs");
+$("#btnLib").onclick = () => abOpen("library");
 $("#btnStates").onclick = () => abOpen("states");
 $("#btnHelp").onclick = () => abOpen("about");
 { const _s = onStarted; onStarted = (...x) => { _s(...x); abClose(); }; }

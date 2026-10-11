@@ -5,6 +5,8 @@ L'action `.github/workflows/amiberry-android.yml` compile l'application Android 
 
 - Version : `v8.3.0` par défaut ; une autre se compile depuis l'onglet *Actions* → « Amiberry pour Android » → *Run workflow*.
 - Architectures : arm64 (téléphones et tablettes) et x86_64.
+- Modification : l'écran de l'émulateur et son interface de réglages s'affichent toujours à l'horizontale
+  (en portrait, l'interface ImGui d'Amiberry est illisible sur un téléphone).
 - Signature : `amiberry-perso.jks`, une clé à usage personnel (mot de passe dans l'action). La garder permet d'installer
   les versions suivantes par-dessus sans perdre ses réglages. Ce n'est pas la clé du Play Store : la version officielle
   et celle-ci ne peuvent pas se mettre à jour l'une l'autre.

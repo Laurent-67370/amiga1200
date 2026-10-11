@@ -30,6 +30,14 @@ jobs:
             https://github.com/BlitterStudio/amiberry.git amiberry
           grep -m1 -E '^\s*VERSION [0-9]' amiberry/CMakeLists.txt
 
+      - name: Écran de l'émulateur en paysage
+        # L'interface de réglages d'Amiberry (ImGui) est conçue pour un écran large : en portrait sur un téléphone,
+        # ses colonnes s'écrasent. L'écran de l'émulateur (activité SDL) reste donc à l'horizontale ; l'accueil Android, non.
+        run: |
+          M=amiberry/android/app/src/main/AndroidManifest.xml
+          sed -i 's|android:process=":sdl"|android:process=":sdl"\n            android:screenOrientation="sensorLandscape"|' "$M"
+          grep -n -A2 'process=":sdl"' "$M"
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

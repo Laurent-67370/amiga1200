@@ -74,7 +74,11 @@ async function effectiveSettings() {
 const skip = {
   level: 1, low: 0, high: 0,
   reset() { this.level = 1; this.low = 0; this.high = 0; },
-  set(l) { this.level = l; if (machine) machine.setOption("puae_gfx_framerate", l > 1 ? "2" : "disabled"); },
+  set(l) {
+    this.level = l; if (!machine) return;
+    if (E.core === "winuae6") machine.M._amb_set_framerate(l > 1 ? 2 : 1);
+    else machine.setOption("puae_gfx_framerate", l > 1 ? "2" : "disabled");
+  },
   update(load) {
     if (!E.autoskip) { if (this.level !== 1) this.set(1); return; }
     if (load > 95) { this.high = 0; if (++this.low >= 2 && this.level < 2) { this.set(2); this.low = 0; } }
@@ -125,6 +129,20 @@ async function coreFactory(core) {
   if (!window.createAmiberry) await loadScript("amiberry.js");
   return window.createAmiberry;
 }
+/* Clavier pour WinUAE 6 : mêmes touches que sous PUAE (Insert et Menu = Help, Page préc./suiv. et Ctrl droit =
+   Amiga gauche/droite, Origine/Fin = parenthèses du pavé numérique), traduites vers celles qu'attend Amiberry
+   (Page suiv. = Help, touches Windows = Amiga, F14/F15 = parenthèses) */
+const AMB_KEYS = { Insert: 281, ContextMenu: 281, PageUp: 311, PageDown: 312, ControlRight: 312, Home: 295, End: 296 };
+/* Bruits des lecteurs de disquettes d'Amiberry (WinUAE 6), téléchargés au premier allumage qui les demande */
+const AMB_SOUNDS = ["drive_click", "drive_spin", "drive_spinnd", "drive_startup", "drive_snatch"];
+let ambSounds = null;
+async function ambFloppySounds(m) {
+  if (!ambSounds) ambSounds = Promise.all(AMB_SOUNDS.map(async n => {
+    const r = await fetch("sons/" + n + ".wav"); if (!r.ok) throw new Error("sons/" + n + ".wav introuvable");
+    return [n, new Uint8Array(await r.arrayBuffer())];
+  })).catch(e => { ambSounds = null; throw e; });
+  for (const [n, u8] of await ambSounds) m.writeFile("/data/floppy_sounds/" + n + ".wav", u8);
+}
 /* Configuration complète au format WinUAE pour Amiberry : le fichier remplace toute la configuration du cœur */
 function amberryLines(model, key) {
   const acc = model !== "A1200" ? ACCEL.none : ACCEL[E.accel] || ACCEL.none;
@@ -140,6 +158,8 @@ function amberryLines(model, key) {
   l.push("ntsc=" + (E.region === "ntsc"));
   if (E.floppy === "turbo") l.push("floppy_speed=0");
   if (S.center) l.push("gfx_auto_crop=true");
+  l.push("gfx_resolution=" + (S.res === "lores" ? "lores" : S.res === "shires" ? "superhires" : "hires"));
+  if (S.floppySound && model !== "CD32") l.push("floppy0sound=1", "floppy1sound=1");
   if (S.midi === "on") l.push("amiberry.midiout_device_name=Libretro MIDI"); /* MIDI du port série vers la page (Web MIDI) */
   /* Carte graphique RTG d'UAE (uaegfx) sur le Zorro III : écrans haute résolution et 16 millions de couleurs.
      Il lui faut un processeur 32 bits (le 68EC020 de l'A1200 n'adresse que 16 Mo) */
@@ -264,6 +284,7 @@ async function powerOn() {
       const kicks = await whdPrepare(machine);
       if (!kicks.length && S.romId !== "aros") toast("Aucun Kickstart reconnu par WHDLoad dans la Bibliothèque : les jeux qui en demandent un (kick34005.A500, kick40068.A1200) s'arrêteront.", true);
       await whdBootAmb(machine, r, kicks, lines);
+      if (whd.whdCfg && whd.whdCfg.opts && whd.whdCfg.opts.puae_immediate_blits) lines.push("immediate_blits=true"); /* base WHDLoad : BLITTER */
       E._whd = safeName(r.name.replace(/\.(lha|lzh)$/i, ""));
       machine.writeFile(content, new TextEncoder().encode(lines.join("\n") + "\n"));
     } else if (whd) {
@@ -283,7 +304,11 @@ async function powerOn() {
     } else machine.writeFile(content, new TextEncoder().encode(lines.join("\n") + "\n"));
     for (const t in fsPath) seen[t] = fsPath[t] ? machine.fileMtime(fsPath[t]) : 0;
 
-    if (amb) await midiAttach(machine);
+    if (amb) {
+      machine.keyRemap = AMB_KEYS;
+      await midiAttach(machine);
+      if (S.floppySound && !cd) await ambFloppySounds(machine).catch(e => console.warn("bruits des lecteurs indisponibles", e));
+    }
     await machine.start({ model: cd ? "CD32" : MODELS[modelOf(E)].core, kickstart: kick, romKey: cd ? null : key, content, options });
     machine.setMuted(!!S.muted);
     /* Jeu WHDLoad prévu pour la manette CD32 (7 boutons) : la manette du port joystick en devient une */

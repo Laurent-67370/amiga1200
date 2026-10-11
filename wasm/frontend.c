@@ -135,6 +135,40 @@ static int16_t input_state_cb(unsigned port, unsigned device, unsigned index, un
   return 0;
 }
 
+/* ---------- MIDI (port série de l'Amiga) : deux files d'octets, vidée et remplie par la page (Web MIDI) ---------- */
+#define MIDI_Q 8192
+static uint8_t midi_out_q[MIDI_Q], midi_in_q[MIDI_Q];
+static unsigned midi_out_w, midi_out_r, midi_in_w, midi_in_r;
+static bool midi_out_on, midi_in_on;
+static bool midi_input_enabled(void) { return midi_in_on; }
+static bool midi_output_enabled(void) { return midi_out_on; }
+static bool midi_read(uint8_t *b) {
+  if (midi_in_r == midi_in_w) return false;
+  *b = midi_in_q[midi_in_r]; midi_in_r = (midi_in_r + 1) % MIDI_Q; return true;
+}
+static bool midi_write(uint8_t b, uint32_t delta) {
+  (void)delta;
+  unsigned n = (midi_out_w + 1) % MIDI_Q;
+  if (n == midi_out_r) return false; /* plein : la page ne vide plus la file */
+  midi_out_q[midi_out_w] = b; midi_out_w = n; return true;
+}
+static bool midi_flush(void) { return true; }
+API void fe_midi_enable(int out, int in) { midi_out_on = out != 0; midi_in_on = in != 0; }
+/* Octets envoyés par l'Amiga depuis le dernier appel (max octets au plus) */
+API unsigned fe_midi_out_read(uint8_t *dst, unsigned max) {
+  unsigned n = 0;
+  while (midi_out_r != midi_out_w && n < max) { dst[n++] = midi_out_q[midi_out_r]; midi_out_r = (midi_out_r + 1) % MIDI_Q; }
+  return n;
+}
+/* Octets reçus d'un instrument, pour l'Amiga */
+API void fe_midi_in_write(const uint8_t *src, unsigned len) {
+  for (unsigned i = 0; i < len; i++) {
+    unsigned n = (midi_in_w + 1) % MIDI_Q;
+    if (n == midi_in_r) break;
+    midi_in_q[midi_in_w] = src[i]; midi_in_w = n;
+  }
+}
+
 /* ---------- LED ---------- */
 static int leds[16];
 static void led_cb(int led, int state) { if (led >= 0 && led < 16) leds[led] = state; }
@@ -179,6 +213,12 @@ static bool environ_cb(unsigned cmd, void *data) {
       struct retro_perf_callback *c = data;
       c->get_time_usec = usec; c->get_cpu_features = cpu_features; c->get_perf_counter = perf_counter;
       c->perf_register = perf_nop; c->perf_start = perf_nop; c->perf_stop = perf_nop; c->perf_log = perf_log;
+      return true;
+    }
+    case RETRO_ENVIRONMENT_GET_MIDI_INTERFACE: {
+      struct retro_midi_interface *m = data;
+      m->input_enabled = midi_input_enabled; m->output_enabled = midi_output_enabled;
+      m->read = midi_read; m->write = midi_write; m->flush = midi_flush;
       return true;
     }
     case RETRO_ENVIRONMENT_GET_LED_INTERFACE: ((struct retro_led_interface *)data)->set_led_state = led_cb; return true;

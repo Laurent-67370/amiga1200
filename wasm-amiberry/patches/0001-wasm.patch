@@ -104,6 +104,19 @@ index cbed0018..9216d1fb 100644
  
  	write_log (_T("MMAN: Total physical RAM %llu MB, all RAM %llu MB\n"),
  	           totalphys64 >> 20, total64 >> 20);
+diff --git a/src/osdep/sysconfig.h b/src/osdep/sysconfig.h
+index 1fae8189..b902684c 100644
+--- a/src/osdep/sysconfig.h
++++ b/src/osdep/sysconfig.h
+@@ -89,6 +89,8 @@
+ #define SERIAL_PORT  /* serial port emulation */
+ #elif defined(_WIN32)
+ #define SERIAL_PORT  /* serial port emulation (native Windows COM) */
++#elif defined(__EMSCRIPTEN__)
++#define SERIAL_PORT  /* WebAssembly : port série émulé sans port réel, pour le MIDI de la page (Web MIDI) */
+ #endif
+ 
+ // We define this externally in Amiberry
 diff --git a/src/vm.cpp b/src/vm.cpp
 index c7b0e1b5..cdb92a43 100644
 --- a/src/vm.cpp

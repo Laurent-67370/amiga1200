@@ -677,14 +677,19 @@ rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>CD3
 rep("Les archives .lzx doivent être extraites avant.", "Images de CD de CD32 : .iso, ou .cue avec ses pistes .bin. Les archives .lzx doivent être extraites avant.")
 
 # Cœur d'émulation : PUAE (WinUAE 5) ou WinUAE 6 (Amiberry)
-rep('kbdOpen: false, compat: "normal",', 'kbdOpen: false, core: "puae", rtg: "0", compat: "normal",')
+rep('kbdOpen: false, compat: "normal",', 'kbdOpen: false, core: "winuae6", rtg: "0", compat: "normal",')
+# WinUAE 6 devient le cœur par défaut : les réglages déjà enregistrés gardaient l'ancienne valeur par défaut (PUAE),
+# on les bascule une fois ; un choix fait ensuite dans les Réglages est respecté
+rep('function saveSettings() { try { localStorage.setItem("a1200.settings", JSON.stringify(S)); } catch (e) {} }',
+    'function saveSettings() { try { localStorage.setItem("a1200.settings", JSON.stringify(S)); } catch (e) {} }\n'
+    'if (S.coreV !== 2) { S.core = "winuae6"; S.coreV = 2; saveSettings(); }')
 rep('''      <h3>Kickstart</h3>
       <p class="hint">Pour l'Amiga 1200 :</p>''', '''      <h3>Cœur d'émulation</h3>
       <div class="opt" data-setting="core">
-        <label><input type="radio" name="core" value="puae"> PUAE, base WinUAE 5 (éprouvé, le plus rapide)</label>
-        <label><input type="radio" name="core" value="winuae6"> WinUAE 6, par Amiberry (plus récent et plus précis, en essai)</label>
+        <label><input type="radio" name="core" value="winuae6"> WinUAE 6, par Amiberry (recommandé : le plus récent et le plus fidèle)</label>
+        <label><input type="radio" name="core" value="puae"> PUAE, base WinUAE 5 (un peu plus léger, pour les appareils anciens)</label>
       </div>
-      <p class="hint">WinUAE 6 demande un peu plus de calcul que PUAE (environ 1,4 fois sur l'A1200, autant sur l'A500 ; bien plus en compatibilité « Maximale », au cycle près) et se télécharge à part (4 Mo) au premier allumage. Une sauvegarde d'état reprend toujours avec le cœur qui l'a faite.</p>
+      <p class="hint">WinUAE 6 demande un peu plus de calcul que PUAE (environ 1,4 fois sur l'A1200, autant sur l'A500 ; bien plus en compatibilité « Maximale », au cycle près). Si l'émulation ralentit sur votre appareil, essayez PUAE. Une sauvegarde d'état reprend toujours avec le cœur qui l'a faite.</p>
 
       <h3>Carte graphique RTG (WinUAE 6)</h3>
       <div class="opt" data-setting="rtg">
@@ -699,7 +704,7 @@ lst = '["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel
 assert page.count(lst) == 2
 page = page.replace(lst, '["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel", "model", "core", "rtg"]')
 rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Deux cœurs d'émulation</h3>
-      <p>Réglages → Cœur d'émulation : <b>PUAE</b> (base WinUAE 5, le cœur historique de cette page) ou <b>WinUAE 6</b>, compilé depuis le cœur libretro d'Amiberry. WinUAE 6 est plus récent et plus fidèle, et à peine plus gourmand que PUAE ; sur un téléphone ancien, PUAE garde un peu d'avance. Disquettes, disques durs, Kickstart, cartes accélératrices, WHDLoad, CD32 et sauvegardes d'état marchent avec les deux.</p>
+      <p>Réglages → Cœur d'émulation : <b>WinUAE 6</b> (par défaut), compilé depuis le cœur libretro d'Amiberry, ou <b>PUAE</b> (base WinUAE 5, le cœur historique de cette page). WinUAE 6 est plus récent et plus fidèle, et à peine plus gourmand ; sur un téléphone ancien, PUAE garde un peu d'avance. Disquettes, disques durs, Kickstart, cartes accélératrices, WHDLoad, CD32 et sauvegardes d'état marchent avec les deux.</p>
       <h3>Workbench en haute résolution (RTG)</h3>
       <p>Avec WinUAE 6, Réglages → Carte graphique RTG ajoute la carte graphique virtuelle d'UAE (16 Mo sur le Zorro III) : des écrans de 640×480 à 1920×1080 en 16 millions de couleurs, bien plus rapides que les modes AGA. L'Amiga ne s'en sert que si son Workbench a les pilotes RTG : Picasso96 (gratuit, sur Aminet) ou P96 (inclus dans Amiga Forever) ; une fois installés, choisissez un mode « uaegfx » dans Prefs/ScreenMode. Les jeux, eux, gardent l'affichage AGA.</p>
       <h3>Copier des fichiers sur le disque dur</h3>''')

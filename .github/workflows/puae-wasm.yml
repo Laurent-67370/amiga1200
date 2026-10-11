@@ -1,11 +1,11 @@
 name: Construire et publier le site
 
-# main : version principale (cœur PUAE) à la racine, ancienne version (SAE) dans sae/.
+# main : version principale (cœurs PUAE et WinUAE 6) à la racine, ancienne version (SAE) dans sae/.
 # Autres branches (essais) : publiées dans /<nom de la branche>/.
 # Les publications sont faites avec GITHUB_TOKEN : elles ne relancent pas ce workflow.
 on:
   push:
-    paths: ["wasm/**", "vendor/**", "src/**", "build.py", ".github/workflows/puae-wasm.yml"]
+    paths: ["wasm/**", "wasm-amiberry/**", "vendor/**", "src/**", "build.py", ".github/workflows/puae-wasm.yml"]
   workflow_dispatch:
 
 concurrency:
@@ -30,6 +30,22 @@ jobs:
           "$HOME/emsdk/emsdk" activate 4.0.15
           echo "$HOME/emsdk" >> "$GITHUB_PATH"
           echo "$HOME/emsdk/upstream/emscripten" >> "$GITHUB_PATH"
+
+      # Cœur WinUAE 6 (Amiberry) : sources clonées et objets gardés d'une compilation à l'autre
+      - uses: actions/cache@v4
+        with:
+          path: wasm-amiberry/src
+          key: amiberry-${{ hashFiles('wasm-amiberry/build.sh', 'wasm-amiberry/patches/**') }}
+          restore-keys: amiberry-
+
+      - name: Compiler le cœur WinUAE 6 (Amiberry)
+        run: |
+          if ! wasm-amiberry/build.sh > amb.log 2>&1; then
+            grep -E "error|undefined symbol" amb.log wasm-amiberry/out/make.log 2>/dev/null | grep -v "Werror\|-Wno-error\|unknown argument\|-lutil\|wasm-ld @" | sort | uniq -c | sort -rn | head -25 | while read -r l; do echo "::error title=Compilation WinUAE 6::$l"; done
+            tail -5 amb.log | while read -r l; do echo "::error title=Fin du journal::$l"; done
+            exit 1
+          fi
+          tail -4 amb.log
 
       - name: Compiler le cœur
         run: |
@@ -64,6 +80,17 @@ jobs:
           done
           test $ok = 1
 
+      - name: Banc d'essai WinUAE 6 (A1200 et A500, AROS)
+        working-directory: wasm-amiberry/out
+        run: |
+          note() { echo "::notice title=$1::$2"; echo "$2" >> "$GITHUB_STEP_SUMMARY"; }
+          grep -E "compressé" ../../amb.log | while read -r l; do note "Compilation WinUAE 6" "$l"; done
+          for model in A1200OG A500; do
+            timeout 600 node amb-bench.js 150 300 $model frame-$model.ppm > out-$model.txt 2>&1 || true
+            grep -E "images/s|sauvegarde" out-$model.txt | while read -r l; do note "WinUAE 6 $model" "$l"; done
+            grep -q "images/s" out-$model.txt || { note "WinUAE 6 $model en échec" "$(tail -8 out-$model.txt | tr '\n' ' ' | cut -c1-900)"; exit 1; }
+          done
+
       - name: Construire l'ancienne version (SAE)
         run: python3 build.py
 
@@ -74,7 +101,7 @@ jobs:
           SITE=../site-main
           if [ "$GITHUB_REF_NAME" = "main" ]; then
             # Version principale à la racine
-            for f in index.html essai.html puae.js puae.wasm puae-frontend.js adf.js hdf.js lha.js ffs.js coi.js coi-sw.js aros-rom.bin.gz aros-ext.bin.gz \
+            for f in index.html essai.html puae.js puae.wasm amiberry.js amiberry.wasm puae-frontend.js adf.js hdf.js lha.js ffs.js coi.js coi-sw.js aros-rom.bin.gz aros-ext.bin.gz \
                      manifest.webmanifest icon-192.png icon-512.png icon-maskable-512.png apple-touch-icon.png; do
               cp "wasm/dist/site/$f" "$SITE/$f"
             done

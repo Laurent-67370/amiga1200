@@ -102,8 +102,14 @@ API void fe_mouse_move(int dx, int dy) { mouse_acc_x += dx; mouse_acc_y += dy; }
 API void fe_mouse_buttons(int mask) { mouse_btn = mask; } /* 1 gauche, 2 droit, 4 milieu */
 API void fe_joy(int port, unsigned mask) { if (port >= 0 && port < 2) joy[port] = mask; } /* bits = RETRO_DEVICE_ID_JOYPAD_* */
 
+#ifdef FE_AMIBERRY
+/* Amiberry : le clavier passe par le rappel annoncé par le cœur */
+static retro_keyboard_event_t kb_cb;
+API void fe_key(int down, unsigned retrok) { if (kb_cb) kb_cb(down != 0, retrok, 0, 0); }
+#else
 extern void retro_keyboard_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers);
 API void fe_key(int down, unsigned retrok) { retro_keyboard_event(down != 0, retrok, 0, 0); }
+#endif
 
 static void input_poll_cb(void) {
   mouse_x = mouse_acc_x; mouse_y = mouse_acc_y; mouse_acc_x = mouse_acc_y = 0;
@@ -136,7 +142,7 @@ API int fe_led(int i) { return i >= 0 && i < 16 ? leds[i] : 0; }
 static void log_cb(enum retro_log_level level, const char *fmt, ...) {
   if (level < RETRO_LOG_WARN) return;
   char buf[512]; va_list a; va_start(a, fmt); vsnprintf(buf, sizeof buf, fmt, a); va_end(a);
-  fprintf(stderr, "[PUAE] %s", buf);
+  fprintf(stderr, "[cœur] %s", buf);
 }
 static retro_time_t usec(void) { struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t); return (retro_time_t)t.tv_sec * 1000000 + t.tv_nsec / 1000; }
 static uint64_t cpu_features(void) { return 0; }
@@ -178,7 +184,11 @@ static bool environ_cb(unsigned cmd, void *data) {
     case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME: return true;
     case RETRO_ENVIRONMENT_GET_DISK_CONTROL_INTERFACE_VERSION: *(unsigned *)data = 1; return true;
     case RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE: disk = *(const struct retro_disk_control_ext_callback *)data; have_disk_ext = true; return true;
+#ifdef FE_AMIBERRY
+    case RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK: kb_cb = ((const struct retro_keyboard_callback *)data)->callback; return true;
+#else
     case RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK: return true; /* on appelle retro_keyboard_event directement */
+#endif
     case RETRO_ENVIRONMENT_GET_LANGUAGE: *(unsigned *)data = RETRO_LANGUAGE_FRENCH; return true;
     case RETRO_ENVIRONMENT_SET_GEOMETRY:
     case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO:
@@ -209,7 +219,12 @@ API int fe_start(const char *path) {
   loaded = retro_load_game(path && *path ? &info : NULL);
   if (!loaded) return 0;
   retro_get_system_av_info(&av);
+#ifdef FE_AMIBERRY
+  /* Amiberry : la souris du port 0 et la manette 0 vont au port souris et au port joystick de l'Amiga */
+  retro_set_controller_port_device(0, RETRO_DEVICE_MOUSE);
+#else
   retro_set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
+#endif
   retro_set_controller_port_device(1, RETRO_DEVICE_JOYPAD);
   return 1;
 }
@@ -233,6 +248,11 @@ API int fe_disk_insert(const char *path) {
 API int fe_disk_eject(void) { return have_disk_ext ? disk.set_eject_state(true) : 0; }
 
 /* Lecteurs DF0: à DF3: pilotés directement (le cœur applique le changement à la trame suivante). */
+#ifdef FE_AMIBERRY
+/* fonctions C++ d'Amiberry, enveloppées dans amb_glue.cpp */
+#define disk_insert amb_disk_insert
+#define disk_eject amb_disk_eject
+#endif
 extern void disk_insert(int num, const char *name);
 extern void disk_eject(int num);
 API void fe_drive_insert(int num, const char *path) { if (num >= 0 && num < 4) disk_insert(num, path); }

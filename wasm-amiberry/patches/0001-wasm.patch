@@ -1,0 +1,71 @@
+diff --git a/src/custom.cpp b/src/custom.cpp
+index 9b4804d..7dd08fa 100644
+--- a/src/custom.cpp
++++ b/src/custom.cpp
+@@ -4787,7 +4787,12 @@ static bool framewait(void)
+ 			frame_rendered = crender_screen(0, 1, false);
+ 			t = read_processor_time() - start;
+ 		}
++		/* WebAssembly : la page cadence les images (une par appel de retro_run), le cœur n'attend pas */
++#ifdef __EMSCRIPTEN__
++		if (0) {
++#else
+ 		if (!currprefs.cpu_thread) {
++#endif
+ 			while (!currprefs.turbo_emulation) {
+ 				float v = rpt_vsync(clockadjust) / (syncbase / 1000.0f);
+ 				if (v >= -FRAMEWAIT_MIN_MS)
+diff --git a/src/include/sysdeps.h b/src/include/sysdeps.h
+index a80f99d..15772fa 100644
+--- a/src/include/sysdeps.h
++++ b/src/include/sysdeps.h
+@@ -69,6 +69,8 @@ using namespace std;
+ #elif defined(__loongarch__) && (__loongarch_grlen == 64)
+ #define CPU_loongarch64 1
+ #define CPU_64_BIT 1
++#elif defined(__wasm__)
++#define CPU_wasm 1 /* WebAssembly : pas d'assembleur, pas de JIT */
+ #else
+ #error unrecognized CPU type
+ #endif
+diff --git a/src/machdep/m68k.h b/src/machdep/m68k.h
+index d040fa4..79d25b7 100644
+--- a/src/machdep/m68k.h
++++ b/src/machdep/m68k.h
+@@ -446,7 +446,7 @@ static inline int cctrue(int cc)
+ 
+ #endif /* SAHF_SETO_PROFITABLE */
+ 
+-#elif defined(CPU_riscv64) || defined(CPU_loongarch64) || defined(CPU_arm) || defined(CPU_AARCH64)
++#elif defined(CPU_riscv64) || defined(CPU_loongarch64) || defined(CPU_arm) || defined(CPU_AARCH64) || defined(CPU_wasm)
+ 
+ #ifdef __cplusplus
+ # include <cstdlib>
+diff --git a/src/machdep/support.cpp b/src/machdep/support.cpp
+index b80fbce..4fb3dee 100644
+--- a/src/machdep/support.cpp
++++ b/src/machdep/support.cpp
+@@ -11,7 +11,7 @@ static uae_time_t read_monotonic_nanoseconds(void)
+ 	return clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW) - g_uae_epoch;
+ #else
+ 	struct timespec ts;
+-#ifdef CLOCK_MONOTONIC_RAW
++#if defined(CLOCK_MONOTONIC_RAW) && !defined(__EMSCRIPTEN__)
+ 	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+ #else
+ 	clock_gettime(CLOCK_MONOTONIC, &ts);
+diff --git a/src/osdep/amiberry_mem.cpp b/src/osdep/amiberry_mem.cpp
+index cbed001..9216d1f 100644
+--- a/src/osdep/amiberry_mem.cpp
++++ b/src/osdep/amiberry_mem.cpp
+@@ -453,6 +453,10 @@ bool preinit_shm ()
+ #else
+ 	natmem_size = std::min<size_t>(natmem_size, 0xc0000000);
+ #endif
++#if defined(CPU_wasm)
++	/* WebAssembly : une réservation est une vraie allocation ; 384 Mo couvrent la Chip, la Fast, le Zorro III et la RTG */
++	natmem_size = std::min<size_t>(natmem_size, 384 * 1024 * 1024);
++#endif
+ 
+ 	write_log (_T("MMAN: Total physical RAM %llu MB, all RAM %llu MB\n"),
+ 	           totalphys64 >> 20, total64 >> 20);

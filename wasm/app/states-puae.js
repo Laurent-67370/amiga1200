@@ -18,7 +18,9 @@ function stateCtx() {
   for (const t of ["df0", "df1", ...HD_TAGS]) c[t] = mounted[t] ? mounted[t].id : null;
   return c;
 }
-const STATE_SETTINGS = ["compat", "cpu", "fast", "region", "joy", "floppy", "accel", "model"];
+const STATE_SETTINGS = ["compat", "cpu", "fast", "region", "joy", "floppy", "accel", "model", "core"];
+/* Valeur d'un réglage absent des sauvegardes anciennes */
+const STATE_DEFAULTS = { accel: "none", model: "a1200", core: "puae" };
 
 async function statesFor(key) {
   return (await DB.all()).filter(r => r.kind === "state" && r.game === key).sort((a, b) => a.slot - b.slot);
@@ -54,7 +56,7 @@ function sameMachine(rec) {
   if (!running) return false;
   const c = stateCtx();
   if (HD_TAGS.some(t => (c[t] || null) !== (rec.ctx[t] || null)) || c.rom !== rec.ctx.rom || (c.whd || null) !== (rec.ctx.whd || null) || (c.cd || null) !== (rec.ctx.cd || null)) return false;
-  return STATE_SETTINGS.filter(k => k !== "joy").every(k => String(E[k] ?? (k === "model" ? "a1200" : undefined)) === String(rec.settings[k] ?? (k === "accel" ? "none" : k === "model" ? "a1200" : undefined)));
+  return STATE_SETTINGS.filter(k => k !== "joy").every(k => String(E[k] ?? STATE_DEFAULTS[k]) === String(rec.settings[k] ?? STATE_DEFAULTS[k]));
 }
 async function resumeState(id) {
   const rec = await DB.get(id); if (!rec) return;

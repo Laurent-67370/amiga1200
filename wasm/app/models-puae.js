@@ -95,3 +95,19 @@ async function renderModelRom() {
 }
 $$('#winSettings input[name="model"]').forEach(i => i.addEventListener("change", () => setTimeout(renderModelRom)));
 $("#btnSettings").addEventListener("click", () => setTimeout(renderModelRom));
+
+/* Lecteurs : ce qu'est chaque unité sur le modèle choisi (ou allumé) */
+function baseDriveLabel(tag) {
+  const m = running || starting ? (E._cd || modelOf(E)) : S.model;
+  if (m === "cd32" || m === "cdtv") return tag === "df0" || tag === "df1" ? "pas de lecteur sur la console" : "non branché sur la console";
+  if (isHd(tag) && m === "a500") return "non branché (l'A500 n'a pas d'IDE)";
+  if (isHd(tag) && m === "a3000") return "disque UAE (SCSI)";
+  if (tag === "dh0") return m === "a4000" ? "IDE interne 3,5\"" : "IDE interne 2,5\"";
+  return BASE_LABEL[tag];
+}
+{ const _d = driveLabel; driveLabel = tag => { const t = _d(tag); return t === BASE_LABEL[tag] ? baseDriveLabel(tag) : t; }; }
+const refreshDriveLabels = () => DRIVE_TAGS.forEach(refreshDriveLabel);
+{ const _r = renderLauncher; renderLauncher = async (...a) => { await _r(...a); refreshDriveLabels(); }; }
+{ const _s = onStarted; onStarted = (...a) => { _s(...a); refreshDriveLabels(); }; }
+$$('#winSettings input[name="model"]').forEach(i => i.addEventListener("change", () => setTimeout(refreshDriveLabels)));
+refreshDriveLabels();

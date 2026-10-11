@@ -90,3 +90,48 @@ window.addEventListener("pagehide", () => { if (running && whdGame) saveWhdSaves
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && running && whdGame) saveWhdSaves(); });
 /* À l'extinction : sauvegardes enregistrées, et le prochain allumage repart sans le jeu */
 { const _off = powerOff; powerOff = async () => { if (running && whdGame) await saveWhdSaves(); await _off(); whdGame = null; }; }
+
+/* ---- WHDLoad avec le cœur WinUAE 6 (Amiberry) ----
+   Même principe, mais c'est la page qui monte les volumes : WHDBoot: (WHDLoad, la startup-sequence, les Kickstart),
+   les commandes et bibliothèques de démarrage d'Amiberry (boot-data.zip, monté tel quel en DH3:), le jeu (l'archive
+   .lha montée en lecture seule comme Games:) et WHDSaves:, le même dossier de sauvegardes qu'avec PUAE. */
+const AMB_CD32PAD = 513; /* RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1) : manette CD32 d'Amiberry */
+let whdAssets = null;
+function whdAssetsAmb() {
+  if (!whdAssets) whdAssets = Promise.all(["whd/WHDLoad", "whd/boot-data.zip"].map(async f => {
+    const r = await fetch(f);
+    if (!r.ok) throw new Error("fichier " + f + " introuvable (" + r.status + ")");
+    return new Uint8Array(await r.arrayBuffer());
+  })).catch(e => { whdAssets = null; throw e; });
+  return whdAssets;
+}
+async function whdBootAmb(m, rec, kicks, lines) {
+  const [whdload, bootData] = await whdAssetsAmb();
+  const u8 = new Uint8Array(await rec.blob.arrayBuffer());
+  const slave = rec.slave || whdSlaveIn(u8);
+  if (!slave) throw new Error("aucun fichier .slave dans cette archive");
+  const base = safeName(rec.name.replace(/\.(lha|lzh)$/i, "")).replace(/["]/g, "_") || "Jeu";
+  const game = "/media/whd/" + base + ".lha";
+  m.writeFile(game, u8);
+  m.writeFile("/whd/boot/C/WHDLoad", whdload);
+  m.writeFile("/whd/boot-data.zip", bootData);
+  for (const k of kicks) m.writeFile("/whd/boot/Devs/Kickstarts/" + k.file, k.data);
+  m.M.FS.mkdirTree("/save/WHDSaves"); m.M.FS.mkdirTree("/whd/boot/Devs/Kickstarts");
+  const dir = slave.includes("/") ? slave.slice(0, slave.lastIndexOf("/")) : "";
+  const script = [
+    "FAILAT 999",
+    "DH3:C/Assign LIBS: DH3:Libs ADD",
+    "DH3:C/Assign C: DH3:C ADD",
+    /* Tables de relocalisation des Kickstart (.RTB), que WHDLoad cherche à côté des ROM */
+    "DH3:C/Copy DH3:Devs/Kickstarts/#?.RTB DEVS:Kickstarts/ QUIET",
+    `CD "Games:${dir}"`,
+    `WHDLoad SLAVE="Games:${slave}" PRELOAD NOREQ NOWRITECACHE SPLASHDELAY=0 CONFIGDELAY=0 SAVEPATH=WHDSaves:`
+  ];
+  m.writeFile("/whd/boot/S/Startup-Sequence", new TextEncoder().encode(script.join("\n") + "\n"));
+  /* Ni disquettes ni disques IDE ; la ROM de démarrage d'UAE est nécessaire aux volumes de fichiers */
+  lines.splice(0, lines.length, ...lines.filter(l => !/^(boot_rom_uae|uaeboard|nr_floppies|floppy1type|floppy\d|hardfile2)=/.test(l)),
+    "filesystem2=rw,DH0:WHDBoot:/whd/boot,10",
+    "filesystem2=ro,DH3:DH3:/whd/boot-data.zip,-10",
+    `filesystem2=ro,DH1:Games:"${game}",0`,
+    "filesystem2=rw,DH2:WHDSaves:/save/WHDSaves,0");
+}

@@ -677,22 +677,31 @@ rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>CD3
 rep("Les archives .lzx doivent être extraites avant.", "Images de CD de CD32 : .iso, ou .cue avec ses pistes .bin. Les archives .lzx doivent être extraites avant.")
 
 # Cœur d'émulation : PUAE (WinUAE 5) ou WinUAE 6 (Amiberry)
-rep('kbdOpen: false, compat: "normal",', 'kbdOpen: false, core: "puae", compat: "normal",')
+rep('kbdOpen: false, compat: "normal",', 'kbdOpen: false, core: "puae", rtg: "0", compat: "normal",')
 rep('''      <h3>Kickstart</h3>
       <p class="hint">Pour l'Amiga 1200 :</p>''', '''      <h3>Cœur d'émulation</h3>
       <div class="opt" data-setting="core">
         <label><input type="radio" name="core" value="puae"> PUAE, base WinUAE 5 (éprouvé, le plus rapide)</label>
         <label><input type="radio" name="core" value="winuae6"> WinUAE 6, par Amiberry (plus récent et plus précis, en essai)</label>
       </div>
-      <p class="hint">WinUAE 6 demande environ deux fois plus de calcul et se télécharge à part (4 Mo) au premier allumage. Les jeux WHDLoad et la CD32 passent encore par PUAE. Une sauvegarde d'état reprend toujours avec le cœur qui l'a faite.</p>
+      <p class="hint">WinUAE 6 demande trois à quatre fois plus de calcul que PUAE et se télécharge à part (4 Mo) au premier allumage. Une sauvegarde d'état reprend toujours avec le cœur qui l'a faite.</p>
+
+      <h3>Carte graphique RTG (WinUAE 6)</h3>
+      <div class="opt" data-setting="rtg">
+        <label><input type="radio" name="rtg" value="0"> Aucune</label>
+        <label><input type="radio" name="rtg" value="16"> Carte UAE de 16 Mo (Workbench en haute résolution)</label>
+      </div>
+      <p class="hint">Pour l'Amiga 1200 avec le cœur WinUAE 6. Le Workbench doit avoir les pilotes RTG installés (Picasso96 ou P96, comme dans Amiga Forever) ; choisissez ensuite un mode « uaegfx » dans Prefs/ScreenMode. Sans carte accélératrice, le processeur passe en 68020 complet (32 bits), nécessaire à la carte.</p>
 
       <h3>Kickstart</h3>
       <p class="hint">Pour l'Amiga 1200 :</p>''')
 lst = '["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel", "model"]'
 assert page.count(lst) == 2
-page = page.replace(lst, '["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel", "model", "core"]')
+page = page.replace(lst, '["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel", "model", "core", "rtg"]')
 rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Deux cœurs d'émulation</h3>
-      <p>Réglages → Cœur d'émulation : <b>PUAE</b> (base WinUAE 5, le cœur historique de cette page) ou <b>WinUAE 6</b>, compilé depuis le cœur libretro d'Amiberry. WinUAE 6 est plus récent et plus fidèle, mais deux fois plus gourmand : sur téléphone, PUAE reste conseillé. Disquettes, disques durs, Kickstart, cartes accélératrices et sauvegardes d'état marchent avec les deux ; WHDLoad et la CD32 utilisent encore PUAE.</p>
+      <p>Réglages → Cœur d'émulation : <b>PUAE</b> (base WinUAE 5, le cœur historique de cette page) ou <b>WinUAE 6</b>, compilé depuis le cœur libretro d'Amiberry. WinUAE 6 est plus récent et plus fidèle, mais deux fois plus gourmand : sur téléphone, PUAE reste conseillé. Disquettes, disques durs, Kickstart, cartes accélératrices, WHDLoad, CD32 et sauvegardes d'état marchent avec les deux.</p>
+      <h3>Workbench en haute résolution (RTG)</h3>
+      <p>Avec WinUAE 6, Réglages → Carte graphique RTG ajoute la carte graphique virtuelle d'UAE (16 Mo sur le Zorro III) : des écrans de 640×480 à 1920×1080 en 16 millions de couleurs, bien plus rapides que les modes AGA. L'Amiga ne s'en sert que si son Workbench a les pilotes RTG : Picasso96 (gratuit, sur Aminet) ou P96 (inclus dans Amiga Forever) ; une fois installés, choisissez un mode « uaegfx » dans Prefs/ScreenMode. Les jeux, eux, gardent l'affichage AGA.</p>
       <h3>Copier des fichiers sur le disque dur</h3>''')
 
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)

@@ -1,5 +1,29 @@
+diff --git a/libretro/libretro.cpp b/libretro/libretro.cpp
+index 096730bb..12e7aa20 100644
+--- a/libretro/libretro.cpp
++++ b/libretro/libretro.cpp
+@@ -3516,7 +3516,8 @@ static void apply_port_device(struct uae_prefs* prefs, unsigned port, unsigned d
+ 		TCHAR joy_name[8];
+ 		_sntprintf(joy_name, sizeof joy_name, _T("joy%d"), joy_index);
+ 		name = joy_name;
+-		mode = JSEM_MODE_JOYSTICK;
++		/* Manette CD32 : les 7 boutons (le mode joystick simple n'en garde que deux) */
++		mode = device == RETRO_DEVICE_AMIGA_CD32PAD ? JSEM_MODE_JOYSTICK_CD32 : JSEM_MODE_JOYSTICK;
+ 	}
+ 	inputdevice_joyport_config(prefs, name, nullptr, static_cast<int>(port), mode, -1, 0, true);
+ }
+@@ -5299,6 +5300,9 @@ size_t retro_serialize_size(void)
+ 	total += currprefs.z3chipmem.size;
+ 	total += currprefs.mbresmem_low.size;
+ 	total += currprefs.mbresmem_high.size;
++	/* Mémoire des cartes graphiques RTG, sauvegardée elle aussi */
++	for (int i = 0; i < MAX_RTG_BOARDS; i++)
++		total += currprefs.rtgboards[i].rtgmem_size;
+ 	total += 8 * 1024 * 1024;
+ 	return total;
+ }
 diff --git a/src/custom.cpp b/src/custom.cpp
-index 9b4804d..7dd08fa 100644
+index 9b4804d6..7dd08fac 100644
 --- a/src/custom.cpp
 +++ b/src/custom.cpp
 @@ -4787,7 +4787,12 @@ static bool framewait(void)
@@ -16,7 +40,7 @@ index 9b4804d..7dd08fa 100644
  				float v = rpt_vsync(clockadjust) / (syncbase / 1000.0f);
  				if (v >= -FRAMEWAIT_MIN_MS)
 diff --git a/src/include/sysdeps.h b/src/include/sysdeps.h
-index a80f99d..15772fa 100644
+index a80f99de..15772fab 100644
 --- a/src/include/sysdeps.h
 +++ b/src/include/sysdeps.h
 @@ -69,6 +69,8 @@ using namespace std;
@@ -29,7 +53,7 @@ index a80f99d..15772fa 100644
  #error unrecognized CPU type
  #endif
 diff --git a/src/machdep/m68k.h b/src/machdep/m68k.h
-index d040fa4..79d25b7 100644
+index d040fa43..79d25b7a 100644
 --- a/src/machdep/m68k.h
 +++ b/src/machdep/m68k.h
 @@ -446,7 +446,7 @@ static inline int cctrue(int cc)
@@ -42,7 +66,7 @@ index d040fa4..79d25b7 100644
  #ifdef __cplusplus
  # include <cstdlib>
 diff --git a/src/machdep/support.cpp b/src/machdep/support.cpp
-index b80fbce..4fb3dee 100644
+index b80fbce7..4fb3dee3 100644
 --- a/src/machdep/support.cpp
 +++ b/src/machdep/support.cpp
 @@ -11,7 +11,7 @@ static uae_time_t read_monotonic_nanoseconds(void)
@@ -55,7 +79,7 @@ index b80fbce..4fb3dee 100644
  #else
  	clock_gettime(CLOCK_MONOTONIC, &ts);
 diff --git a/src/osdep/amiberry_mem.cpp b/src/osdep/amiberry_mem.cpp
-index cbed001..9216d1f 100644
+index cbed0018..9216d1fb 100644
 --- a/src/osdep/amiberry_mem.cpp
 +++ b/src/osdep/amiberry_mem.cpp
 @@ -453,6 +453,10 @@ bool preinit_shm ()

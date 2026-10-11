@@ -1,0 +1,85 @@
+name: Amiberry pour Android (APK)
+# Compile l'application Android d'Amiberry (BlitterStudio, licence GPL v3) depuis ses sources officielles,
+# signe l'APK avec une clé personnelle (android-amiberry/) et la publie dans une « Release » de ce dépôt.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version d'Amiberry (étiquette Git)"
+        default: "v8.3.0"
+  push:
+    branches: [amiberry-android]
+    paths: [".github/workflows/amiberry-android.yml", "android-amiberry/**"]
+permissions:
+  contents: write
+concurrency:
+  group: amiberry-android
+  cancel-in-progress: true
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      VERSION: ${{ github.event.inputs.version || 'v8.3.0' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sources d'Amiberry
+        run: |
+          git clone --depth 1 --branch "$VERSION" --recurse-submodules --shallow-submodules \
+            https://github.com/BlitterStudio/amiberry.git amiberry
+          grep -m1 -E '^\s*VERSION [0-9]' amiberry/CMakeLists.txt
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: NDK, CMake et plateforme Android
+        run: |
+          NDK=$(sed -n "s/.*ndkVersion = '\(.*\)'.*/\1/p" amiberry/android/app/build.gradle)
+          SDK=$(sed -n "s/.*compileSdk = \([0-9]*\).*/\1/p" amiberry/android/app/build.gradle)
+          echo "NDK $NDK, SDK $SDK"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$NDK" "cmake;3.22.1" "platforms;android-$SDK" >/dev/null
+
+      - name: Clé de signature personnelle
+        run: |
+          cp android-amiberry/amiberry-perso.jks amiberry/android/app/amiberry-perso.jks
+          printf 'storeFile=amiberry-perso.jks\nstorePassword=amiberry-perso\nkeyAlias=amiberry\nkeyPassword=amiberry-perso\n' > amiberry/android/keystore.properties
+
+      - name: Compilation (version optimisée)
+        working-directory: amiberry/android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --stacktrace assembleRelease 2>&1 | tee ../../gradle.log | grep -E "^> Task|BUILD|error|FAILURE" | tail -60
+          test "${PIPESTATUS[0]}" = 0
+
+      - name: Erreurs
+        if: failure()
+        run: |
+          grep -n -i -E "error|failed|exception" gradle.log | head -80 | while IFS= read -r l; do echo "::error title=Gradle::${l:0:400}"; done
+
+      - name: APK
+        run: |
+          APK=$(find amiberry/android/app/build/outputs/apk/release -name '*.apk' | head -1)
+          test -n "$APK"
+          V=${VERSION#v}
+          mkdir -p out && cp "$APK" "out/Amiberry-$V-android.apk"
+          ls -la out
+          echo "::notice title=APK::Amiberry-$V-android.apk ($(du -h out/*.apk | cut -f1))"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: amiberry-android
+          path: out/*.apk
+
+      - name: Publication (Release)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="amiberry-android-$VERSION"
+          NOTES="Amiberry $VERSION pour Android (arm64 et x86_64), compilé depuis les sources officielles de BlitterStudio (GPL v3), signé avec une clé personnelle. Installation : télécharger l'APK sur le téléphone puis l'ouvrir (autoriser les sources inconnues). Version officielle et soutien du développeur : https://amiberry.com"
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Amiberry ${VERSION#v} pour Android" --notes "$NOTES" --target "$GITHUB_SHA"
+          gh release upload "$TAG" out/*.apk --clobber
+          echo "::notice title=Publié::https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG"

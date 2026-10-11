@@ -1,0 +1,12 @@
+# Amiberry pour Android (compilation personnelle)
+
+L'action `.github/workflows/amiberry-android.yml` compile l'application Android d'[Amiberry](https://amiberry.com)
+(BlitterStudio, licence GPL v3) depuis ses sources officielles et publie l'APK dans les *Releases* de ce dépôt.
+
+- Version : `v8.3.0` par défaut ; une autre se compile depuis l'onglet *Actions* → « Amiberry pour Android » → *Run workflow*.
+- Architectures : arm64 (téléphones et tablettes) et x86_64.
+- Signature : `amiberry-perso.jks`, une clé à usage personnel (mot de passe dans l'action). La garder permet d'installer
+  les versions suivantes par-dessus sans perdre ses réglages. Ce n'est pas la clé du Play Store : la version officielle
+  et celle-ci ne peuvent pas se mettre à jour l'une l'autre.
+
+La version du Play Store, quand elle sera publique, est le moyen de soutenir le développeur.

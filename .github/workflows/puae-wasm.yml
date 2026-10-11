@@ -105,6 +105,7 @@ jobs:
                      manifest.webmanifest icon-192.png icon-512.png icon-maskable-512.png apple-touch-icon.png; do
               cp "wasm/dist/site/$f" "$SITE/$f"
             done
+            mkdir -p "$SITE/whd" && cp wasm/dist/site/whd/* "$SITE/whd/"
             mkdir -p "$SITE/sae" && cp sae/index.html "$SITE/sae/index.html"
             # Ancienne adresse d'essai : redirection vers l'accueil
             rm -rf "$SITE/puae" && mkdir -p "$SITE/puae"
@@ -114,7 +115,7 @@ jobs:
             ADD=". "; URL="https://laurent-67370.github.io/amiga1200/"
           else
             DIR="$GITHUB_REF_NAME"
-            rm -rf "$SITE/$DIR" && mkdir -p "$SITE/$DIR" && cp wasm/dist/site/* "$SITE/$DIR/"
+            rm -rf "$SITE/$DIR" && mkdir -p "$SITE/$DIR" && cp -r wasm/dist/site/* "$SITE/$DIR/"
             ADD="$DIR"; URL="https://laurent-67370.github.io/amiga1200/$DIR/"
           fi
           cd "$SITE"

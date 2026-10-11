@@ -126,9 +126,9 @@ async function coreFactory(core) {
   return window.createAmiberry;
 }
 /* Configuration complète au format WinUAE pour Amiberry : le fichier remplace toute la configuration du cœur */
-function amberryLines(a500, key) {
-  const acc = a500 ? ACCEL.none : ACCEL[E.accel] || ACCEL.none;
-  const l = [`quickstart=${a500 ? "A500" : "A1200"},0`, "kickstart_rom_file=/sys/kickstart-utilisateur.rom"];
+function amberryLines(model, key) {
+  const acc = model !== "A1200" ? ACCEL.none : ACCEL[E.accel] || ACCEL.none;
+  const l = [`quickstart=${model},0`, "kickstart_rom_file=/sys/kickstart-utilisateur.rom"];
   if (key) l.push("kickstart_key_file=/sys/rom.key");
   if (+E.fast > 0) l.push("fastmem_size=" + (+E.fast));
   if (acc !== ACCEL.none) l.push("cpu_model=" + acc.cpu, "fpu_model=" + (acc.fpu === "cpu" ? acc.cpu : acc.fpu), "cpu_24bit_addressing=false", "cpu_multiplier=" + acc.mult);
@@ -137,6 +137,12 @@ function amberryLines(a500, key) {
   l.push("ntsc=" + (E.region === "ntsc"));
   if (E.floppy === "turbo") l.push("floppy_speed=0");
   if (S.center) l.push("gfx_auto_crop=true");
+  /* Carte graphique RTG d'UAE (uaegfx) sur le Zorro III : écrans haute résolution et 16 millions de couleurs.
+     Il lui faut un processeur 32 bits (le 68EC020 de l'A1200 n'adresse que 16 Mo) */
+  if (model === "A1200" && +E.rtg > 0) {
+    l.push("gfxcard_type=ZorroIII", "gfxcard_size=" + (+E.rtg));
+    if (acc === ACCEL.none) l.push("cpu_model=68020", "cpu_24bit_addressing=false");
+  }
   return l;
 }
 
@@ -159,24 +165,22 @@ async function powerOn() {
       for (const t of ["df0", "df1", ...HD_TAGS]) setMounted(t, resume.ctx[t] ? await DB.get(resume.ctx[t]) : null);
       whdGame = resume.ctx.whd ? await DB.get(resume.ctx.whd) : null;
       cdGame = resume.ctx.cd ? await DB.get(resume.ctx.cd) : null;
-      E = Object.assign({}, S, { accel: "none", model: "a1200", core: "puae" }, resume.settings, { _profile: "" });
+      E = Object.assign({}, S, { accel: "none", model: "a1200", core: "puae", rtg: "0" }, resume.settings, { _profile: "" });
     } else E = whdGame || cdGame || S.model === "cd32" ? Object.assign({}, S) : await effectiveSettings(); /* les profils de disques ne s'appliquent pas à un jeu WHDLoad */
     /* Jeu WHDLoad : sur l'A1200, avec de la mémoire Fast (8 Mo si les réglages n'en donnent pas) */
     const whd = whdGame;
     if (whd && !resume) {
-      E.model = "a1200"; if (!+E.fast) E.fast = "8"; E._profile = "";
+      E.model = "a1200"; E.rtg = "0"; if (!+E.fast) E.fast = "8"; E._profile = "";
       if (whd.whdCfg) Object.assign(E, whd.whdCfg.e); /* réglages de la base WHDLoad pour ce jeu */
     }
     /* CD32 : la console telle qu'elle est (2 Mo de Chip, 68EC020), ses propres ROM */
     const cd = cdGame || (!resume && !whdGame && S.model === "cd32") ? cdGame || "sans CD" : null; /* console CD32, avec ou sans CD */
-    if (cd && !resume) Object.assign(E, { model: "a1200", fast: "0", accel: "none", _profile: "" });
+    if (cd && !resume) Object.assign(E, { model: "a1200", fast: "0", accel: "none", rtg: "0", _profile: "" });
     const cdRoms = cd ? await cd32Roms() : null;
     if (cd && !cdRoms) throw new Error("ROM de la CD32 absentes de la Bibliothèque");
     const a500 = modelOf(E) === "a500";
-    /* Cœur : celui de la sauvegarde reprise, sinon celui des réglages ; WHDLoad et CD32 restent sur PUAE pour l'instant */
-    const want = resume ? E.core || "puae" : S.core || "puae";
-    E.core = whd || cd ? "puae" : want;
-    if (want === "winuae6" && E.core !== "winuae6") toast((whd ? "WHDLoad" : "La CD32") + " passe encore par le cœur PUAE.");
+    /* Cœur : celui de la sauvegarde reprise, sinon celui des réglages */
+    E.core = resume ? E.core || "puae" : S.core || "puae";
     const amb = E.core === "winuae6";
     const romId = cd ? cdRoms.id : resume ? resume.ctx.rom : a500 ? await romFor500() : S.romId;
     if (a500 && romId === "aros" && !resume) toast("Mode Amiga 500 sans Kickstart 1.3 : AROS démarre, mais la plupart des jeux A500 ont besoin du vrai Kickstart (Réglages).", true);
@@ -201,7 +205,7 @@ async function powerOn() {
     /* Pas de ROM de démarrage UAE : un vrai A1200 n'en a pas, et ses fils « pièges » passent par le fil principal
        de la page dans le navigateur — un blocage de la page (enregistrement d'un gros disque) faisait alors échouer
        les écritures IDE suivantes. */
-    const lines = [...(amb ? amberryLines(a500, key) : []), "nr_floppies=2", "floppy1type=0", "boot_rom_uae=disabled", "uaeboard=disabled"];
+    const lines = [...(amb ? amberryLines(cd ? "CD32" : a500 ? "A500" : "A1200", key) : []), "nr_floppies=2", "floppy1type=0", "boot_rom_uae=disabled", "uaeboard=disabled"];
     /* Une extension mémoire A1200 (carte trappe) porte une horloge sauvegardée par pile */
     if (+E.fast > 0) lines.push("rtc=MSM6242B");
     /* Carte accélératrice sans MMU, comme une Blizzard vue par AmigaOS (qui ne s'en sert pas) : le cœur active la MMU
@@ -243,13 +247,22 @@ async function powerOn() {
     if (amb) options = { amiberry_crop_overscan: S.center ? "enabled" : "disabled", amiberry_statusline: "disabled" };
     if (cd) {
       /* Modèle CD32 du cœur ; l'extension est cherchée sous le nom kick40060.CD32.ext (inutile avec la ROM complète) */
-      if (cdRoms.ext) machine.writeFile("/sys/kick40060.CD32.ext", cdRoms.ext);
+      if (cdRoms.ext) { machine.writeFile("/sys/kick40060.CD32.ext", cdRoms.ext); if (amb) lines.push("kickstart_ext_rom_file=/sys/kick40060.CD32.ext"); }
       lines.splice(0, lines.length, ...lines.filter(l => !/^(nr_floppies|floppy1type)=/.test(l))); /* pas de lecteur de disquettes */
-      if (cdGame) lines.push(`cdimage0=${await writeCd(machine, cdGame)},`);
+      if (cdGame) lines.push(`cdimage0=${await writeCd(machine, cdGame)},${amb ? "image" : ""}`);
       options.puae_model = "CD32"; options.puae_fastmem_size = "0";
       E._cd = true;
     }
-    if (whd) {
+    if (whd && amb) {
+      /* WinUAE 6 : la page monte elle-même les volumes et écrit la startup-sequence */
+      const r = await DB.get(whd.id);
+      if (!r) throw new Error("ce jeu n'est plus dans la Bibliothèque");
+      const kicks = await whdPrepare(machine);
+      if (!kicks.length && S.romId !== "aros") toast("Aucun Kickstart reconnu par WHDLoad dans la Bibliothèque : les jeux qui en demandent un (kick34005.A500, kick40068.A1200) s'arrêteront.", true);
+      await whdBootAmb(machine, r, kicks, lines);
+      E._whd = safeName(r.name.replace(/\.(lha|lzh)$/i, ""));
+      machine.writeFile(content, new TextEncoder().encode(lines.join("\n") + "\n"));
+    } else if (whd) {
       /* Le cœur reçoit l'archive elle-même : il la monte en DH0: et démarre sur son volume WHDLoad:. Nos lignes
          de configuration passent par le fichier .uae propre au contenu, lu après les siennes. Il faut la ROM de
          démarrage UAE (volumes de fichiers) : pas de disque IDE ici, donc pas d'écritures IDE à protéger. */
@@ -269,7 +282,9 @@ async function powerOn() {
     await machine.start({ model: cd ? "CD32" : MODELS[modelOf(E)].core, kickstart: kick, romKey: cd ? null : key, content, options });
     machine.setMuted(!!S.muted);
     /* Jeu WHDLoad prévu pour la manette CD32 (7 boutons) : la manette du port joystick en devient une */
-    if ((whd && whd.whdCfg && whd.whdCfg.cd32) || cd) machine.M._retro_set_controller_port_device(0, CD32PAD);
+    if ((whd && whd.whdCfg && whd.whdCfg.cd32) || cd) {
+      if (amb) machine.M._retro_set_controller_port_device(1, AMB_CD32PAD); else machine.M._retro_set_controller_port_device(0, CD32PAD);
+    }
     if (cd) document.documentElement.dataset.cd32 = "1";
     if (whd && whd.whdCfg && whd.whdCfg.mouse && isTouch) toast("Ce jeu se joue à la souris : un doigt la déplace, une touche clique.");
     machine.inputBlocked = false;
@@ -291,7 +306,7 @@ function onStarted() {
   starting = false; running = true; setPowerUi("on");
   $("#statMode").textContent = (E._cd ? "CD32, " : modelOf(E) === "a500" ? "A500, " : "") + (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "")
     + (modelOf(E) !== "a500" && ACCEL[E.accel] && ACCEL[E.accel].label ? ", " + ACCEL[E.accel].label : "")
-    + (E.core === "winuae6" ? ", WinUAE 6" : "") + (E.compat === "max" ? ", cycle exact" : "") + (E._profile ? ", profil " + E._profile : "") + (E._whd ? ", WHDLoad" + (whdGame && whdGame.whdCfg ? " (réglages de la base)" : "") : "");
+    + (E.core === "winuae6" ? ", WinUAE 6" + (+E.rtg > 0 && modelOf(E) !== "a500" && !E._cd && !E._whd ? ", RTG " + E.rtg + " Mo" : "") : "") + (E.compat === "max" ? ", cycle exact" : "") + (E._profile ? ", profil " + E._profile : "") + (E._whd ? ", WHDLoad" + (whdGame && whdGame.whdCfg ? " (réglages de la base)" : "") : "");
   showCaptureHint();
 }
 function onStopped() {

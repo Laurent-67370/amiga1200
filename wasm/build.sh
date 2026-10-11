@@ -63,13 +63,17 @@ cp "$ROOT"/wasm/web/* "$OUT/site/"
 cp "$OUT/puae.js" "$OUT/puae.wasm" "$OUT/site/"
 # Cœur WinUAE 6 (Amiberry), compilé avant par wasm-amiberry/build.sh
 AMB="$ROOT/wasm-amiberry/out"
-if [ -f "$AMB/amiberry.js" ]; then cp "$AMB/amiberry.js" "$AMB/amiberry.wasm" "$OUT/site/"; else echo "cœur WinUAE 6 absent (wasm-amiberry/build.sh non lancé)"; fi
+if [ -f "$AMB/amiberry.js" ]; then
+  cp "$AMB/amiberry.js" "$AMB/amiberry.wasm" "$OUT/site/"
+  # WHDLoad et les commandes de démarrage fournies avec Amiberry, pour les jeux WHDLoad sous WinUAE 6
+  mkdir -p "$OUT/site/whd" && cp "$ROOT/wasm-amiberry/src/whdboot/WHDLoad" "$ROOT/wasm-amiberry/src/whdboot/boot-data.zip" "$OUT/site/whd/"
+else echo "cœur WinUAE 6 absent (wasm-amiberry/build.sh non lancé)"; fi
 python3 "$ROOT/wasm/app/make-page.py" "$OUT/site/index.html"
 # Kickstart de secours : AROS d'août 2026, compressé (décompressé par la page)
 gzip -9 -n -c "$ROOT/vendor/aros/aros-20260820-rom.bin" > "$OUT/site/aros-rom.bin.gz"
 gzip -9 -n -c "$ROOT/vendor/aros/aros-20260820-ext.bin" > "$OUT/site/aros-ext.bin.gz"
 # Version du service worker = résumé des fichiers publiés : chaque publication renouvelle la copie hors ligne
-VER=$(cd "$OUT/site" && ls | grep -v '^coi-sw.js$' | sort | xargs cat | sha256sum | cut -c1-12)
+VER=$(cd "$OUT/site" && find . -type f ! -name coi-sw.js | sort | xargs cat | sha256sum | cut -c1-12)
 sed -i "s/__VERSION__/$VER/" "$OUT/site/coi-sw.js"
 echo "version hors ligne : $VER"
 ls -la "$OUT" "$OUT/site"

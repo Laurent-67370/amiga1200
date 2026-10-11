@@ -10,6 +10,7 @@
 
 static const char *SYSDIR = "sys";
 static const char *model = "A1200OG";
+static int verbose; /* journal complet : 7e argument « v » */
 static int fmt = RETRO_PIXEL_FORMAT_0RGB1555;
 static unsigned fw, fh; static size_t fpitch;
 static uint8_t *last;
@@ -23,7 +24,7 @@ static struct { const char *k, *v; } OPTS[] = {
 };
 
 static void logfn(enum retro_log_level l, const char *f, ...) {
-  if (l < RETRO_LOG_WARN) return;
+  if (l < RETRO_LOG_WARN && !verbose) return;
   va_list a; va_start(a, f); vfprintf(stderr, f, a); va_end(a);
 }
 
@@ -89,6 +90,7 @@ int main(int argc, char **argv) {
   int run = argc > 2 ? atoi(argv[2]) : 500;
   model = argc > 3 ? argv[3] : "A1200OG";
   OPTS[0].v = model;
+  verbose = argc > 7 && argv[7][0] == 'v';
   OPTS[2].v = argc > 5 ? argv[5] : "disabled";
   retro_set_environment(env);
   retro_set_video_refresh(video);
@@ -98,7 +100,8 @@ int main(int argc, char **argv) {
   retro_set_input_state(input_state);
   double t0 = now();
   retro_init();
-  if (!retro_load_game(NULL)) { fprintf(stderr, "load_game a échoué\n"); return 1; }
+  struct retro_game_info gi = { argc > 6 ? argv[6] : NULL, NULL, 0, NULL };
+  if (!retro_load_game(argc > 6 ? &gi : NULL)) { fprintf(stderr, "load_game a échoué\n"); return 1; }
   double t1 = now();
   for (int i = 0; i < warm; i++) retro_run();
   double t2 = now();

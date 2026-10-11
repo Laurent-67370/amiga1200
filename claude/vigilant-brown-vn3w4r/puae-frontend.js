@@ -227,7 +227,8 @@ export class PuaeMachine {
      images serait perdue, et Maj pourrait passer après la lettre. Les événements attendent donc dans une file
      et le cœur en reçoit un par image, dans l'ordre où ils sont arrivés. */
   key(code, down) {
-    const k = RETROK[code];
+    /* keyRemap : touches propres à un cœur (WinUAE 6 ne place pas Help ni les touches Amiga comme PUAE) */
+    const k = this.keyRemap && code in this.keyRemap ? this.keyRemap[code] : RETROK[code];
     if (k && this.running) { (this._keyQ || (this._keyQ = [])).push([down ? 1 : 0, k]); if (this._keyQ.length > 256) this._keyQ.shift(); }
     return !!k;
   }

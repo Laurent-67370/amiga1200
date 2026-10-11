@@ -77,6 +77,9 @@ button{font:inherit}
 .l-model{display:inline-flex;border:1px solid rgba(255,255,255,.25);margin-right:6px}
 .l-seg{appearance:none;font:inherit;font-size:12.5px;background:none;border:0;color:#aeb7c1;padding:3px 9px;cursor:pointer}
 .l-seg[aria-pressed="true"]{background:var(--wb-blue);color:#fff}
+.l-model{border:0}
+.l-model-sel{font:inherit;font-size:13px;background:rgba(255,255,255,.08);color:inherit;border:1px solid rgba(255,255,255,.25);padding:3px 6px;border-radius:3px}
+.l-model-sel option{color:#000}
 .l-kick-lbl{color:#7c8792;text-transform:uppercase;letter-spacing:.08em;font-size:11px}
 .l-kick-name{color:#e3e7eb}
 .l-main{flex:1 0 auto;display:flex;flex-direction:column;gap:10px;min-height:0}
@@ -599,8 +602,13 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
         <label><input type="radio" name="model" value="a1200"> Amiga 1200 (68EC020, AGA, 2 Mo)</label>
         <label><input type="radio" name="model" value="a500"> Amiga 500 (68000, OCS, 1 Mo)</label>
         <label><input type="radio" name="model" value="cd32"> Amiga CD32 (console CD)</label>
+        <label><input type="radio" name="model" value="a600"> Amiga 600 (68000, ECS, 1 Mo, IDE)</label>
+        <label><input type="radio" name="model" value="a3000"> Amiga 3000 (68030, ECS, 32 bits)</label>
+        <label><input type="radio" name="model" value="a4000"> Amiga 4000 (68030, AGA, 32 bits)</label>
+        <label><input type="radio" name="model" value="cdtv"> Amiga CDTV (console CD de 1991)</label>
       </div>
-      <p class="hint">L'Amiga 500 sert aux jeux A500 qui refusent de tourner sur l'A1200, lancés depuis leurs disquettes ; il demande le Kickstart 1.3. Ni disque dur ni carte accélératrice dans ce mode. Le choix peut aussi se faire pour une seule disquette, dans son Profil.</p>
+      <p class="hint" id="modelRom" hidden></p>
+      <p class="hint">L'Amiga 500 sert aux jeux A500 qui refusent de tourner sur l'A1200, lancés depuis leurs disquettes ; il demande le Kickstart 1.3. Ni disque dur ni carte accélératrice dans ce mode. Le choix peut aussi se faire pour une seule disquette, dans son Profil. A600, A3000, A4000 et CDTV passent par le cœur WinUAE 6, avec leur Kickstart pris dans la Bibliothèque (le leur, sinon celui de l'A1200, sinon AROS).</p>
 
       <h3>Cœur d'émulation</h3>
       <div class="opt" data-setting="core">
@@ -854,6 +862,8 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
       <p>Avec WinUAE 6, Réglages → Carte graphique RTG ajoute la carte graphique virtuelle d'UAE (16 Mo sur le Zorro III) : des écrans de 640×480 à 1920×1080 en 16 millions de couleurs, bien plus rapides que les modes AGA. L'Amiga ne s'en sert que si son Workbench a les pilotes RTG : Picasso96 (gratuit, sur Aminet) ou P96 (inclus dans Amiga Forever) ; une fois installés, choisissez un mode « uaegfx » dans Prefs/ScreenMode. Les jeux, eux, gardent l'affichage AGA.</p>
       <h3>MIDI</h3>
       <p>Avec WinUAE 6, Réglages → MIDI branche une interface MIDI virtuelle sur le port série de l'Amiga : ce qu'il envoie à 31 250 bauds part vers un instrument ou un logiciel MIDI de l'ordinateur (Web MIDI), et un clavier MIDI peut jouer sur l'Amiga. Dans le logiciel de musique, choisissez simplement le port série (serial.device) comme sortie MIDI.</p>
+      <h3>A600, A3000, A4000 et CDTV</h3>
+      <p>Avec le cœur WinUAE 6, le choix du modèle (accueil ou Réglages) s'étend à l'<b>Amiga 600</b> (68000, ECS, IDE), à l'<b>Amiga 3000</b> (68030, ECS, 32 bits), à l'<b>Amiga 4000</b> (68030, AGA, 32 bits ; la carte accélératrice 68040/68060 et la carte RTG s'y ajoutent) et au <b>CDTV</b> (la console CD de 1991). Le Kickstart est pris tout seul dans la Bibliothèque : celui du modèle s'il y est (reconnu par son empreinte), sinon un voisin (3.1 de l'A4000 pour l'A3000…), sinon celui de l'A1200, sinon AROS. Le CDTV demande un Kickstart 1.3 et sa ROM d'extension de 256 Ko ; ses CD se lancent comme ceux de la CD32, d'une touche sur leur vignette.</p>
       <h3>Copier des fichiers sur le disque dur</h3>
       <p>Amiga éteint, le bouton <b>Fichiers…</b> du disque dur (ou de la Bibliothèque) copie des fichiers, un dossier entier ou des archives .lha et .zip, décompressées au passage, dans le dossier de votre choix. C'est la façon d'installer des jeux <b>WHDLoad</b> : copiez WHDLoad dans C:, vos jeux .lha dans Jeux, et vos Kickstart dans Devs:Kickstarts avec le bouton prévu (1.3 pour l'A500, 3.1 pour l'A1200). Disques OFS et FFS ; PFS, SFS et FFS à cache de dossiers ne sont pas modifiables ici.</p>
       <h3>Sauvegardes d'état</h3>
@@ -990,9 +1000,16 @@ function kickVersion(u8) {
 }
 const KICK_NAMES = { 33: "1.2", 34: "1.3", 36: "2.0", 37: "2.04", 39: "3.0", 40: "3.1", 45: "3.9", 46: "3.1.4", 47: "3.2" };
 
-/* ---- Modèle : Amiga 1200 ou Amiga 500 (68000, OCS, 512 Ko de Chip + 512 Ko de Slow, Kickstart 1.3) ---- */
-const MODELS = { a1200: { core: "A1200OG", name: "Amiga 1200" }, a500: { core: "A500", name: "Amiga 500" } };
-const modelOf = s => s && s.model === "a500" ? "a500" : "a1200";
+/* ---- Modèles : Amiga 1200, Amiga 500 (68000, OCS, 512 Ko de Chip + 512 Ko de Slow, Kickstart 1.3), et avec le cœur
+        WinUAE 6 : A600 (ECS, IDE), A3000 et A4000 (68030, mémoire 32 bits), CDTV (console CD) ---- */
+const MODELS = {
+  a1200: { core: "A1200OG", qs: "A1200", name: "Amiga 1200" }, a500: { core: "A500", qs: "A500", name: "Amiga 500" },
+  a600: { qs: "A600", name: "Amiga 600" }, a3000: { qs: "A3000", name: "Amiga 3000" }, a4000: { qs: "A4000", name: "Amiga 4000" },
+  cdtv: { qs: "CDTV", name: "Amiga CDTV" }
+};
+const WINUAE_ONLY = new Set(["a600", "a3000", "a4000", "cdtv"]); /* préréglages de WinUAE 6 seulement */
+const HAS_ACCEL = new Set(["a1200", "a3000", "a4000"]);          /* carte accélératrice et carte RTG possibles */
+const modelOf = s => s && MODELS[s.model] && s.model !== "cdtv" ? s.model : "a1200";
 /* Kickstart pour l'A500 : celui choisi, sinon un 1.x ou 2.0x de la Bibliothèque (le plus ancien d'abord) */
 async function romFor500(all) {
   all = all || await DB.all();
@@ -1109,7 +1126,8 @@ async function ambFloppySounds(m) {
 }
 /* Configuration complète au format WinUAE pour Amiberry : le fichier remplace toute la configuration du cœur */
 function amberryLines(model, key) {
-  const acc = model !== "A1200" ? ACCEL.none : ACCEL[E.accel] || ACCEL.none;
+  const big = model === "A1200" || model === "A3000" || model === "A4000";
+  const acc = !big ? ACCEL.none : ACCEL[E.accel] || ACCEL.none;
   const l = [`quickstart=${model},0`, "kickstart_rom_file=/sys/kickstart-utilisateur.rom"];
   if (key) l.push("kickstart_key_file=/sys/rom.key");
   if (+E.fast > 0) l.push("fastmem_size=" + (+E.fast));
@@ -1123,13 +1141,13 @@ function amberryLines(model, key) {
   if (E.floppy === "turbo") l.push("floppy_speed=0");
   if (S.center) l.push("gfx_auto_crop=true");
   l.push("gfx_resolution=" + (S.res === "lores" ? "lores" : S.res === "shires" ? "superhires" : "hires"));
-  if (S.floppySound && model !== "CD32") l.push("floppy0sound=1", "floppy1sound=1");
+  if (S.floppySound && model !== "CD32" && model !== "CDTV") l.push("floppy0sound=1", "floppy1sound=1");
   if (S.midi === "on") l.push("amiberry.midiout_device_name=Libretro MIDI"); /* MIDI du port série vers la page (Web MIDI) */
   /* Carte graphique RTG d'UAE (uaegfx) sur le Zorro III : écrans haute résolution et 16 millions de couleurs.
      Il lui faut un processeur 32 bits (le 68EC020 de l'A1200 n'adresse que 16 Mo) */
-  if (model === "A1200" && +E.rtg > 0) {
+  if (big && +E.rtg > 0) {
     l.push("gfxcard_type=ZorroIII", "gfxcard_size=" + (+E.rtg));
-    if (acc === ACCEL.none) l.push("cpu_model=68020", "cpu_24bit_addressing=false");
+    if (acc === ACCEL.none && model === "A1200") l.push("cpu_model=68020", "cpu_24bit_addressing=false");
   }
   return l;
 }
@@ -1161,16 +1179,24 @@ async function powerOn() {
       E.model = "a1200"; E.rtg = "0"; if (!+E.fast) E.fast = "8"; E._profile = "";
       if (whd.whdCfg) Object.assign(E, whd.whdCfg.e); /* réglages de la base WHDLoad pour ce jeu */
     }
-    /* CD32 : la console telle qu'elle est (2 Mo de Chip, 68EC020), ses propres ROM */
-    const cd = cdGame || (!resume && !whdGame && S.model === "cd32") ? cdGame || "sans CD" : null; /* console CD32, avec ou sans CD */
-    if (cd && !resume) Object.assign(E, { model: "a1200", fast: "0", accel: "none", rtg: "0", _profile: "" });
-    const cdRoms = cd ? await cd32Roms() : null;
-    if (cd && !cdRoms) throw new Error("ROM de la CD32 absentes de la Bibliothèque");
-    const a500 = modelOf(E) === "a500";
+    /* CD32 : la console telle qu'elle est (2 Mo de Chip, 68EC020), ses propres ROM ; CDTV : de même, avec le cœur WinUAE 6 */
+    const cdConsole = S.model === "cd32" || S.model === "cdtv";
+    const cd = cdGame || (!resume && !whdGame && cdConsole) ? cdGame || "sans CD" : null; /* console CD, avec ou sans CD */
+    const cdtv = !!cd && (resume ? E.model === "cdtv" : S.model === "cdtv");
+    if (cd && !resume) Object.assign(E, { model: cdtv ? "cdtv" : "a1200", fast: "0", accel: "none", rtg: "0", _profile: "" });
+    const cdRoms = cd && !cdtv ? await cd32Roms() : null;
+    if (cd && !cdtv && !cdRoms) throw new Error("ROM de la CD32 absentes de la Bibliothèque");
+    const cdtvExt = cdtv ? await cdtvExtRom() : null;
+    if (cdtv && !cdtvExt) throw new Error("ROM d'extension du CDTV absente de la Bibliothèque");
+    const model = modelOf(E), a500 = model === "a500";
     /* Cœur : celui de la sauvegarde reprise, sinon celui des réglages */
     E.core = resume ? E.core || "puae" : S.core || "winuae6"; /* une sauvegarde sans cœur noté date de PUAE */
+    if ((WINUAE_ONLY.has(model) || cdtv) && E.core !== "winuae6") { E.core = "winuae6"; toast(MODELS[cdtv ? "cdtv" : model].name + " : allumé avec le cœur WinUAE 6 (PUAE ne l'émule pas)."); }
     const amb = E.core === "winuae6";
-    const romId = cd ? cdRoms.id : resume ? resume.ctx.rom : a500 ? await romFor500() : S.romId;
+    const romId = cd ? (cdtv ? (resume ? resume.ctx.rom : await romForModel("cdtv")) : cdRoms.id) : resume ? resume.ctx.rom : a500 ? await romFor500() : WINUAE_ONLY.has(model) ? await romForModel(model) : S.romId;
+    /* AROS ne tient pas dans le seul Mo de l'A600 : 4 Mo de Fast, comme une carte PCMCIA */
+    if (model === "a600" && romId === "aros" && !+E.fast) { E.fast = "4"; toast("Amiga 600 avec AROS : 4 Mo de mémoire Fast ajoutés (AROS ne tient pas dans 1 Mo). Avec un vrai Kickstart 2.05 ou 3.1, l'A600 garde sa mémoire d'origine."); }
+    if (cdtv && romId === "aros") throw new Error("le CDTV a besoin d'un vrai Kickstart (1.3 de préférence) dans la Bibliothèque");
     if (a500 && romId === "aros" && !resume) toast("Mode Amiga 500 sans Kickstart 1.3 : AROS démarre, mais la plupart des jeux A500 ont besoin du vrai Kickstart (Réglages).", true);
     skip.reset();
     machine = await PuaeMachine.create({
@@ -1182,10 +1208,10 @@ async function powerOn() {
     let kick = null, key = null, arosExt = null;
     if (romId !== "aros") {
       const r = await DB.get(romId);
-      if (cd) kick = cdRoms.main;
+      if (cd && !cdtv) kick = cdRoms.main;
       else if (r) kick = new Uint8Array(await r.blob.arrayBuffer());
       else if (resume) throw new Error("le Kickstart de cette sauvegarde n'est plus dans la Bibliothèque");
-      else if (!a500) { S.romId = "aros"; saveSettings(); }
+      else if (romId === S.romId) { S.romId = "aros"; saveSettings(); }
       if (kick && S.keyId) { const k = await DB.get(S.keyId); if (k) key = new Uint8Array(await k.blob.arrayBuffer()); }
     }
     if (!kick) [kick, arosExt] = await Promise.all([fetchGz("aros-rom.bin.gz"), fetchGz("aros-ext.bin.gz")]);
@@ -1193,12 +1219,12 @@ async function powerOn() {
     /* Pas de ROM de démarrage UAE : un vrai A1200 n'en a pas, et ses fils « pièges » passent par le fil principal
        de la page dans le navigateur — un blocage de la page (enregistrement d'un gros disque) faisait alors échouer
        les écritures IDE suivantes. */
-    const lines = [...(amb ? amberryLines(cd ? "CD32" : a500 ? "A500" : "A1200", key) : []), "nr_floppies=2", "floppy1type=0", "boot_rom_uae=disabled", "uaeboard=disabled"];
+    const lines = [...(amb ? amberryLines(cd ? (cdtv ? "CDTV" : "CD32") : MODELS[model].qs, key) : []), "nr_floppies=2", "floppy1type=0", "boot_rom_uae=disabled", "uaeboard=disabled"];
     /* Une extension mémoire A1200 (carte trappe) porte une horloge sauvegardée par pile */
     if (+E.fast > 0) lines.push("rtc=MSM6242B");
     /* Carte accélératrice sans MMU, comme une Blizzard vue par AmigaOS (qui ne s'en sert pas) : le cœur active la MMU
        dès le 68030, et son émulation passe par setjmp/longjmp, très coûteux en WebAssembly (68040 : 22 ms par image) */
-    if (modelOf(E) !== "a500" && E.accel && E.accel !== "none") lines.push("mmu_model=0");
+    if (HAS_ACCEL.has(model) && E.accel && E.accel !== "none") lines.push("mmu_model=0");
     if (arosExt) { machine.writeFile("/sys/aros-ext.bin", arosExt); lines.push("kickstart_ext_rom_file=/sys/aros-ext.bin"); }
     for (const tag of ["df0", "df1"]) {
       fsPath[tag] = null;
@@ -1210,7 +1236,7 @@ async function powerOn() {
       lines.push(`floppy${DRIVE_NUM[tag]}=${fsPath[tag]}`);
     }
     const anyHd = HD_TAGS.some(t => mounted[t]);
-    if (anyHd && cd) toast("Les disques durs ne sont pas branchés sur la CD32.");
+    if (anyHd && cd) toast("Les disques durs ne sont pas branchés sur la " + (cdtv ? "console CDTV." : "CD32."));
     else if (anyHd && whd) toast("Les disques durs ne sont pas branchés pendant un jeu WHDLoad.");
     else if (anyHd && a500) toast("Mode Amiga 500 : les disques durs ne sont pas branchés (l'A500 n'a pas de contrôleur IDE).");
     const partNames = new Set();
@@ -1225,21 +1251,23 @@ async function powerOn() {
       for (const x of uniquePartitionNames(bytes, partNames)) toast(r.name + " : partition " + x.from + ": montée comme " + x.to + ":");
       machine.writeFile(fsPath[tag], bytes);
       hdDirty[tag].clear(); machine.trackWrites(fsPath[tag], (pos, len) => hdWrite(tag, pos, len)); /* pour ne réenregistrer que les morceaux modifiés */
-      /* DH0:, DH1: : disque IDE brut sur le contrôleur Gayle, géométrie lue sur le disque, comme un vrai A1200 */
-      if (unit < 2) lines.push(`hardfile2=rw,${tag.toUpperCase()}:${fsPath[tag]},0,0,0,512,0,,ide${unit}_mainboard,0`);
-      else lines.push(`hardfile2=rw,${tag.toUpperCase()}:${fsPath[tag]},0,0,0,512,0,,uae${unit - 2}`);
+      /* DH0:, DH1: : disque IDE brut sur le contrôleur de la carte mère (Gayle de l'A600/A1200, IDE de l'A4000), géométrie
+         lue sur le disque ; l'A3000 (contrôleur SCSI) passe par le pilote de disque d'UAE */
+      if (unit < 2 && model !== "a3000") lines.push(`hardfile2=rw,${tag.toUpperCase()}:${fsPath[tag]},0,0,0,512,0,,ide${unit}_mainboard,0`);
+      else lines.push(`hardfile2=rw,${tag.toUpperCase()}:${fsPath[tag]},0,0,0,512,0,,uae${model === "a3000" ? unit : unit - 2}`);
     }
     /* uaehf.device a besoin de la ROM de démarrage d'UAE : seulement si DH2: ou DH3: est branché (voir plus haut) */
-    if (fsPath.dh2 || fsPath.dh3) lines.splice(0, lines.length, ...lines.filter(l => !/^(boot_rom_uae|uaeboard)=/.test(l)));
+    if (fsPath.dh2 || fsPath.dh3 || (model === "a3000" && HD_TAGS.some(t => fsPath[t]))) lines.splice(0, lines.length, ...lines.filter(l => !/^(boot_rom_uae|uaeboard)=/.test(l)));
     let content = "/cfg/a1200.uae", options = coreOptions();
     if (amb) options = { amiberry_crop_overscan: S.center ? "enabled" : "disabled", amiberry_statusline: "disabled", amiberry_midi_output: S.midi === "on" ? "libretro" : "disabled" };
     if (cd) {
       /* Modèle CD32 du cœur ; l'extension est cherchée sous le nom kick40060.CD32.ext (inutile avec la ROM complète) */
-      if (cdRoms.ext) { machine.writeFile("/sys/kick40060.CD32.ext", cdRoms.ext); if (amb) lines.push("kickstart_ext_rom_file=/sys/kick40060.CD32.ext"); }
+      if (cdtv) { machine.writeFile("/sys/cdtv.ext", cdtvExt); lines.push("kickstart_ext_rom_file=/sys/cdtv.ext"); }
+      else if (cdRoms.ext) { machine.writeFile("/sys/kick40060.CD32.ext", cdRoms.ext); if (amb) lines.push("kickstart_ext_rom_file=/sys/kick40060.CD32.ext"); }
       lines.splice(0, lines.length, ...lines.filter(l => !/^(nr_floppies|floppy1type)=/.test(l))); /* pas de lecteur de disquettes */
       if (cdGame) lines.push(`cdimage0=${await writeCd(machine, cdGame)},${amb ? "image" : ""}`);
       options.puae_model = "CD32"; options.puae_fastmem_size = "0";
-      E._cd = true;
+      E._cd = cdtv ? "cdtv" : "cd32";
     }
     if (whd && amb) {
       /* WinUAE 6 : la page monte elle-même les volumes et écrit la startup-sequence */
@@ -1273,13 +1301,13 @@ async function powerOn() {
       await midiAttach(machine);
       if (S.floppySound && !cd) await ambFloppySounds(machine).catch(e => console.warn("bruits des lecteurs indisponibles", e));
     }
-    await machine.start({ model: cd ? "CD32" : MODELS[modelOf(E)].core, kickstart: kick, romKey: cd ? null : key, content, options });
+    await machine.start({ model: cd ? "CD32" : MODELS[model].core || "A1200OG", kickstart: kick, romKey: cd && !cdtv ? null : key, content, options });
     machine.setMuted(!!S.muted);
     /* Jeu WHDLoad prévu pour la manette CD32 (7 boutons) : la manette du port joystick en devient une */
-    if ((whd && whd.whdCfg && whd.whdCfg.cd32) || cd) {
+    if ((whd && whd.whdCfg && whd.whdCfg.cd32) || (cd && !cdtv)) {
       if (amb) machine.M._retro_set_controller_port_device(1, AMB_CD32PAD); else machine.M._retro_set_controller_port_device(0, CD32PAD);
     }
-    if (cd) document.documentElement.dataset.cd32 = "1";
+    if (cd && !cdtv) document.documentElement.dataset.cd32 = "1";
     if (whd && whd.whdCfg && whd.whdCfg.mouse && isTouch) toast("Ce jeu se joue à la souris : un doigt la déplace, une touche clique.");
     machine.inputBlocked = false;
     E._rom = romId;
@@ -1298,9 +1326,9 @@ async function powerOff() {
 }
 function onStarted() {
   starting = false; running = true; setPowerUi("on");
-  $("#statMode").textContent = (E._cd ? "CD32, " : modelOf(E) === "a500" ? "A500, " : "") + (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "")
-    + (modelOf(E) !== "a500" && ACCEL[E.accel] && ACCEL[E.accel].label ? ", " + ACCEL[E.accel].label : "")
-    + (E.core === "winuae6" ? ", WinUAE 6" + (+E.rtg > 0 && modelOf(E) !== "a500" && !E._cd && !E._whd ? ", RTG " + E.rtg + " Mo" : "") : "") + (E.compat === "max" ? ", cycle exact" : "") + (E._profile ? ", profil " + E._profile : "") + (E._whd ? ", WHDLoad" + (whdGame && whdGame.whdCfg ? " (réglages de la base)" : "") : "");
+  $("#statMode").textContent = (E._cd ? (E._cd === "cdtv" ? "CDTV, " : "CD32, ") : modelOf(E) !== "a1200" ? MODELS[modelOf(E)].qs + ", " : "") + (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "")
+    + (HAS_ACCEL.has(modelOf(E)) && !E._cd && ACCEL[E.accel] && ACCEL[E.accel].label ? ", " + ACCEL[E.accel].label : "")
+    + (E.core === "winuae6" ? ", WinUAE 6" + (+E.rtg > 0 && HAS_ACCEL.has(modelOf(E)) && !E._cd && !E._whd ? ", RTG " + E.rtg + " Mo" : "") : "") + (E.compat === "max" ? ", cycle exact" : "") + (E._profile ? ", profil " + E._profile : "") + (E._whd ? ", WHDLoad" + (whdGame && whdGame.whdCfg ? " (réglages de la base)" : "") : "");
   showCaptureHint();
 }
 function onStopped() {
@@ -2309,17 +2337,17 @@ async function renderLauncher() {
   try { all = await DB.all(); } catch (e) {}
   /* Kickstart */
   const kick = $("#lKick"); kick.innerHTML = "";
-  const is500 = S.model === "a500", isCd32 = S.model === "cd32";
-  /* Bascule Amiga 1200 / Amiga 500 / CD32 */
-  const seg = lEl("span", "l-model");
-  for (const [m, t] of [["a1200", "A1200"], ["a500", "A500"], ["cd32", "CD32"]]) {
-    const b = lEl("button", "l-seg"); b.textContent = t; b.setAttribute("aria-pressed", (S.model || "a1200") === m ? "true" : "false");
-    b.title = m === "a500" ? "Amiga 500 : 68000, OCS, pour les jeux A500 récalcitrants" : m === "cd32" ? "Amiga CD32 : la console CD (68EC020, AGA, manette à 7 boutons)" : "Amiga 1200 : 68EC020, AGA";
-    b.onclick = () => { S.model = m; saveSettings(); renderLauncher(); };
-    seg.appendChild(b);
+  const is500 = S.model === "a500", isCd32 = S.model === "cd32", isCdtv = S.model === "cdtv", other = WINUAE_ONLY.has(S.model) && !isCdtv;
+  /* Choix du modèle */
+  const seg = lEl("label", "l-model");
+  const sel = lEl("select", "l-model-sel"); sel.setAttribute("aria-label", "Modèle d'Amiga");
+  for (const [m, t] of [["a500", "Amiga 500"], ["a600", "Amiga 600"], ["a1200", "Amiga 1200"], ["a3000", "Amiga 3000"], ["a4000", "Amiga 4000"], ["cd32", "Amiga CD32"], ["cdtv", "Amiga CDTV"]]) {
+    const o = lEl("option"); o.value = m; o.textContent = t; if ((S.model || "a1200") === m) o.selected = true; sel.appendChild(o);
   }
-  $("#lTitle").textContent = is500 ? "Amiga 500" : isCd32 ? "Amiga CD32" : "Amiga 1200";
-  const romId = is500 ? await romFor500(all) : S.romId;
+  sel.onchange = () => { S.model = sel.value; saveSettings(); renderLauncher(); if (typeof themeNow === "function") themeNow(); };
+  seg.appendChild(sel);
+  $("#lTitle").textContent = isCd32 ? "Amiga CD32" : (MODELS[S.model] || MODELS.a1200).name;
+  const romId = is500 ? await romFor500(all) : other || isCdtv ? await romForModel(S.model, all) : S.romId;
   const romRec = romId !== "aros" ? all.find(r => r.id === romId) : null;
   if (isCd32) {
     /* ROM de la console : état et import (plusieurs fichiers à la fois : Kickstart, extension, rom.key) */
@@ -2330,19 +2358,26 @@ async function renderLauncher() {
     kick.append(seg, lEl("span", "l-kick-lbl", "ROM CD32"), t, b);
   } else {
   const kTxt = lEl("span", "l-kick-name");
-  kTxt.textContent = romRec ? (romRec.label || romRec.name) : "AROS (Kickstart libre)";
+  kTxt.textContent = other || isCdtv ? await modelRomLabel(S.model, all) : romRec ? (romRec.label || romRec.name) : "AROS (Kickstart libre)";
   kick.append(seg, lEl("span", "l-kick-lbl", "Kickstart"), kTxt);
-  const kBtn = lEl("button", "gad small"); kBtn.textContent = romRec ? "Changer" : is500 ? "Importer le 1.3…" : "Importer le mien…";
-  kBtn.onclick = romRec ? () => $("#btnSettings").click() : () => pickFile(".rom,.bin,.key", f => importFile(f));
+  const kBtn = lEl("button", "gad small"); kBtn.textContent = other || isCdtv ? "Importer…" : romRec ? "Changer" : is500 ? "Importer le 1.3…" : "Importer le mien…";
+  kBtn.onclick = romRec && !other && !isCdtv ? () => $("#btnSettings").click() : () => pickFiles(".rom,.bin,.key", files => { (async () => { for (const f of files) await importFile(f); })(); });
   kick.appendChild(kBtn);
   }
 
   /* Disques : les plus récemment utilisés d'abord */
-  const disks = all.filter(r => isCd32 ? r.kind === "cd" : r.kind === "adf" || r.kind === "hdf" || r.kind === "whd" || r.kind === "cd").sort((a, b) => (b.used || b.added) - (a.used || a.added));
+  const disks = all.filter(r => isCd32 || isCdtv ? r.kind === "cd" : r.kind === "adf" || r.kind === "hdf" || r.kind === "whd" || r.kind === "cd").sort((a, b) => (b.used || b.added) - (a.used || a.added));
   const thumbs = {};
   for (const s of all.filter(r => r.kind === "state").sort((a, b) => a.updated - b.updated)) thumbs[s.game] = s;
   box.innerHTML = "";
-  if (!disks.length && isCd32) {
+  if (!disks.length && isCdtv) {
+    const steps = lEl("ol", "l-steps");
+    const s1 = lEl("li", null, "<b>ROM du CDTV</b><span></span>");
+    s1.querySelector("span").textContent = await modelRomLabel("cdtv", all) + ". Il faut un Kickstart 1.3 et la ROM d'extension du CDTV (256 Ko) : bouton ci-dessus.";
+    const s2 = lEl("li", null, "<b>Un CD</b><span>Une image .iso, ou un fichier .cue choisi en même temps que ses pistes .bin.</span>");
+    const acts = lEl("div", "l-acts"); const o = lEl("button", "gad"); o.textContent = "Ouvrir un CD…"; o.onclick = () => $("#lOpen").click(); acts.appendChild(o); s2.appendChild(acts);
+    steps.append(s1, s2, lEl("li", null, "<b>Allumer</b><span>Une touche sur la vignette du CD lance le CDTV (cœur WinUAE 6).</span>")); box.appendChild(steps);
+  } else if (!disks.length && isCd32) {
     /* CD32 : ROM, un CD, Allumer */
     const st = await cd32RomStatus(all);
     const steps = lEl("ol", "l-steps");
@@ -2402,7 +2437,7 @@ async function renderLauncher() {
   if (mounted.df0) what.push(mounted.df0.name.replace(/\.(adf|adz|dms)$/i, ""));
   const hds = HD_TAGS.filter(t => mounted[t]).map(t => mounted[t].name.replace(/\.hdf$/i, ""));
   if (hds.length) what.push((mounted.df0 ? "+ " : "") + (hds.length > 1 ? "disques durs " : "disque dur ") + hds.join(", "));
-  $("#lWhat").textContent = isCd32 ? "console CD32, sans CD (touchez un CD pour le lancer)" : what.length ? "avec " + what.join(" ") : "sans disque";
+  $("#lWhat").textContent = isCd32 || isCdtv ? "console " + (isCdtv ? "CDTV" : "CD32") + ", sans CD (touchez un CD pour le lancer)" : what.length ? "avec " + what.join(" ") : "sans disque";
 }
 
 /* Le bouton « Ouvrir un fichier » : disquette, archive, disque dur ou Kickstart */
@@ -2644,20 +2679,21 @@ async function renderRom500() {
 $$('#winSettings input[name="model"]').forEach(i => i.addEventListener("change", () => renderLauncherSoon()));
 
 function modelUi(win, prefix, model) {
-  const a500 = model === "a500";
+  const a500 = model === "a500" || model === "a600";
   const lab = (name, value, text) => { const i = $(win + ' input[name="' + prefix + name + '"][value="' + value + '"]'); if (i) i.parentElement.lastChild.textContent = " " + text; };
-  lab("fast", "0", a500 ? "512 Ko Chip + 512 Ko Slow (d'origine)" : prefix ? "2 Mo Chip" : "2 Mo Chip (d'origine)");
-  lab("cpu", "orig", a500 ? (prefix ? "7 MHz" : "7 MHz (d'origine, 68000)") : (prefix ? "14 MHz" : "14 MHz (d'origine)"));
+  const big = model === "a3000" || model === "a4000";
+  lab("fast", "0", model === "a600" ? "1 Mo Chip (d'origine)" : a500 ? "512 Ko Chip + 512 Ko Slow (d'origine)" : big ? "Mémoire d'origine (2 Mo Chip + 8 Mo sur la carte mère)" : prefix ? "2 Mo Chip" : "2 Mo Chip (d'origine)");
+  lab("cpu", "orig", a500 ? (prefix ? "7 MHz" : "7 MHz (d'origine, 68000)") : big ? "25 MHz (d'origine, 68030)" : (prefix ? "14 MHz" : "14 MHz (d'origine)"));
   /* La carte accélératrice ne concerne que l'A1200 : son titre, ses choix et son explication disparaissent */
   const acc = $(win + ' input[name="' + prefix + 'accel"]');
   if (acc) {
     const box = acc.closest(".opt"), h = box.previousElementSibling, hint = box.nextElementSibling;
-    for (const el of [box, h, hint && hint.classList.contains("hint") && !hint.querySelector("input") ? hint : null]) if (el) el.hidden = a500;
+    for (const el of [box, h, hint && hint.classList.contains("hint") && !hint.querySelector("input") ? hint : null]) if (el) el.hidden = !HAS_ACCEL.has(model || "a1200");
   }
 }
 function settingsModelUi() {
   modelUi("#winSettings", "", S.model);
-  $("#tSettings").textContent = "Réglages de l'" + (S.model === "a500" ? "Amiga 500" : S.model === "cd32" ? "Amiga CD32" : "Amiga 1200");
+  $("#tSettings").textContent = "Réglages de l'" + (S.model === "cd32" ? "Amiga CD32" : (MODELS[S.model] || MODELS.a1200).name);
 }
 function profileModelUi() {
   const c = $('#winProfile input[name="p_model"]:checked');
@@ -2932,20 +2968,24 @@ const BOING = '<svg class="boing" viewBox="0 0 40 40" aria-hidden="true"><defs>'
   + '<circle cx="20" cy="20" r="18" fill="url(#bbShade)"/></g><circle cx="20" cy="20" r="18" fill="none" stroke="rgba(0,0,0,.35)"/></svg>';
 
 let themeModel = null;
-function applyModelTheme(model) {
-  model = model === "a500" ? "a500" : model === "cd32" ? "cd32" : "a1200";
-  if (model === themeModel) return;
-  themeModel = model;
+/* Trois habillages : beige et Workbench 1.3 (A500, A600), Workbench 3.1 (A1200, A3000, A4000), noir (CD32, CDTV) */
+const THEME_OF = { a500: "a500", a600: "a500", a1200: "a1200", a3000: "a1200", a4000: "a1200", cd32: "cd32", cdtv: "cd32" };
+const THEME_NAME = { a500: "Amiga 500", a600: "Amiga 600", a1200: "Amiga 1200", a3000: "Amiga 3000", a4000: "Amiga 4000", cd32: "Amiga CD32", cdtv: "Amiga CDTV" };
+function applyModelTheme(which) {
+  which = THEME_NAME[which] ? which : "a1200";
+  if (which === themeModel) return;
+  themeModel = which;
+  const model = THEME_OF[which];
   document.documentElement.dataset.model = model;
-  const label = model === "a500" ? "AMIGA 500" : model === "cd32" ? "AMIGA CD32" : "AMIGA 1200";
+  const label = THEME_NAME[which].toUpperCase();
   const brand = $(".monitor-foot .brand"), name = $(".wedge .name");
   if (brand) { const led = $("#monLed"); brand.innerHTML = AMIGA_TICK + label; if (led) brand.appendChild(led); }
   if (name) name.innerHTML = AMIGA_TICK + label;
-  const wedge = $(".wedge"); if (wedge) wedge.setAttribute("aria-label", "Boîtier " + (model === "a500" ? "Amiga 500" : model === "cd32" ? "Amiga CD32" : "Amiga 1200"));
+  const wedge = $(".wedge"); if (wedge) wedge.setAttribute("aria-label", "Boîtier " + THEME_NAME[which]);
   const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.content = model === "a500" ? "#0b3a73" : "#2b303b";
 }
 /* Le modèle qui tourne (réglages effectifs, profil compris), sinon celui choisi pour le prochain allumage */
-const themeNow = () => applyModelTheme(running || starting ? (E._cd ? "cd32" : modelOf(E)) : S.model);
+const themeNow = () => applyModelTheme(running || starting ? (E._cd ? E._cd : modelOf(E)) : S.model);
 { const _r = renderLauncher; renderLauncher = async () => { await _r(); themeNow(); decorateLauncher(); }; }
 { const _s = onStarted; onStarted = (...a) => { _s(...a); themeNow(); }; }
 $$('#winSettings input[name="model"]').forEach(i => i.addEventListener("change", () => setTimeout(themeNow)));
@@ -3498,6 +3538,167 @@ $("#optMidi").onchange = async e => {
   renderMidiChoices();
 };
 $("#btnSettings").addEventListener("click", () => { if (S.midi === "on") midiInit(false).then(renderMidiChoices); else renderMidiChoices(); });
+
+/* Kickstart connus, d'après la table des ROM d'Amiberry (src/rommgr.cpp) : CRC32 → [nom, modèles, type].
+   Sert à choisir automatiquement le Kickstart de l'A600, de l'A3000, de l'A4000 et du CDTV. */
+const KICK_DB = {
+  0x299790ff: ["KS ROM v1.0 (A1000)(NTSC)", "A1000", "kick"],
+  0xd060572a: ["KS ROM v1.1 (A1000)(NTSC)", "A1000", "kick"],
+  0xec86dae2: ["KS ROM v1.1 (A1000)(PAL)", "A1000", "kick"],
+  0x9ed783d0: ["KS ROM v1.2 (A1000)", "A1000", "kick"],
+  0xa6ce1636: ["KS ROM v1.2 (A500,A1000,A2000)", "A500 A1000 A2000", "kick"],
+  0xc4f0f55f: ["KS ROM v1.3 (A500,A1000,A2000)", "A500 A1000 A2000", "kick"],
+  0xe0f37258: ["KS ROM v1.3 (A3000)(SK)", "A3000", "kick"],
+  0xbc0ec13f: ["KS ROM v1.4 (A3000)", "A3000", "kick"],
+  0xc3bdb240: ["KS ROM v2.04 (A500+)", "A500+", "kick"],
+  0x83028fb5: ["KS ROM v2.05 (A600)", "A600", "kick"],
+  0x64466c2a: ["KS ROM v2.05 (A600HD)", "A600HD A600", "kick"],
+  0x43b0df7b: ["KS ROM v2.05 (A600HD)", "A600HD A600", "kick"],
+  0x234a7233: ["KS ROM v2.04 (A3000)", "A3000", "kick"],
+  0x6c9b07d2: ["KS ROM v3.0 (A1200)", "A1200", "kick"],
+  0x9e6ac152: ["KS ROM v3.0 (A4000)", "A4000", "kick"],
+  0x2b4566f1: ["KS ROM v3.1 (A4000)", "A4000", "kick"],
+  0xfc24ae0d: ["KS ROM v3.1 (A500,A600,A2000)", "A500 A600 A2000", "kick"],
+  0x1483a091: ["KS ROM v3.1 (A1200)", "A1200", "kick"],
+  0xefb239cc: ["KS ROM v3.1 (A3000)", "A3000", "kick"],
+  0x43b6dd22: ["KS ROM v3.1 (A4000)(Cloanto)", "A4000", "kick"],
+  0xd6bae334: ["KS ROM v3.1 (A4000)", "A4000", "kick"],
+  0x75932c3a: ["KS ROM v3.1 (A4000T)", "A4000T", "kick"],
+  0x3ac99edc: ["KS ROM v3.X (A4000)(Cloanto)", "A4000", "kick"],
+  0xf17fa97f: ["KS ROM v3.1.4-1 (A1200)", "A1200", "kick"],
+  0x50c3529c: ["KS ROM v3.1.4-1 (A3000)", "A3000", "kick"],
+  0xd47e18fd: ["KS ROM v3.1.4-1 (A4000)", "A4000", "kick"],
+  0x75a2b2a5: ["KS ROM v3.1.4-1 (A4000T)", "A4000T", "kick"],
+  0xd52b52fd: ["KS ROM v3.1.4-1 (A500)", "A500", "kick"],
+  0xb87506a7: ["KS ROM v3.1.4-2 (A1200)", "A1200", "kick"],
+  0xba35f8eb: ["KS ROM v3.1.4-2 (A3000)", "A3000", "kick"],
+  0x1b84cb33: ["KS ROM v3.1.4-2 (A4000)", "A4000", "kick"],
+  0xd6d0ef3e: ["KS ROM v3.1.4-2 (A4000T)", "A4000T", "kick"],
+  0x568f8786: ["KS ROM v3.1.4-2 (A500)", "A500", "kick"],
+  0xbd1ff75e: ["KS ROM v3.2 (A1200)", "A1200", "kick"],
+  0xf3af46cc: ["KS ROM v3.2 (A3000)", "A3000", "kick"],
+  0x9bb8fc93: ["KS ROM v3.2 (A4000)", "A4000", "kick"],
+  0x9188a509: ["KS ROM v3.2 (A4000T)", "A4000T", "kick"],
+  0x8173d7b6: ["KS ROM v3.2 (A500/A600/A2000/A1000/CDTV)", "A500", "kick"],
+  0x2b653371: ["KS ROM v3.2.1 (A1200)", "A1200", "kick"],
+  0x0078f607: ["KS ROM v3.2.1 (A3000)", "A3000", "kick"],
+  0xf3ced3b8: ["KS ROM v3.2.1 (A4000)", "A4000", "kick"],
+  0xaf3452ec: ["KS ROM v3.2.1 (A4000T)", "A4000T", "kick"],
+  0x4f078456: ["KS ROM v3.2.1 (A500/A600/A2000/A1000/CDTV)", "A500", "kick"],
+  0x5c40328a: ["KS ROM v3.2.2 (A1200)", "A1200", "kick"],
+  0x46335b57: ["KS ROM v3.2.2 (A3000)", "A3000", "kick"],
+  0x4bea9798: ["KS ROM v3.2.2 (A4000)", "A4000", "kick"],
+  0x36bbcd8a: ["KS ROM v3.2.2 (A4000T)", "A4000T", "kick"],
+  0xe4458462: ["KS ROM v3.2.2 (A500/A600/A2000/A1000/CDTV)", "A500", "kick"],
+  0xb18d3b67: ["KS ROM v3.2.3 (A1200)", "A1200", "kick"],
+  0x74c0b23f: ["KS ROM v3.2.3 (A3000)", "A3000", "kick"],
+  0xb6a4698e: ["KS ROM v3.2.3 (A4000)", "A4000", "kick"],
+  0x588a5e6d: ["KS ROM v3.2.3 (A4000T)", "A4000T", "kick"],
+  0xe1f50b0b: ["KS ROM v3.2.3 (A500/A600/A2000/A1000/CDTV)", "A500", "kick"],
+  0x42baa124: ["CDTV extended ROM v1.0", "CDTV", "cdtvext"],
+  0xceae68d2: ["CDTV extended ROM v2.7", "CDTV", "cdtvext"],
+  0x30b54232: ["CDTV/A570 extended ROM v2.30", "CDTV", "cdtvext"],
+  0xab6274e7: ["CDTV extended ROM v47.1", "CDTV", "cdtvext"],
+  0x0b1ad2d0: ["A1000 bootstrap ROM", "A1000", "kick"],
+};
+
+/* =========================================================
+   Autres modèles avec le cœur WinUAE 6 : A600, A3000, A4000, CDTV
+   =========================================================
+   Leur Kickstart est choisi tout seul dans la Bibliothèque : d'abord une ROM faite pour ce modèle (reconnue par son
+   empreinte, d'après la table des ROM d'Amiberry), sinon une ROM voisine, sinon celle de l'A1200, sinon AROS.
+   Le CDTV demande en plus sa ROM d'extension (256 Ko) et un vrai Kickstart (1.3 de préférence). */
+
+/* Ce que la table dit d'une ROM de la Bibliothèque : { name, models: [...], kind: "kick"|"cdtvext" } ou null (mis en cache) */
+async function kickInfo(r) {
+  if (r.kdb === undefined) {
+    let info = null;
+    try {
+      const p = await plainRomBytes(new Uint8Array(await r.blob.arrayBuffer()));
+      const e = p && KICK_DB[crc32u8(p)];
+      if (e) info = { name: e[0], models: e[1].split(" "), kind: e[2] };
+    } catch (x) {}
+    r.kdb = info; await DB.put(r);
+  }
+  return r.kdb;
+}
+/* Modèles de la table que chaque modèle accepte, du meilleur au moins bon */
+const MODEL_ROMS = {
+  a600: [["A600", "A600HD"]],
+  a3000: [["A3000"], ["A4000", "A4000T"]],
+  a4000: [["A4000", "A4000T"], ["A3000"]],
+  cdtv: [["A500", "A1000", "A2000"]]
+};
+async function romForModel(model, all) {
+  all = all || await DB.all();
+  const roms = all.filter(r => r.kind === "rom" && !r.cd32).sort((a, b) => a.added - b.added);
+  for (const group of MODEL_ROMS[model] || []) {
+    const hits = [];
+    for (const r of roms) { const k = await kickInfo(r); if (k && k.kind === "kick" && k.models.some(m => group.includes(m))) hits.push([r, k]); }
+    /* CDTV : le 1.3 d'abord (celui de la vraie console) */
+    if (model === "cdtv") hits.sort((a, b) => (/v1\.3/.test(b[1].name) ? 1 : 0) - (/v1\.3/.test(a[1].name) ? 1 : 0));
+    if (hits.length) return hits[0][0].id;
+  }
+  if (model === "cdtv") { const id = await romFor500(all); return id; } /* un 1.x ou 2.0x reconnu par sa version */
+  if (S.romId && S.romId !== "aros" && roms.some(r => r.id === S.romId)) return S.romId; /* celui de l'A1200 */
+  return "aros";
+}
+async function cdtvExtRom() {
+  for (const r of (await DB.all()).filter(x => x.kind === "rom")) {
+    const k = await kickInfo(r);
+    if (k && k.kind === "cdtvext") return plainRomBytes(new Uint8Array(await r.blob.arrayBuffer()));
+  }
+  return null;
+}
+/* Libellé du Kickstart qu'utilisera un modèle (accueil, réglages) */
+async function modelRomLabel(model, all) {
+  all = all || await DB.all();
+  const id = await romForModel(model, all), r = all.find(x => x.id === id);
+  let t = r ? (r.label || r.name) : "AROS (Kickstart libre)";
+  if (model === "cdtv") t += (await cdtvExtRom()) ? " + extension CDTV" : " — il manque la ROM d'extension du CDTV";
+  return t;
+}
+
+/* Import : une ROM faite pour un autre modèle (A600, A3000, A4000, extension CDTV) rejoint la Bibliothèque sans devenir
+   le Kickstart de l'A1200 */
+{ const _ib = importBytes;
+  importBytes = async (name, u8, target, mount, quiet) => {
+    if (guessKind(name, u8) === "rom") {
+      const p = await plainRomBytes(u8), e = p && KICK_DB[crc32u8(p)];
+      if (e && (e[2] === "cdtvext" || !/A1200|A500\b|A1000|A2000/.test(e[1]))) {
+        if ((await DB.all()).some(r => r.kind === "rom" && r.crc === crc32u8(u8))) { if (!quiet) toast(name + " est déjà dans la Bibliothèque."); return null; }
+        const rec = { id: newId(), kind: "rom", name, size: u8.length, blob: new Blob([u8]), crc: crc32u8(u8), added: Date.now(), label: e[0],
+          kdb: { name: e[0], models: e[1].split(" "), kind: e[2] }, cd32: false };
+        await DB.put(rec);
+        const who = e[2] === "cdtvext" ? "au CDTV" : "à l'" + e[1].split(" ").map(m => "Amiga " + m.replace(/^A/, "")).filter((x, i, a) => a.indexOf(x) === i).join(" et à l'");
+        if (!quiet) toast(e[0] + " ajoutée : elle servira " + who + ".");
+        if (typeof renderRomChoices === "function") renderRomChoices();
+        renderLauncherSoon();
+        return rec;
+      }
+    }
+    return _ib(name, u8, target, mount, quiet);
+  }; }
+
+/* Lancer un CD sur le CDTV : il faut la ROM d'extension */
+{ const _l = launchCd;
+  launchCd = async rec => {
+    if (S.model === "cdtv" && !running && !starting && !(await cdtvExtRom())) {
+      toast("Le CDTV a besoin de sa ROM d'extension (256 Ko) et d'un Kickstart 1.3 : importez-les (Réglages → Kickstart), puis touchez à nouveau le CD.", true);
+      return;
+    }
+    return _l(rec);
+  }; }
+
+/* Réglages : le Kickstart retenu pour le modèle choisi */
+async function renderModelRom() {
+  const el = $("#modelRom"); if (!el) return;
+  const m = S.model;
+  el.hidden = !WINUAE_ONLY.has(m);
+  if (WINUAE_ONLY.has(m)) el.textContent = "Kickstart de l'" + MODELS[m].name + " : " + await modelRomLabel(m);
+}
+$$('#winSettings input[name="model"]').forEach(i => i.addEventListener("change", () => setTimeout(renderModelRom)));
+$("#btnSettings").addEventListener("click", () => setTimeout(renderModelRom));
 
 /* Profil par disque */
 let profTarget = null;

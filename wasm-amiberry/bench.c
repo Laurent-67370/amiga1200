@@ -20,6 +20,7 @@ static struct { const char *k, *v; } OPTS[] = {
   { "amiberry_model", NULL }, /* rempli depuis argv */
   { "amiberry_video_standard", "pal" },
   { "amiberry_crop_overscan", NULL }, /* rempli depuis argv */
+  { "amiberry_midi_output", "libretro" },
   { NULL, NULL }
 };
 
@@ -33,6 +34,12 @@ static uint64_t cpufeat(void) { return 0; }
 static retro_perf_tick_t perfctr(void) { return (retro_perf_tick_t)usec(); }
 static void pnop(struct retro_perf_counter *c) { (void)c; }
 static void plog(void) {}
+/* MIDI : octets envoyés par l'Amiga, comptés et affichés (les 12 premiers) */
+static unsigned long midi_bytes;
+static bool midi_on(void) { return true; }
+static bool midi_rd(uint8_t *b) { (void)b; return false; }
+static bool midi_wr(uint8_t b, uint32_t d) { (void)d; if (midi_bytes++ < 12) fprintf(stderr, "[midi] %02x\n", b); return true; }
+static bool midi_fl(void) { return true; }
 static bool env(unsigned cmd, void *data) {
   switch (cmd) {
     case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
@@ -46,6 +53,11 @@ static bool env(unsigned cmd, void *data) {
       struct retro_variable *v = data;
       for (int i = 0; OPTS[i].k; i++) if (!strcmp(v->key, OPTS[i].k) && OPTS[i].v) { v->value = OPTS[i].v; return true; }
       return false;
+    }
+    case RETRO_ENVIRONMENT_GET_MIDI_INTERFACE: {
+      struct retro_midi_interface *m = data;
+      m->input_enabled = midi_on; m->output_enabled = midi_on; m->read = midi_rd; m->write = midi_wr; m->flush = midi_fl;
+      return true;
     }
     case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE: *(bool *)data = false; return true;
     case RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION: *(unsigned *)data = 0; return true;
@@ -109,6 +121,7 @@ int main(int argc, char **argv) {
   for (int i = 0; i < run; i++) retro_run();
   double t3 = now();
   double fps = (frames - f0) / (t3 - t2);
+  if (midi_bytes) printf("MIDI : %lu octets envoyés par l'Amiga\n", midi_bytes);
   printf("init %.2fs | %d images de chauffe %.2fs | %lu images en %.2fs => %.1f images/s (%.1fx le temps réel PAL) | modèle %s | %ux%u\n",
          t1 - t0, warm, t2 - t1, frames - f0, t3 - t2, fps, fps / 50.0, model, fw, fh);
   {

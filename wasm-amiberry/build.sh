@@ -11,6 +11,8 @@
 #  - horloge CLOCK_MONOTONIC (CLOCK_MONOTONIC_RAW échoue sous Emscripten) ;
 #  - réservation de mémoire limitée à 384 Mo (une réservation y est une vraie allocation) ;
 #  - pas d'attente interne entre deux images : la page cadence l'émulation.
+#  - port série émulé sans port réel (MIDI vers la page) ; manette CD32 à 7 boutons ; mémoire RTG dans les
+#    sauvegardes d'état ; recadrage automatique allégé ; réserve mémoire sans remise à zéro.
 # Les coroutines libco du cœur sont remplacées par des fils (libco_pthread.c).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)

@@ -677,7 +677,7 @@ rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>CD3
 rep("Les archives .lzx doivent être extraites avant.", "Images de CD de CD32 : .iso, ou .cue avec ses pistes .bin. Les archives .lzx doivent être extraites avant.")
 
 # Cœur d'émulation : PUAE (WinUAE 5) ou WinUAE 6 (Amiberry)
-rep('kbdOpen: false, compat: "normal",', 'kbdOpen: false, core: "winuae6", rtg: "0", compat: "normal",')
+rep('kbdOpen: false, compat: "normal",', 'kbdOpen: false, core: "winuae6", rtg: "0", midi: "off", midiOut: "", midiIn: "", compat: "normal",')
 # WinUAE 6 devient le cœur par défaut : les réglages déjà enregistrés gardaient l'ancienne valeur par défaut (PUAE),
 # on les bascule une fois ; un choix fait ensuite dans les Réglages est respecté
 rep('function saveSettings() { try { localStorage.setItem("a1200.settings", JSON.stringify(S)); } catch (e) {} }',
@@ -707,6 +707,21 @@ rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Deu
       <p>Réglages → Cœur d'émulation : <b>WinUAE 6</b> (par défaut), compilé depuis le cœur libretro d'Amiberry, ou <b>PUAE</b> (base WinUAE 5, le cœur historique de cette page). WinUAE 6 est plus récent et plus fidèle, et à peine plus gourmand ; sur un téléphone ancien, PUAE garde un peu d'avance. Disquettes, disques durs, Kickstart, cartes accélératrices, WHDLoad, CD32 et sauvegardes d'état marchent avec les deux.</p>
       <h3>Workbench en haute résolution (RTG)</h3>
       <p>Avec WinUAE 6, Réglages → Carte graphique RTG ajoute la carte graphique virtuelle d'UAE (16 Mo sur le Zorro III) : des écrans de 640×480 à 1920×1080 en 16 millions de couleurs, bien plus rapides que les modes AGA. L'Amiga ne s'en sert que si son Workbench a les pilotes RTG : Picasso96 (gratuit, sur Aminet) ou P96 (inclus dans Amiga Forever) ; une fois installés, choisissez un mode « uaegfx » dans Prefs/ScreenMode. Les jeux, eux, gardent l'affichage AGA.</p>
+      <h3>Copier des fichiers sur le disque dur</h3>''')
+
+# MIDI par le navigateur (Web MIDI)
+rep('''      <h3>Kickstart</h3>
+      <p class="hint">Pour l'Amiga 1200 :</p>''', '''      <h3>MIDI (WinUAE 6)</h3>
+      <div class="opt"><label><input type="checkbox" id="optMidi"> Interface MIDI sur le port série (Web MIDI)</label></div>
+      <div class="opt midi-ports" id="midiPorts" hidden></div>
+      <p class="hint">Les logiciels de musique de l'Amiga (Bars &amp; Pipes, Music-X, OctaMED…) jouent sur un synthétiseur ou un clavier branché à l'ordinateur, ou sur un logiciel MIDI ; un clavier peut aussi jouer sur l'Amiga. Le navigateur demande l'autorisation la première fois (Chrome, Edge, Opera, Firefox ; pas Safari). S'applique au prochain allumage.</p>
+
+      <h3>Kickstart</h3>
+      <p class="hint">Pour l'Amiga 1200 :</p>''')
+rep(".footnote{margin-top:18px", ".midi-ports{flex-direction:column;align-items:flex-start;gap:6px}\n.midi-ports[hidden]{display:none}\n.midi-ports select{margin-left:6px;max-width:260px}\n.footnote{margin-top:18px")
+rep("/* Profil par disque */", (APP / "midi-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>MIDI</h3>
+      <p>Avec WinUAE 6, Réglages → MIDI branche une interface MIDI virtuelle sur le port série de l'Amiga : ce qu'il envoie à 31 250 bauds part vers un instrument ou un logiciel MIDI de l'ordinateur (Web MIDI), et un clavier MIDI peut jouer sur l'Amiga. Dans le logiciel de musique, choisissez simplement le port série (serial.device) comme sortie MIDI.</p>
       <h3>Copier des fichiers sur le disque dur</h3>''')
 
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)

@@ -37,6 +37,11 @@ jobs:
           M=amiberry/android/app/src/main/AndroidManifest.xml
           sed -i 's|android:process=":sdl"|android:process=":sdl"\n            android:screenOrientation="sensorLandscape"|' "$M"
           grep -n -A2 'process=":sdl"' "$M"
+          # L'interface ImGui impose aussi ses orientations à SDL (ce qui passe outre le manifeste) : paysage seulement
+          G=amiberry/src/osdep/gui/main_window.cpp
+          sed -i 's|"LandscapeLeft LandscapeRight Portrait PortraitUpsideDown"|"LandscapeLeft LandscapeRight"|' "$G"
+          grep -n 'SDL_HINT_ORIENTATIONS' "$G"
+          ! grep -rn 'Portrait PortraitUpsideDown' amiberry/src
 
       - uses: actions/setup-java@v4
         with:

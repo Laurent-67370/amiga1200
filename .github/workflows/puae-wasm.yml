@@ -106,6 +106,7 @@ jobs:
               cp "wasm/dist/site/$f" "$SITE/$f"
             done
             mkdir -p "$SITE/whd" && cp wasm/dist/site/whd/* "$SITE/whd/"
+            mkdir -p "$SITE/sons" && cp wasm/dist/site/sons/* "$SITE/sons/"
             mkdir -p "$SITE/sae" && cp sae/index.html "$SITE/sae/index.html"
             # Ancienne adresse d'essai : redirection vers l'accueil
             rm -rf "$SITE/puae" && mkdir -p "$SITE/puae"

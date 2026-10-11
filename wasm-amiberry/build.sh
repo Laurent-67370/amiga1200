@@ -28,9 +28,16 @@ if [ ! -d "$SRC/.git" ]; then
 fi
 git -C "$SRC" fetch -q origin "$AMB_REV" 2>/dev/null || true
 git -C "$SRC" checkout -q -f "$AMB_REV"
-git -C "$SRC" clean -fdq -e '*.o'
+git -C "$SRC" clean -fdq -e '*.o' -e .patches.sum
 git -C "$SRC" submodule update --init libretro/libco libretro/libretro-common
 for p in "$HERE"/patches/*.patch; do git -C "$SRC" apply "$p"; done
+# Le Makefile ne suit pas les en-têtes : si les correctifs ont changé (un en-tête peut en faire partie),
+# les objets d'une compilation précédente (cache de l'intégration continue) sont jetés
+PATCH_SUM=$(cat "$HERE"/patches/*.patch | sha256sum | cut -c1-16)
+if [ "$(cat "$SRC/.patches.sum" 2>/dev/null)" != "$PATCH_SUM" ]; then
+  find "$SRC" -name '*.o' -delete
+  echo "$PATCH_SUM" > "$SRC/.patches.sum"
+fi
 
 # zlib : les en-têtes et sources fournis avec PUAE (le port zlib d'Emscripten se télécharge, ce qui n'est pas toujours possible)
 ZINC="$OUT/zinc"; mkdir -p "$ZINC"

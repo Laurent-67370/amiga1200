@@ -206,7 +206,9 @@ page = page.replace(lst, '["fast", "cpu", "region", "res", "joy", "floppy", "kbd
 rep('$("#optAutosave").checked = S.autosave;', '$("#optAutosave").checked = S.autosave; $("#optFloppySound").checked = !!S.floppySound;')
 rep('$("#optAutosave").onchange = e => { S.autosave = e.target.checked; saveSettings(); };',
     '$("#optAutosave").onchange = e => { S.autosave = e.target.checked; saveSettings(); };\n'
-    '$("#optFloppySound").onchange = e => { S.floppySound = e.target.checked; saveSettings(); if (running) machine.setOption("puae_floppy_sound", S.floppySound ? "75" : "100"); };')
+    '$("#optFloppySound").onchange = e => { S.floppySound = e.target.checked; saveSettings(); if (!running) return; '
+    'if (E.core === "winuae6") ambFloppySounds(machine).then(() => machine.M._amb_set_floppy_sound(S.floppySound ? 1 : 0)).catch(() => {}); '
+    'else machine.setOption("puae_floppy_sound", S.floppySound ? "75" : "100"); };')
 
 # Souris : rappel des deux boutons dans l'aide
 rep("Cliquez dans l'écran pour capturer la souris, <span class=\"kbd\">Échap</span> pour la libérer.</p>",

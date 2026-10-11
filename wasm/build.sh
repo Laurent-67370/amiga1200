@@ -67,6 +67,8 @@ if [ -f "$AMB/amiberry.js" ]; then
   cp "$AMB/amiberry.js" "$AMB/amiberry.wasm" "$OUT/site/"
   # WHDLoad et les commandes de démarrage fournies avec Amiberry, pour les jeux WHDLoad sous WinUAE 6
   mkdir -p "$OUT/site/whd" && cp "$ROOT/wasm-amiberry/src/whdboot/WHDLoad" "$ROOT/wasm-amiberry/src/whdboot/boot-data.zip" "$OUT/site/whd/"
+  # Bruits des lecteurs de disquettes d'Amiberry
+  mkdir -p "$OUT/site/sons" && cp "$ROOT"/wasm-amiberry/src/data/floppy_sounds/*.wav "$OUT/site/sons/"
 else echo "cœur WinUAE 6 absent (wasm-amiberry/build.sh non lancé)"; fi
 python3 "$ROOT/wasm/app/make-page.py" "$OUT/site/index.html"
 # Kickstart de secours : AROS d'août 2026, compressé (décompressé par la page)

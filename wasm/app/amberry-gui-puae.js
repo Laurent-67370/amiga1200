@@ -204,7 +204,7 @@ function abState() {
 function abOpen(panel) {
   if (!ab.el) abBuild();
   if (!ab.open) {
-    abAdopt(); ab.open = true; ab.el.hidden = false; $("#abOpenBtn").hidden = true;
+    abAdopt(); ab.open = true; ab.el.hidden = false;
     if (running && !paused) { ab.pausedByGui = true; $("#btnPause").click(); }
     document.body.style.overflow = "hidden";
   }
@@ -215,7 +215,7 @@ function abClose() {
   if (!ab.open) return;
   const content = ab.el.querySelector(".ab-content"), park = ab.el.querySelector(".ab-park");
   for (const el of [...content.children]) park.appendChild(el);
-  abRelease(); ab.open = false; ab.el.hidden = true; $("#abOpenBtn").hidden = false;
+  abRelease(); ab.open = false; ab.el.hidden = true;
   document.body.style.overflow = "";
   if (ab.pausedByGui && running && paused) $("#btnPause").click();
   ab.pausedByGui = false;
@@ -232,7 +232,9 @@ async function abAction(a) {
 
 /* Raccordements : boutons de la page, fenêtres, allumage et extinction, F12 */
 { const _sw = showWin; showWin = id => { if (AB_WIN_PANEL[id]) return abOpen(AB_WIN_PANEL[id]); return _sw(id); }; }
-$("#btnSettings").onclick = () => abOpen("quick");
+/* Le bouton Réglages de la barre devient celui de l'interface (elle s'ouvre sur le dernier panneau affiché) */
+{ const b = $("#btnSettings"); b.onclick = () => abOpen(); b.title = "Interface de l'émulateur (F12)";
+  const t = [...b.childNodes].reverse().find(n => n.nodeType === 3 && n.textContent.trim()); if (t) t.textContent = " Interface"; }
 $("#btnLib").onclick = () => abOpen("library");
 $("#btnStates").onclick = () => abOpen("states");
 $("#btnHelp").onclick = () => abOpen("about");
@@ -244,8 +246,6 @@ window.addEventListener("keydown", e => {
   e.preventDefault(); e.stopPropagation();
   ab.open ? abClose() : abOpen();
 }, true);
-{ const b = document.createElement("button"); b.id = "abOpenBtn"; b.className = "ab-open"; b.type = "button"; b.textContent = "Interface (F12)"; b.hidden = true;
-  b.onclick = () => abOpen(); document.body.appendChild(b); }
 abWrapSettings();
 /* Au chargement : l'interface, sauf si l'Amiga se rallume tout seul (rallumage, reprise d'une sauvegarde) */
-if (!sessionStorage.getItem("a1200.autostart")) abOpen("play"); else $("#abOpenBtn").hidden = false;
+if (!sessionStorage.getItem("a1200.autostart")) abOpen("play");

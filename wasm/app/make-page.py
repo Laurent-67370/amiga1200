@@ -124,7 +124,7 @@ rep('''  if (!inf.video.webGL && !inf.video.canvas) toast("Ce navigateur ne peut
 
 # 9. Textes
 rep("Cœur d'émulation : <a href=\"https://github.com/naTmeg/ScriptedAmigaEmulator\" rel=\"noopener\">SAE</a> (Scripted Amiga Emulator, R. Hausberger, licence GPL v2) dérivé de WinUAE.\n    Kickstart de secours : AROS (AROS Public License).",
-    "Cœur d'émulation : <a href=\"https://github.com/libretro/libretro-uae\" rel=\"noopener\">PUAE</a> (libretro-uae, licence GPL v2), le moteur de WinUAE compilé en WebAssembly.\n    Kickstart de secours : AROS, version d'août 2026 (AROS Public License).")
+    "Cœurs d'émulation, compilés en WebAssembly : <b>WinUAE 6</b> par défaut, par le cœur libretro d'<a href=\"https://github.com/BlitterStudio/amiberry\" rel=\"noopener\">Amiberry</a> 8.3 (licence GPL v3), et <a href=\"https://github.com/libretro/libretro-uae\" rel=\"noopener\">PUAE</a> (libretro-uae, base WinUAE 5, licence GPL v2), au choix dans les réglages.\n    Kickstart de secours : AROS, version d'août 2026 (AROS Public License).")
 rep('<label><input type="radio" name="cpu" value="max"> Aussi vite que possible</label>',
     '<label><input type="radio" name="cpu" value="max"> Accéléré (×5)</label>')
 rep('<label><input type="radio" name="compat" value="max"> Maximale</label>',

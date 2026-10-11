@@ -96,10 +96,6 @@
 .ctl-grid .gad{justify-self:start;min-width:120px}
 .ctl-grid [data-padrow]{padding:2px 6px}
 .ctl-grid [data-padrow].on{background:var(--ab-acc);color:#fff}
-/* Bouton de retour à l'interface pendant l'émulation */
-.ab-open{position:fixed;right:10px;top:10px;z-index:30;font:14px "Amiga Topaz",monospace;background:#aaa;color:#000;cursor:pointer;
-  border:1px solid;border-color:#fff #787878 #787878 #fff;padding:4px 10px}
-.ab-open[hidden]{display:none}
 /* Fenêtres secondaires (profil, nouveau disque, fichiers) au-dessus de l'interface */
 .veil.open{z-index:60}
 /* Téléphone : barre latérale en bandeau défilant */

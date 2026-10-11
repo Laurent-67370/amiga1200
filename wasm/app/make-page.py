@@ -741,11 +741,15 @@ rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>A60
       <p>Avec le cœur WinUAE 6, le choix du modèle (accueil ou Réglages) s'étend à l'<b>Amiga 600</b> (68000, ECS, IDE), à l'<b>Amiga 3000</b> (68030, ECS, 32 bits), à l'<b>Amiga 4000</b> (68030, AGA, 32 bits ; la carte accélératrice 68040/68060 et la carte RTG s'y ajoutent) et au <b>CDTV</b> (la console CD de 1991). Le Kickstart est pris tout seul dans la Bibliothèque : celui du modèle s'il y est (reconnu par son empreinte), sinon un voisin (3.1 de l'A4000 pour l'A3000…), sinon celui de l'A1200, sinon AROS. Le CDTV demande un Kickstart 1.3 et sa ROM d'extension de 256 Ko ; ses CD se lancent comme ceux de la CD32, d'une touche sur leur vignette.</p>
       <h3>Copier des fichiers sur le disque dur</h3>''')
 
+rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Configurations, chipset et commandes</h3>
+      <p>Dans l'interface (F12) : <b>Configurations</b> enregistre tous les réglages sous un nom et les recharge d'un clic ; l'export .uae s'ouvre dans WinUAE ou Amiberry, et l'import lit leurs fichiers (disquettes, disques et Kickstart retrouvés dans la Bibliothèque par leur nom). <b>Chipset</b> choisit OCS, ECS ou AGA (WinUAE 6), le blitter et les collisions ; <b>Mémoire</b> la Chip et la Slow. <b>Entrées</b> change les touches du joystick au clavier et le rôle de chaque bouton de la manette (bouton, direction ou touche du clavier), pour tous les jeux ou pour le jeu en place seulement.</p>
+      <h3>Copier des fichiers sur le disque dur</h3>''')
+
 # Interface façon Amiberry 8 (en dernier : elle reprend les éléments mis en place par les autres modules)
 import base64
 _topaz = base64.b64encode((APP / "amiga-topaz.ttf").read_bytes()).decode()
 rep("</style>", (APP / "amberry-gui-puae.css").read_text(encoding="utf-8").replace("__TOPAZ__", _topaz) + "</style>")
-rep("/* Profil par disque */", (APP / "amberry-gui-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+rep("/* Profil par disque */", (APP / "amberry-cfg-puae.js").read_text(encoding="utf-8") + "\n" + (APP / "amberry-gui-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)
 assert not leftovers, f"restes de SAE : {sorted(set(leftovers))[:10]}"

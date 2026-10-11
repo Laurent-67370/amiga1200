@@ -80,6 +80,22 @@
 .ab-about dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;margin:0 0 10px}
 .ab-about dt{color:#2e2e2e}
 .ab-about dd{margin:0}
+/* Configurations : liste à gauche, nom, description et boutons à droite (comme dans Amiberry) */
+.cfg-wrap{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
+.cfg-list{flex:1 1 260px;min-height:200px;background:var(--ab-frame);color:var(--ab-text);border:1px solid;
+  border-color:var(--ab-border) var(--ab-shine) var(--ab-shine) var(--ab-border);padding:2px}
+.cfg-list option{padding:3px 6px}
+.cfg-list option:checked{background:var(--ab-acc);color:#fff}
+.cfg-form{flex:1 1 260px;display:flex;flex-direction:column;gap:8px}
+.cfg-form label{display:flex;flex-direction:column;gap:3px}
+.cfg-form input,#ambGui .ctl-grid select{background:var(--ab-frame);color:var(--ab-text);border:1px solid;
+  border-color:var(--ab-border) var(--ab-shine) var(--ab-shine) var(--ab-border);padding:4px 6px}
+.cfg-btns{display:flex;gap:6px;flex-wrap:wrap}
+/* Commandes : action, puis touche ou rôle du bouton */
+.ctl-grid{display:grid;grid-template-columns:max-content minmax(0,320px);gap:5px 14px;align-items:center;margin:4px 0 12px}
+.ctl-grid .gad{justify-self:start;min-width:120px}
+.ctl-grid [data-padrow]{padding:2px 6px}
+.ctl-grid [data-padrow].on{background:var(--ab-acc);color:#fff}
 /* Bouton de retour à l'interface pendant l'émulation */
 .ab-open{position:fixed;right:10px;top:10px;z-index:30;font:14px "Amiga Topaz",monospace;background:#aaa;color:#000;cursor:pointer;
   border:1px solid;border-color:#fff #787878 #787878 #fff;padding:4px 10px}

@@ -27,6 +27,9 @@ export const RETROK_CODES = RETROK;
 /* LED annoncées par PUAE */
 export const LED = { POWER: 0, FLOPPY: 1, HD: 2, DF0: 3, DF1: 4, HDONLY: 7 };
 
+/* Manette : bouton (disposition standard du navigateur) → bit RETRO_DEVICE_ID_JOYPAD_* : A = B libretro (tir), B = A (2e bouton),
+   X = Y, Y = X, LB/RB = gâchettes CD32, Select, Start, croix directionnelle */
+const PAD_DEF = { 0: 0, 1: 8, 2: 1, 3: 9, 4: 10, 5: 11, 8: 2, 9: 3, 12: 4, 13: 5, 14: 6, 15: 7 };
 const WORKLET = `
 class Ring extends AudioWorkletProcessor {
   constructor() { super(); this.q = []; this.off = 0; this.port.onmessage = e => { this.q.push(e.data); if (this.q.length > 24) this.q.splice(0, this.q.length - 12); }; }
@@ -245,13 +248,18 @@ export class PuaeMachine {
     const pads = navigator.getGamepads();
     for (let i = 0; i < 2; i++) {
       const g = pads[i]; if (!g) continue;
-      const b = j => g.buttons[j] && g.buttons[j].pressed, ax = g.axes[0] || 0, ay = g.axes[1] || 0;
+      const ax = g.axes[0] || 0, ay = g.axes[1] || 0, map = this.padMap || {};
+      const prev = (this._padPrev || (this._padPrev = [[], []]))[i];
       let m = 0;
-      if (b(0)) m |= 1; if (b(1)) m |= 1 << 8; if (b(2)) m |= 1 << 1; if (b(3)) m |= 1 << 9;
-      if (b(12) || ay < -0.5) m |= 1 << 4; if (b(13) || ay > 0.5) m |= 1 << 5;
-      if (b(14) || ax < -0.5) m |= 1 << 6; if (b(15) || ax > 0.5) m |= 1 << 7;
-      if (b(9)) m |= 1 << 3; if (b(8)) m |= 1 << 2;
-      if (b(4)) m |= 1 << 10; if (b(5)) m |= 1 << 11; /* gâchettes L et R (manette CD32) */
+      if (ay < -0.5) m |= 1 << 4; if (ay > 0.5) m |= 1 << 5;
+      if (ax < -0.5) m |= 1 << 6; if (ax > 0.5) m |= 1 << 7;
+      /* padMap (commandes personnalisées) : bouton → bit du joystick, -1 (rien) ou touche du clavier ("Space"…) */
+      g.buttons.forEach((bt, j) => {
+        const on = !!(bt && bt.pressed), t = j in map ? map[j] : PAD_DEF[j];
+        if (typeof t === "string") { if (on !== !!prev[j]) this.key(t, on); }
+        else if (on && t >= 0) m |= 1 << t;
+        prev[j] = on;
+      });
       this.M._fe_joy(i === 0 ? 0 : 1, m | this.joyMask[i === 0 ? 0 : 1]);
     }
   }

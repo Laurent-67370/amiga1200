@@ -151,28 +151,28 @@ async function ambFloppySounds(m) {
   for (const [n, u8] of await ambSounds) m.writeFile("/data/floppy_sounds/" + n + ".wav", u8);
 }
 /* Configuration complète au format WinUAE pour Amiberry : le fichier remplace toute la configuration du cœur */
-function amberryLines(model, key) {
+function amberryLines(model, key, e = E) {
   const big = model === "A1200" || model === "A3000" || model === "A4000";
-  const acc = !big ? ACCEL.none : ACCEL[E.accel] || ACCEL.none;
+  const acc = !big ? ACCEL.none : ACCEL[e.accel] || ACCEL.none;
   const l = [`quickstart=${model},0`, "kickstart_rom_file=/sys/kickstart-utilisateur.rom"];
   if (key) l.push("kickstart_key_file=/sys/rom.key");
-  if (+E.fast > 0) l.push("fastmem_size=" + (+E.fast));
+  if (+e.fast > 0) l.push("fastmem_size=" + (+e.fast));
   if (acc !== ACCEL.none) l.push("cpu_model=" + acc.cpu, "fpu_model=" + (acc.fpu === "cpu" ? acc.cpu : acc.fpu), "cpu_24bit_addressing=false", "cpu_multiplier=" + acc.mult);
-  if (E.cpu === "max") l.push("cpu_speed=max", "cpu_cycle_exact=false", "cpu_memory_cycle_exact=false");
+  if (e.cpu === "max") l.push("cpu_speed=max", "cpu_cycle_exact=false", "cpu_memory_cycle_exact=false");
   /* Les préréglages de WinUAE sont au cycle près : « Rapide » revient à l'équivalent du mode normal de PUAE
      (sans prélecture ni cycle exact), plus de deux fois moins de calcul */
-  if (E.compat === "max") l.push("cycle_exact=true");
+  if (e.compat === "max") l.push("cycle_exact=true");
   else l.push("cycle_exact=false", "cpu_compatible=false");
-  l.push("ntsc=" + (E.region === "ntsc"));
-  if (E.floppy === "turbo") l.push("floppy_speed=0");
-  if (S.center) l.push("gfx_auto_crop=true");
-  l.push("gfx_resolution=" + (S.res === "lores" ? "lores" : S.res === "shires" ? "superhires" : "hires"));
-  if (S.floppySound && model !== "CD32" && model !== "CDTV") l.push("floppy0sound=1", "floppy1sound=1");
-  if (S.midi === "on") l.push("amiberry.midiout_device_name=Libretro MIDI"); /* MIDI du port série vers la page (Web MIDI) */
+  l.push("ntsc=" + (e.region === "ntsc"));
+  if (e.floppy === "turbo") l.push("floppy_speed=0");
+  if (e.center) l.push("gfx_auto_crop=true");
+  l.push("gfx_resolution=" + (e.res === "lores" ? "lores" : e.res === "shires" ? "superhires" : "hires"));
+  if (e.floppySound && model !== "CD32" && model !== "CDTV") l.push("floppy0sound=1", "floppy1sound=1");
+  if (e.midi === "on") l.push("amiberry.midiout_device_name=Libretro MIDI"); /* MIDI du port série vers la page (Web MIDI) */
   /* Carte graphique RTG d'UAE (uaegfx) sur le Zorro III : écrans haute résolution et 16 millions de couleurs.
      Il lui faut un processeur 32 bits (le 68EC020 de l'A1200 n'adresse que 16 Mo) */
-  if (big && +E.rtg > 0) {
-    l.push("gfxcard_type=ZorroIII", "gfxcard_size=" + (+E.rtg));
+  if (big && +e.rtg > 0) {
+    l.push("gfxcard_type=ZorroIII", "gfxcard_size=" + (+e.rtg));
     if (acc === ACCEL.none && model === "A1200") l.push("cpu_model=68020", "cpu_24bit_addressing=false");
   }
   return l;
@@ -197,7 +197,7 @@ async function powerOn() {
       for (const t of ["df0", "df1", ...HD_TAGS]) setMounted(t, resume.ctx[t] ? await DB.get(resume.ctx[t]) : null);
       whdGame = resume.ctx.whd ? await DB.get(resume.ctx.whd) : null;
       cdGame = resume.ctx.cd ? await DB.get(resume.ctx.cd) : null;
-      E = Object.assign({}, S, { accel: "none", model: "a1200", core: "puae", rtg: "0" }, resume.settings, { _profile: "" });
+      E = Object.assign({}, S, { accel: "none", model: "a1200", core: "puae", rtg: "0" }, CHIP_DEFAULTS, resume.settings, { _profile: "" });
     } else E = whdGame || cdGame || S.model === "cd32" ? Object.assign({}, S) : await effectiveSettings(); /* les profils de disques ne s'appliquent pas à un jeu WHDLoad */
     /* Jeu WHDLoad : sur l'A1200, avec de la mémoire Fast (8 Mo si les réglages n'en donnent pas) */
     const whd = whdGame;
@@ -286,6 +286,8 @@ async function powerOn() {
     if (fsPath.dh2 || fsPath.dh3 || (model === "a3000" && HD_TAGS.some(t => fsPath[t]))) lines.splice(0, lines.length, ...lines.filter(l => !/^(boot_rom_uae|uaeboard)=/.test(l)));
     let content = "/cfg/a1200.uae", options = coreOptions();
     if (amb) options = { amiberry_crop_overscan: S.center ? "enabled" : "disabled", amiberry_statusline: "disabled", amiberry_midi_output: S.midi === "on" ? "libretro" : "disabled" };
+    /* Chipset, blitter, collisions, mémoire Chip et Slow (panneau Chipset) : pas pour WHDLoad ni les consoles CD */
+    if (!cd && !whd) { if (amb) lines.push(...chipLines(E)); else Object.assign(options, chipOpts(E)); }
     if (cd) {
       /* Modèle CD32 du cœur ; l'extension est cherchée sous le nom kick40060.CD32.ext (inutile avec la ROM complète) */
       if (cdtv) { machine.writeFile("/sys/cdtv.ext", cdtvExt); lines.push("kickstart_ext_rom_file=/sys/cdtv.ext"); }

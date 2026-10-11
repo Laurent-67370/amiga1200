@@ -293,6 +293,9 @@ rep(".idle .rom-line{font-size:13px;color:#7c8792}", """.idle .rom-line{font-siz
 .l-model{display:inline-flex;border:1px solid rgba(255,255,255,.25);margin-right:6px}
 .l-seg{appearance:none;font:inherit;font-size:12.5px;background:none;border:0;color:#aeb7c1;padding:3px 9px;cursor:pointer}
 .l-seg[aria-pressed="true"]{background:var(--wb-blue);color:#fff}
+.l-model{border:0}
+.l-model-sel{font:inherit;font-size:13px;background:rgba(255,255,255,.08);color:inherit;border:1px solid rgba(255,255,255,.25);padding:3px 6px;border-radius:3px}
+.l-model-sel option{color:#000}
 .l-kick-lbl{color:#7c8792;text-transform:uppercase;letter-spacing:.08em;font-size:11px}
 .l-kick-name{color:#e3e7eb}
 .l-main{flex:1 0 auto;display:flex;flex-direction:column;gap:10px;min-height:0}
@@ -429,8 +432,13 @@ rep('''      <h3>Kickstart</h3>
         <label><input type="radio" name="model" value="a1200"> Amiga 1200 (68EC020, AGA, 2 Mo)</label>
         <label><input type="radio" name="model" value="a500"> Amiga 500 (68000, OCS, 1 Mo)</label>
         <label><input type="radio" name="model" value="cd32"> Amiga CD32 (console CD)</label>
+        <label><input type="radio" name="model" value="a600"> Amiga 600 (68000, ECS, 1 Mo, IDE)</label>
+        <label><input type="radio" name="model" value="a3000"> Amiga 3000 (68030, ECS, 32 bits)</label>
+        <label><input type="radio" name="model" value="a4000"> Amiga 4000 (68030, AGA, 32 bits)</label>
+        <label><input type="radio" name="model" value="cdtv"> Amiga CDTV (console CD de 1991)</label>
       </div>
-      <p class="hint">L'Amiga 500 sert aux jeux A500 qui refusent de tourner sur l'A1200, lancés depuis leurs disquettes ; il demande le Kickstart 1.3. Ni disque dur ni carte accélératrice dans ce mode. Le choix peut aussi se faire pour une seule disquette, dans son Profil.</p>
+      <p class="hint" id="modelRom" hidden></p>
+      <p class="hint">L'Amiga 500 sert aux jeux A500 qui refusent de tourner sur l'A1200, lancés depuis leurs disquettes ; il demande le Kickstart 1.3. Ni disque dur ni carte accélératrice dans ce mode. Le choix peut aussi se faire pour une seule disquette, dans son Profil. A600, A3000, A4000 et CDTV passent par le cœur WinUAE 6, avec leur Kickstart pris dans la Bibliothèque (le leur, sinon celui de l'A1200, sinon AROS).</p>
 
       <h3>Kickstart</h3>
       <p class="hint">Pour l'Amiga 1200 :</p>
@@ -485,20 +493,21 @@ rep('''    rec.label = info.label;
 
 # Réglages et profils cohérents avec le modèle choisi (A500 : 7 MHz, 512 Ko + 512 Ko, pas de carte accélératrice)
 rep("/* Profil par disque */", '''function modelUi(win, prefix, model) {
-  const a500 = model === "a500";
+  const a500 = model === "a500" || model === "a600";
   const lab = (name, value, text) => { const i = $(win + ' input[name="' + prefix + name + '"][value="' + value + '"]'); if (i) i.parentElement.lastChild.textContent = " " + text; };
-  lab("fast", "0", a500 ? "512 Ko Chip + 512 Ko Slow (d'origine)" : prefix ? "2 Mo Chip" : "2 Mo Chip (d'origine)");
-  lab("cpu", "orig", a500 ? (prefix ? "7 MHz" : "7 MHz (d'origine, 68000)") : (prefix ? "14 MHz" : "14 MHz (d'origine)"));
+  const big = model === "a3000" || model === "a4000";
+  lab("fast", "0", model === "a600" ? "1 Mo Chip (d'origine)" : a500 ? "512 Ko Chip + 512 Ko Slow (d'origine)" : big ? "Mémoire d'origine (2 Mo Chip + 8 Mo sur la carte mère)" : prefix ? "2 Mo Chip" : "2 Mo Chip (d'origine)");
+  lab("cpu", "orig", a500 ? (prefix ? "7 MHz" : "7 MHz (d'origine, 68000)") : big ? "25 MHz (d'origine, 68030)" : (prefix ? "14 MHz" : "14 MHz (d'origine)"));
   /* La carte accélératrice ne concerne que l'A1200 : son titre, ses choix et son explication disparaissent */
   const acc = $(win + ' input[name="' + prefix + 'accel"]');
   if (acc) {
     const box = acc.closest(".opt"), h = box.previousElementSibling, hint = box.nextElementSibling;
-    for (const el of [box, h, hint && hint.classList.contains("hint") && !hint.querySelector("input") ? hint : null]) if (el) el.hidden = a500;
+    for (const el of [box, h, hint && hint.classList.contains("hint") && !hint.querySelector("input") ? hint : null]) if (el) el.hidden = !HAS_ACCEL.has(model || "a1200");
   }
 }
 function settingsModelUi() {
   modelUi("#winSettings", "", S.model);
-  $("#tSettings").textContent = "Réglages de l'" + (S.model === "a500" ? "Amiga 500" : S.model === "cd32" ? "Amiga CD32" : "Amiga 1200");
+  $("#tSettings").textContent = "Réglages de l'" + (S.model === "cd32" ? "Amiga CD32" : (MODELS[S.model] || MODELS.a1200).name);
 }
 function profileModelUi() {
   const c = $('#winProfile input[name="p_model"]:checked');
@@ -724,6 +733,12 @@ rep(".footnote{margin-top:18px", ".midi-ports{flex-direction:column;align-items:
 rep("/* Profil par disque */", (APP / "midi-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>MIDI</h3>
       <p>Avec WinUAE 6, Réglages → MIDI branche une interface MIDI virtuelle sur le port série de l'Amiga : ce qu'il envoie à 31 250 bauds part vers un instrument ou un logiciel MIDI de l'ordinateur (Web MIDI), et un clavier MIDI peut jouer sur l'Amiga. Dans le logiciel de musique, choisissez simplement le port série (serial.device) comme sortie MIDI.</p>
+      <h3>Copier des fichiers sur le disque dur</h3>''')
+
+# Autres modèles (A600, A3000, A4000, CDTV) avec WinUAE 6
+rep("/* Profil par disque */", (APP / "kickdb-puae.js").read_text(encoding="utf-8") + "\n" + (APP / "models-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>A600, A3000, A4000 et CDTV</h3>
+      <p>Avec le cœur WinUAE 6, le choix du modèle (accueil ou Réglages) s'étend à l'<b>Amiga 600</b> (68000, ECS, IDE), à l'<b>Amiga 3000</b> (68030, ECS, 32 bits), à l'<b>Amiga 4000</b> (68030, AGA, 32 bits ; la carte accélératrice 68040/68060 et la carte RTG s'y ajoutent) et au <b>CDTV</b> (la console CD de 1991). Le Kickstart est pris tout seul dans la Bibliothèque : celui du modèle s'il y est (reconnu par son empreinte), sinon un voisin (3.1 de l'A4000 pour l'A3000…), sinon celui de l'A1200, sinon AROS. Le CDTV demande un Kickstart 1.3 et sa ROM d'extension de 256 Ko ; ses CD se lancent comme ceux de la CD32, d'une touche sur leur vignette.</p>
       <h3>Copier des fichiers sur le disque dur</h3>''')
 
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)

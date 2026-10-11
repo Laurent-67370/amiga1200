@@ -18,6 +18,7 @@ static unsigned long frames;
 static struct { const char *k, *v; } OPTS[] = {
   { "amiberry_model", NULL }, /* rempli depuis argv */
   { "amiberry_video_standard", "pal" },
+  { "amiberry_crop_overscan", NULL }, /* rempli depuis argv */
   { NULL, NULL }
 };
 
@@ -88,6 +89,7 @@ int main(int argc, char **argv) {
   int run = argc > 2 ? atoi(argv[2]) : 500;
   model = argc > 3 ? argv[3] : "A1200OG";
   OPTS[0].v = model;
+  OPTS[2].v = argc > 5 ? argv[5] : "disabled";
   retro_set_environment(env);
   retro_set_video_refresh(video);
   retro_set_audio_sample(audio);

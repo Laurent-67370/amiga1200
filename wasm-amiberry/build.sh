@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Cœur Amiberry (base WinUAE 6) compilé en WebAssembly, avec un banc d'essai Node.
 #
-#   wasm-amiberry/build.sh            → wasm-amiberry/out/amb-bench.js (+ .wasm)
+#   wasm-amiberry/build.sh            → wasm-amiberry/out/amiberry.js (+ .wasm), module pour la page
+#                                       wasm-amiberry/out/amb-bench.js (+ .wasm), banc d'essai Node
 #   cd wasm-amiberry/out && node amb-bench.js 150 300 A1200OG frame.ppm
 #
 # Prérequis : Emscripten (emcc) dans le PATH. Les sources d'Amiberry sont clonées dans
@@ -50,8 +51,24 @@ em++ -pthread -fwasm-exceptions -sSUPPORT_LONGJMP=wasm -O3 -sPTHREAD_POOL_SIZE=1
   -sNODERAWFS=1 -sENVIRONMENT=node -sEXIT_RUNTIME=1 -Wno-pthreads-mem-growth \
   bench.o libco_pthread.o z_*.o @objs.txt -o amb-bench.js
 
+# Module navigateur : le même frontal que PUAE (wasm/frontend.c), adapté par FE_AMIBERRY
+INC="-I$SRC/src -I$SRC/src/include -I$SRC/src/osdep/libretro -I$SRC/src/osdep -I$SRC/src/threaddep -I$SRC/libretro"
+DEFS=(-DAMIBERRY -DLIBRETRO -DLIBRETRO_NO_JIT '-DOSDEP_GFX_PLATFORM_HEADER="libretro/gfx_platform_internal.h"'
+      '-DOSDEP_AMIBERRY_PLATFORM_HEADER="libretro/amiberry_platform_internal.h"' '-DOSDEP_INPUT_PLATFORM_HEADER="libretro/input_platform_internal.h"'
+      '-DOSDEP_GUI_HANDLING_HEADER="libretro/gui_handling_platform.h"')
+em++ -O3 -pthread -fwasm-exceptions -sSUPPORT_LONGJMP=wasm -std=gnu++17 $INC "${DEFS[@]}" -c "$HERE/amb_glue.cpp" -o amb_glue.o
+emcc -O3 -pthread -DFE_AMIBERRY -I"$SRC/libretro" -c "$ROOT/wasm/frontend.c" -o frontend.o
+EXPORTS='["_retro_run","_retro_set_controller_port_device","_retro_serialize_size","_retro_serialize","_retro_unserialize","_malloc","_free"]'
+em++ -pthread -fwasm-exceptions -sSUPPORT_LONGJMP=wasm -O3 -sPTHREAD_POOL_SIZE=12 \
+  -sINITIAL_MEMORY=256MB -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=2GB -sSTACK_SIZE=8MB -Wno-pthreads-mem-growth \
+  -sMODULARIZE=1 -sEXPORT_NAME=createAmiberry -sENVIRONMENT=web,worker -sFORCE_FILESYSTEM=1 \
+  -sEXPORTED_FUNCTIONS="$EXPORTS" \
+  -sEXPORTED_RUNTIME_METHODS='["FS","UTF8ToString","stringToNewUTF8","setValue","getValue","HEAPU8","HEAP16","HEAPU32","HEAPF32"]' \
+  frontend.o amb_glue.o libco_pthread.o z_*.o @objs.txt -o amiberry.js
+
 # ROM AROS libres pour le banc d'essai
 mkdir -p sys
 cp "$ROOT/vendor/aros/aros-20260820-rom.bin" sys/aros-rom.bin
 cp "$ROOT/vendor/aros/aros-20260820-ext.bin" sys/aros-ext.bin
-echo "OK : $OUT/amb-bench.js"
+echo "OK : $OUT/amb-bench.js, $OUT/amiberry.js"
+for f in amb-bench.wasm amiberry.wasm; do echo "$f compressé : $(gzip -9 -c "$f" | wc -c) octets"; done

@@ -676,6 +676,25 @@ rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>CD3
       <h3>Copier des fichiers sur le disque dur</h3>''')
 rep("Les archives .lzx doivent être extraites avant.", "Images de CD de CD32 : .iso, ou .cue avec ses pistes .bin. Les archives .lzx doivent être extraites avant.")
 
+# Cœur d'émulation : PUAE (WinUAE 5) ou WinUAE 6 (Amiberry)
+rep('kbdOpen: false, compat: "normal",', 'kbdOpen: false, core: "puae", compat: "normal",')
+rep('''      <h3>Kickstart</h3>
+      <p class="hint">Pour l'Amiga 1200 :</p>''', '''      <h3>Cœur d'émulation</h3>
+      <div class="opt" data-setting="core">
+        <label><input type="radio" name="core" value="puae"> PUAE, base WinUAE 5 (éprouvé, le plus rapide)</label>
+        <label><input type="radio" name="core" value="winuae6"> WinUAE 6, par Amiberry (plus récent et plus précis, en essai)</label>
+      </div>
+      <p class="hint">WinUAE 6 demande environ deux fois plus de calcul et se télécharge à part (4 Mo) au premier allumage. Les jeux WHDLoad et la CD32 passent encore par PUAE. Une sauvegarde d'état reprend toujours avec le cœur qui l'a faite.</p>
+
+      <h3>Kickstart</h3>
+      <p class="hint">Pour l'Amiga 1200 :</p>''')
+lst = '["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel", "model"]'
+assert page.count(lst) == 2
+page = page.replace(lst, '["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel", "model", "core"]')
+rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Deux cœurs d'émulation</h3>
+      <p>Réglages → Cœur d'émulation : <b>PUAE</b> (base WinUAE 5, le cœur historique de cette page) ou <b>WinUAE 6</b>, compilé depuis le cœur libretro d'Amiberry. WinUAE 6 est plus récent et plus fidèle, mais deux fois plus gourmand : sur téléphone, PUAE reste conseillé. Disquettes, disques durs, Kickstart, cartes accélératrices et sauvegardes d'état marchent avec les deux ; WHDLoad et la CD32 utilisent encore PUAE.</p>
+      <h3>Copier des fichiers sur le disque dur</h3>''')
+
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)
 assert not leftovers, f"restes de SAE : {sorted(set(leftovers))[:10]}"
 

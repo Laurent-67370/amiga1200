@@ -61,6 +61,9 @@ emcc "${COMMON[@]}" "$OBJ/frontend.o" -sMODULARIZE=1 -sEXPORT_NAME=createPuae -s
 rm -rf "$OUT/site" && mkdir -p "$OUT/site"
 cp "$ROOT"/wasm/web/* "$OUT/site/"
 cp "$OUT/puae.js" "$OUT/puae.wasm" "$OUT/site/"
+# Cœur WinUAE 6 (Amiberry), compilé avant par wasm-amiberry/build.sh
+AMB="$ROOT/wasm-amiberry/out"
+if [ -f "$AMB/amiberry.js" ]; then cp "$AMB/amiberry.js" "$AMB/amiberry.wasm" "$OUT/site/"; else echo "cœur WinUAE 6 absent (wasm-amiberry/build.sh non lancé)"; fi
 python3 "$ROOT/wasm/app/make-page.py" "$OUT/site/index.html"
 # Kickstart de secours : AROS d'août 2026, compressé (décompressé par la page)
 gzip -9 -n -c "$ROOT/vendor/aros/aros-20260820-rom.bin" > "$OUT/site/aros-rom.bin.gz"

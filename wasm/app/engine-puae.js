@@ -111,6 +111,35 @@ function coreOptions() {
   };
 }
 
+/* ---- Cœur d'émulation : PUAE (WinUAE 5) ou Amiberry (WinUAE 6), chargé à la demande ---- */
+const CORE_NAMES = { puae: "PUAE (WinUAE 5)", winuae6: "WinUAE 6 (Amiberry)" };
+function loadScript(src) {
+  return new Promise((ok, ko) => {
+    const el = document.createElement("script"); el.src = src;
+    el.onload = ok; el.onerror = () => ko(new Error("fichier " + src + " introuvable"));
+    document.head.appendChild(el);
+  });
+}
+async function coreFactory(core) {
+  if (core !== "winuae6") return window.createPuae;
+  if (!window.createAmiberry) await loadScript("amiberry.js");
+  return window.createAmiberry;
+}
+/* Configuration complète au format WinUAE pour Amiberry : le fichier remplace toute la configuration du cœur */
+function amberryLines(a500, key) {
+  const acc = a500 ? ACCEL.none : ACCEL[E.accel] || ACCEL.none;
+  const l = [`quickstart=${a500 ? "A500" : "A1200"},0`, "kickstart_rom_file=/sys/kickstart-utilisateur.rom"];
+  if (key) l.push("kickstart_key_file=/sys/rom.key");
+  if (+E.fast > 0) l.push("fastmem_size=" + (+E.fast));
+  if (acc !== ACCEL.none) l.push("cpu_model=" + acc.cpu, "fpu_model=" + (acc.fpu === "cpu" ? acc.cpu : acc.fpu), "cpu_24bit_addressing=false", "cpu_multiplier=" + acc.mult);
+  if (E.cpu === "max") l.push("cpu_speed=max", "cpu_cycle_exact=false", "cpu_memory_cycle_exact=false");
+  if (E.compat === "max") l.push("cycle_exact=true");
+  l.push("ntsc=" + (E.region === "ntsc"));
+  if (E.floppy === "turbo") l.push("floppy_speed=0");
+  if (S.center) l.push("gfx_auto_crop=true");
+  return l;
+}
+
 async function powerOn() {
   if (running || starting) return;
   /* Le cœur ne se rallume pas dans la même page : on recharge et on rallume aussitôt. */
@@ -130,7 +159,7 @@ async function powerOn() {
       for (const t of ["df0", "df1", ...HD_TAGS]) setMounted(t, resume.ctx[t] ? await DB.get(resume.ctx[t]) : null);
       whdGame = resume.ctx.whd ? await DB.get(resume.ctx.whd) : null;
       cdGame = resume.ctx.cd ? await DB.get(resume.ctx.cd) : null;
-      E = Object.assign({}, S, { accel: "none", model: "a1200" }, resume.settings, { _profile: "" });
+      E = Object.assign({}, S, { accel: "none", model: "a1200", core: "puae" }, resume.settings, { _profile: "" });
     } else E = whdGame || cdGame || S.model === "cd32" ? Object.assign({}, S) : await effectiveSettings(); /* les profils de disques ne s'appliquent pas à un jeu WHDLoad */
     /* Jeu WHDLoad : sur l'A1200, avec de la mémoire Fast (8 Mo si les réglages n'en donnent pas) */
     const whd = whdGame;
@@ -144,11 +173,16 @@ async function powerOn() {
     const cdRoms = cd ? await cd32Roms() : null;
     if (cd && !cdRoms) throw new Error("ROM de la CD32 absentes de la Bibliothèque");
     const a500 = modelOf(E) === "a500";
+    /* Cœur : celui de la sauvegarde reprise, sinon celui des réglages ; WHDLoad et CD32 restent sur PUAE pour l'instant */
+    const want = resume ? E.core || "puae" : S.core || "puae";
+    E.core = whd || cd ? "puae" : want;
+    if (want === "winuae6" && E.core !== "winuae6") toast((whd ? "WHDLoad" : "La CD32") + " passe encore par le cœur PUAE.");
+    const amb = E.core === "winuae6";
     const romId = cd ? cdRoms.id : resume ? resume.ctx.rom : a500 ? await romFor500() : S.romId;
     if (a500 && romId === "aros" && !resume) toast("Mode Amiga 500 sans Kickstart 1.3 : AROS démarre, mais la plupart des jeux A500 ont besoin du vrai Kickstart (Réglages).", true);
     skip.reset();
     machine = await PuaeMachine.create({
-      canvas: $("#amigaScreen"), factory: window.createPuae,
+      canvas: $("#amigaScreen"), factory: await coreFactory(E.core),
       onLog: t => { if (/error|erreur|fail/i.test(t)) console.warn(t); },
       onStats: onStats, onFrame: onLeds
     });
@@ -167,7 +201,7 @@ async function powerOn() {
     /* Pas de ROM de démarrage UAE : un vrai A1200 n'en a pas, et ses fils « pièges » passent par le fil principal
        de la page dans le navigateur — un blocage de la page (enregistrement d'un gros disque) faisait alors échouer
        les écritures IDE suivantes. */
-    const lines = ["nr_floppies=2", "floppy1type=0", "boot_rom_uae=disabled", "uaeboard=disabled"];
+    const lines = [...(amb ? amberryLines(a500, key) : []), "nr_floppies=2", "floppy1type=0", "boot_rom_uae=disabled", "uaeboard=disabled"];
     /* Une extension mémoire A1200 (carte trappe) porte une horloge sauvegardée par pile */
     if (+E.fast > 0) lines.push("rtc=MSM6242B");
     /* Carte accélératrice sans MMU, comme une Blizzard vue par AmigaOS (qui ne s'en sert pas) : le cœur active la MMU
@@ -206,6 +240,7 @@ async function powerOn() {
     /* uaehf.device a besoin de la ROM de démarrage d'UAE : seulement si DH2: ou DH3: est branché (voir plus haut) */
     if (fsPath.dh2 || fsPath.dh3) lines.splice(0, lines.length, ...lines.filter(l => !/^(boot_rom_uae|uaeboard)=/.test(l)));
     let content = "/cfg/a1200.uae", options = coreOptions();
+    if (amb) options = { amiberry_crop_overscan: S.center ? "enabled" : "disabled", amiberry_statusline: "disabled" };
     if (cd) {
       /* Modèle CD32 du cœur ; l'extension est cherchée sous le nom kick40060.CD32.ext (inutile avec la ROM complète) */
       if (cdRoms.ext) machine.writeFile("/sys/kick40060.CD32.ext", cdRoms.ext);
@@ -256,7 +291,7 @@ function onStarted() {
   starting = false; running = true; setPowerUi("on");
   $("#statMode").textContent = (E._cd ? "CD32, " : modelOf(E) === "a500" ? "A500, " : "") + (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "")
     + (modelOf(E) !== "a500" && ACCEL[E.accel] && ACCEL[E.accel].label ? ", " + ACCEL[E.accel].label : "")
-    + (E.compat === "max" ? ", cycle exact" : "") + (E._profile ? ", profil " + E._profile : "") + (E._whd ? ", WHDLoad" + (whdGame && whdGame.whdCfg ? " (réglages de la base)" : "") : "");
+    + (E.core === "winuae6" ? ", WinUAE 6" : "") + (E.compat === "max" ? ", cycle exact" : "") + (E._profile ? ", profil " + E._profile : "") + (E._whd ? ", WHDLoad" + (whdGame && whdGame.whdCfg ? " (réglages de la base)" : "") : "");
   showCaptureHint();
 }
 function onStopped() {

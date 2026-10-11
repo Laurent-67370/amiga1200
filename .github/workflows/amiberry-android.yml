@@ -43,6 +43,21 @@ jobs:
           grep -n 'SDL_HINT_ORIENTATIONS' "$G"
           ! grep -rn 'Portrait PortraitUpsideDown' amiberry/src
 
+      - name: Interface en français et plus facile au doigt
+        run: |
+          # Traduction française de l'interface Android (accueil, réglages, fichiers)
+          cp -r android-amiberry/res/values-fr amiberry/android/app/src/main/res/
+          # Interface avancée (ImGui) : zones de toucher élargies et barres de défilement plus larges sur Android
+          python3 - amiberry/src/osdep/gui/main_window.cpp <<'PY'
+          import sys
+          p = sys.argv[1]; s = open(p, encoding="utf-8").read()
+          a = "\tstyle.ScaleAllSizes(scaling_factor);\n"
+          assert s.count(a) == 1, "repère ScaleAllSizes introuvable"
+          s = s.replace(a, a + "#ifdef __ANDROID__\n\tstyle.TouchExtraPadding = ImVec2(8.0f * scaling_factor, 8.0f * scaling_factor);\n\tstyle.ScrollbarSize = std::max(style.ScrollbarSize, 26.0f * scaling_factor);\n#endif\n")
+          open(p, "w", encoding="utf-8").write(s)
+          PY
+          grep -n -A4 'style.ScaleAllSizes(scaling_factor)' amiberry/src/osdep/gui/main_window.cpp
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

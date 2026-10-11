@@ -7,6 +7,8 @@ L'action `.github/workflows/amiberry-android.yml` compile l'application Android 
 - Architectures : arm64 (téléphones et tablettes) et x86_64.
 - Modification : l'écran de l'émulateur et son interface de réglages s'affichent toujours à l'horizontale
   (en portrait, l'interface ImGui d'Amiberry est illisible sur un téléphone).
+- Interface Android traduite en français (`res/values-fr/strings.xml`, 342 textes sur 364 ; les termes techniques restent tels quels).
+- Interface avancée (ImGui) : zones de toucher élargies et barres de défilement plus larges.
 - Signature : `amiberry-perso.jks`, une clé à usage personnel (mot de passe dans l'action). La garder permet d'installer
   les versions suivantes par-dessus sans perdre ses réglages. Ce n'est pas la clé du Play Store : la version officielle
   et celle-ci ne peuvent pas se mettre à jour l'une l'autre.

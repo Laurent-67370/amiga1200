@@ -1,0 +1,99 @@
+/* ===== Interface façon Amiberry 8 (thème par défaut : Workbench gris, police Topaz, accent bleu) ===== */
+@font-face{font-family:"Amiga Topaz";src:url(data:font/ttf;base64,__TOPAZ__) format("truetype");font-display:swap}
+#ambGui{--ab-base:#aaa;--ab-frame:#969696;--ab-text:#000;--ab-dis:#646464;--ab-acc:#0055aa;--ab-sel:#c3d9d9;--ab-border:#787878;
+  --ab-shine:#fff;--ab-btn:#aaa;--ab-hover:#b9b9b9;
+  position:fixed;inset:0;z-index:40;background:#5a5a5a;display:flex;align-items:stretch;justify-content:center;
+  font:16px/1.25 "Amiga Topaz",ui-monospace,Menlo,Consolas,monospace;color:var(--ab-text)}
+#ambGui[hidden]{display:none}
+#ambGui *{font-family:inherit}
+/* Topaz est dessinée sur une grille de 8 pixels : 16 px partout, sinon les lettres se brouillent */
+#ambGui :is(p,span,label,b,small,li,dt,dd,button,select,input,h3,div,a,legend){font-size:16px}
+#ambGui[data-running] #idlePower{display:none}
+.ab-win{display:flex;flex-direction:column;width:100%;max-width:1280px;background:var(--ab-base);
+  border:1px solid;border-color:var(--ab-shine) var(--ab-border) var(--ab-border) var(--ab-shine)}
+.ab-title{display:flex;align-items:center;gap:8px;height:24px;padding:0 6px;background:var(--ab-acc);color:#fff;flex:none;user-select:none}
+.ab-title .ab-tname{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ab-title .ab-tstate{font-size:14px;opacity:.9;white-space:nowrap}
+.ab-main{flex:1;display:flex;min-height:0;padding:6px;gap:6px}
+.ab-bevel{border:1px solid;border-color:var(--ab-shine) var(--ab-border) var(--ab-border) var(--ab-shine)}
+.ab-sunk{border:1px solid;border-color:var(--ab-border) var(--ab-shine) var(--ab-shine) var(--ab-border)}
+/* Barre latérale */
+.ab-side{width:22%;min-width:190px;max-width:300px;display:flex;flex-direction:column;gap:6px;padding:6px;overflow:auto;flex:none}
+.ab-search{width:100%;box-sizing:border-box;background:var(--ab-frame);color:var(--ab-text);border:1px solid;
+  border-color:var(--ab-border) var(--ab-shine) var(--ab-shine) var(--ab-border);padding:4px 6px}
+.ab-search::placeholder{color:#3c3c3c}
+.ab-check{display:flex;align-items:center;gap:7px;cursor:pointer}
+#ambGui input[type=checkbox],#ambGui input[type=radio]{accent-color:var(--ab-acc);width:16px;height:16px}
+.ab-group{margin:8px 0 2px;padding:0 4px;font-size:13px;letter-spacing:.06em;color:#2c2c2c;display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.ab-group::before{content:"▾";font-size:11px}
+.ab-group.shut::before{content:"▸"}
+.ab-item{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:none;border:0;padding:4px 6px;cursor:pointer;color:var(--ab-text);font-size:15.5px}
+.ab-item:hover{background:var(--ab-hover)}
+.ab-item[aria-current="true"]{background:var(--ab-acc);color:#fff}
+.ab-item svg{width:18px;height:18px;flex:none;fill:currentColor}
+/* Panneau */
+.ab-pane{flex:1;min-width:0;display:flex;flex-direction:column;overflow:auto;padding:12px 10px 10px}
+.ab-box{position:relative;border:1px solid;border-color:var(--ab-border) var(--ab-shine) var(--ab-shine) var(--ab-border);
+  padding:16px 14px 12px;margin:6px 0 10px;min-height:0}
+.ab-box>.ab-legend{position:absolute;top:-10px;left:10px;background:var(--ab-base);padding:0 6px;font-size:16px}
+/* Barre du bas */
+.ab-bar{display:flex;gap:8px;padding:8px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--ab-border);flex:none}
+.ab-bar .ab-sp{flex:1}
+.ab-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:96px;height:32px;padding:0 12px;
+  background:var(--ab-btn);color:var(--ab-text);font-size:15px;cursor:pointer;border:1px solid;
+  border-color:var(--ab-shine) var(--ab-border) var(--ab-border) var(--ab-shine)}
+.ab-btn:hover{background:var(--ab-hover)}
+.ab-btn:active{border-color:var(--ab-border) var(--ab-shine) var(--ab-shine) var(--ab-border);background:var(--ab-frame)}
+.ab-btn[hidden]{display:none}
+.ab-btn svg{width:16px;height:16px;fill:currentColor}
+.ab-btn.ab-primary{background:var(--ab-acc);color:#fff}
+/* Contenus repris de la page : fenêtres, lecteurs, accueil */
+#ambGui .veil{position:static;display:block;background:none;padding:0;inset:auto;z-index:auto}
+#ambGui .veil>.win{width:auto;max-height:none;box-shadow:none;border:0;background:none;display:block}
+#ambGui .veil .titlebar,#ambGui .veil .actions{display:none}
+#ambGui .veil .body{padding:0;overflow:visible;background:none;color:var(--ab-text)}
+#ambGui h3{font-size:16px;font-weight:normal;margin:14px 0 6px;padding-bottom:3px;border-bottom:1px solid var(--ab-border)}
+#ambGui .ab-sec:first-child h3{margin-top:0}
+#ambGui p,#ambGui .hint,#ambGui li,#ambGui label{color:var(--ab-text)}
+#ambGui .hint{color:#2e2e2e;font-size:14.5px}
+#ambGui .opt{gap:6px 16px}
+#ambGui .gad,#ambGui button.gad{font-family:inherit}
+#ambGui .lib-list>*{background:var(--ab-frame)}
+#ambGui .drives{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin:0;padding:0;background:none;border:0}
+#ambGui .drive{background:var(--ab-base);border:1px solid;border-color:var(--ab-shine) var(--ab-border) var(--ab-border) var(--ab-shine);box-shadow:none}
+#ambGui .drive .media{background:var(--ab-frame);color:var(--ab-text)}
+#ambGui[data-panel="floppy"] .drives>.drive:not(#drive-df0):not(#drive-df1),
+#ambGui[data-panel="hd"] .drives>#drive-df0,#ambGui[data-panel="hd"] .drives>#drive-df1{display:none}
+#ambGui[data-panel="hd"] .drives>.hd-extra{display:block}
+/* Accueil (jouer) sur fond gris */
+#ambGui #idle{position:static;display:block!important;inset:auto;background:none;padding:0;min-height:0;color:var(--ab-text)}
+#ambGui #idle .launch{min-height:0}
+#ambGui #idle .l-title,#ambGui #lTitle{color:var(--ab-text)}
+#ambGui #idle .l-kick{background:var(--ab-frame);border:1px solid;border-color:var(--ab-border) var(--ab-shine) var(--ab-shine) var(--ab-border);color:var(--ab-text)}
+#ambGui #idle .l-kick-name,#ambGui #idle .l-kick-lbl,#ambGui #lWhat{color:var(--ab-text)}
+#ambGui #idle .l-model-sel{background:var(--ab-base);color:var(--ab-text);border:1px solid;border-color:var(--ab-shine) var(--ab-border) var(--ab-border) var(--ab-shine)}
+#ambGui #idle .l-tile{background:var(--ab-base);border:1px solid;border-color:var(--ab-shine) var(--ab-border) var(--ab-border) var(--ab-shine)}
+#ambGui #idle .l-name,#ambGui #idle .l-steps b{color:var(--ab-text)}
+#ambGui #idle .l-sub,#ambGui #idle .l-steps span{color:#333}
+#ambGui #idle .l-steps li::before{background:var(--ab-acc);border-radius:0}
+#ambGui #idle .l-more{color:var(--ab-acc)}
+.ab-about dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;margin:0 0 10px}
+.ab-about dt{color:#2e2e2e}
+.ab-about dd{margin:0}
+/* Bouton de retour à l'interface pendant l'émulation */
+.ab-open{position:fixed;right:10px;top:10px;z-index:30;font:14px "Amiga Topaz",monospace;background:#aaa;color:#000;cursor:pointer;
+  border:1px solid;border-color:#fff #787878 #787878 #fff;padding:4px 10px}
+.ab-open[hidden]{display:none}
+/* Fenêtres secondaires (profil, nouveau disque, fichiers) au-dessus de l'interface */
+.veil.open{z-index:60}
+/* Téléphone : barre latérale en bandeau défilant */
+@media (max-width:760px){
+  .ab-main{flex-direction:column;padding:4px}
+  .ab-side{width:auto;max-width:none;min-width:0;flex:none;overflow-x:auto;padding:4px}
+  .ab-nav{display:flex;flex-wrap:nowrap;gap:4px}
+  .ab-search,.ab-check{display:none}
+  .ab-group{display:none}
+  .ab-item{white-space:nowrap;width:auto;flex:none}
+  .ab-pane{padding:10px 6px}
+  .ab-btn{min-width:0;flex:1 1 auto}
+}

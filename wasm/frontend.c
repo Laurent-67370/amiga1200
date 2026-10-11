@@ -52,9 +52,11 @@ static void video_cb(const void *data, unsigned w, unsigned h, size_t pitch) {
   vid_w = w; vid_h = h; frame_count++;
   uint8_t *o = rgba;
   if (pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888) {
+    /* XRGB → RGBA en mots de 32 bits (WebAssembly est petit-boutiste : octets R, G, B, A en mémoire) */
+    uint32_t *o32 = (uint32_t *)rgba;
     for (unsigned y = 0; y < h; y++) {
       const uint32_t *s = (const uint32_t *)((const uint8_t *)data + y * pitch);
-      for (unsigned x = 0; x < w; x++) { uint32_t p = s[x]; *o++ = p >> 16; *o++ = p >> 8; *o++ = p; *o++ = 255; }
+      for (unsigned x = 0; x < w; x++) { uint32_t p = s[x]; *o32++ = 0xff000000u | ((p & 0xff) << 16) | (p & 0xff00) | ((p >> 16) & 0xff); }
     }
   } else {
     for (unsigned y = 0; y < h; y++) {

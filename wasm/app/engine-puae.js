@@ -133,7 +133,10 @@ function amberryLines(model, key) {
   if (+E.fast > 0) l.push("fastmem_size=" + (+E.fast));
   if (acc !== ACCEL.none) l.push("cpu_model=" + acc.cpu, "fpu_model=" + (acc.fpu === "cpu" ? acc.cpu : acc.fpu), "cpu_24bit_addressing=false", "cpu_multiplier=" + acc.mult);
   if (E.cpu === "max") l.push("cpu_speed=max", "cpu_cycle_exact=false", "cpu_memory_cycle_exact=false");
+  /* Les préréglages de WinUAE sont au cycle près : « Rapide » revient à l'équivalent du mode normal de PUAE
+     (sans prélecture ni cycle exact), plus de deux fois moins de calcul */
   if (E.compat === "max") l.push("cycle_exact=true");
+  else l.push("cycle_exact=false", "cpu_compatible=false");
   l.push("ntsc=" + (E.region === "ntsc"));
   if (E.floppy === "turbo") l.push("floppy_speed=0");
   if (S.center) l.push("gfx_auto_crop=true");

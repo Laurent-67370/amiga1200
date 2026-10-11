@@ -14,20 +14,24 @@ const BOING = '<svg class="boing" viewBox="0 0 40 40" aria-hidden="true"><defs>'
   + '<circle cx="20" cy="20" r="18" fill="url(#bbShade)"/></g><circle cx="20" cy="20" r="18" fill="none" stroke="rgba(0,0,0,.35)"/></svg>';
 
 let themeModel = null;
-function applyModelTheme(model) {
-  model = model === "a500" ? "a500" : model === "cd32" ? "cd32" : "a1200";
-  if (model === themeModel) return;
-  themeModel = model;
+/* Trois habillages : beige et Workbench 1.3 (A500, A600), Workbench 3.1 (A1200, A3000, A4000), noir (CD32, CDTV) */
+const THEME_OF = { a500: "a500", a600: "a500", a1200: "a1200", a3000: "a1200", a4000: "a1200", cd32: "cd32", cdtv: "cd32" };
+const THEME_NAME = { a500: "Amiga 500", a600: "Amiga 600", a1200: "Amiga 1200", a3000: "Amiga 3000", a4000: "Amiga 4000", cd32: "Amiga CD32", cdtv: "Amiga CDTV" };
+function applyModelTheme(which) {
+  which = THEME_NAME[which] ? which : "a1200";
+  if (which === themeModel) return;
+  themeModel = which;
+  const model = THEME_OF[which];
   document.documentElement.dataset.model = model;
-  const label = model === "a500" ? "AMIGA 500" : model === "cd32" ? "AMIGA CD32" : "AMIGA 1200";
+  const label = THEME_NAME[which].toUpperCase();
   const brand = $(".monitor-foot .brand"), name = $(".wedge .name");
   if (brand) { const led = $("#monLed"); brand.innerHTML = AMIGA_TICK + label; if (led) brand.appendChild(led); }
   if (name) name.innerHTML = AMIGA_TICK + label;
-  const wedge = $(".wedge"); if (wedge) wedge.setAttribute("aria-label", "Boîtier " + (model === "a500" ? "Amiga 500" : model === "cd32" ? "Amiga CD32" : "Amiga 1200"));
+  const wedge = $(".wedge"); if (wedge) wedge.setAttribute("aria-label", "Boîtier " + THEME_NAME[which]);
   const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.content = model === "a500" ? "#0b3a73" : "#2b303b";
 }
 /* Le modèle qui tourne (réglages effectifs, profil compris), sinon celui choisi pour le prochain allumage */
-const themeNow = () => applyModelTheme(running || starting ? (E._cd ? "cd32" : modelOf(E)) : S.model);
+const themeNow = () => applyModelTheme(running || starting ? (E._cd ? E._cd : modelOf(E)) : S.model);
 { const _r = renderLauncher; renderLauncher = async () => { await _r(); themeNow(); decorateLauncher(); }; }
 { const _s = onStarted; onStarted = (...a) => { _s(...a); themeNow(); }; }
 $$('#winSettings input[name="model"]').forEach(i => i.addEventListener("change", () => setTimeout(themeNow)));

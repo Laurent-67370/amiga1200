@@ -496,10 +496,6 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
 .ctl-grid .gad{justify-self:start;min-width:120px}
 .ctl-grid [data-padrow]{padding:2px 6px}
 .ctl-grid [data-padrow].on{background:var(--ab-acc);color:#fff}
-/* Bouton de retour à l'interface pendant l'émulation */
-.ab-open{position:fixed;right:10px;top:10px;z-index:30;font:14px "Amiga Topaz",monospace;background:#aaa;color:#000;cursor:pointer;
-  border:1px solid;border-color:#fff #787878 #787878 #fff;padding:4px 10px}
-.ab-open[hidden]{display:none}
 /* Fenêtres secondaires (profil, nouveau disque, fichiers) au-dessus de l'interface */
 .veil.open{z-index:60}
 /* Téléphone : barre latérale en bandeau défilant */
@@ -697,7 +693,7 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
   <section class="vkbd wb" id="vkbd" aria-label="Clavier Amiga" hidden></section>
 
   <p class="footnote">
-    Cœur d'émulation : <a href="https://github.com/libretro/libretro-uae" rel="noopener">PUAE</a> (libretro-uae, licence GPL v2), le moteur de WinUAE compilé en WebAssembly.
+    Cœurs d'émulation, compilés en WebAssembly : <b>WinUAE 6</b> par défaut, par le cœur libretro d'<a href="https://github.com/BlitterStudio/amiberry" rel="noopener">Amiberry</a> 8.3 (licence GPL v3), et <a href="https://github.com/libretro/libretro-uae" rel="noopener">PUAE</a> (libretro-uae, base WinUAE 5, licence GPL v2), au choix dans les réglages.
     Kickstart de secours : AROS, version d'août 2026 (AROS Public License). Les ROM Kickstart et disquettes Workbench d'origine ne sont pas fournies : importez les vôtres.
     Vos fichiers restent dans ce navigateur (stockage local) et ne sont envoyés nulle part.
     <br><a href="sae/">Ancienne version (cœur SAE)</a>, conservée pour comparer : elle partage la même Bibliothèque.
@@ -3820,6 +3816,22 @@ async function renderModelRom() {
 $$('#winSettings input[name="model"]').forEach(i => i.addEventListener("change", () => setTimeout(renderModelRom)));
 $("#btnSettings").addEventListener("click", () => setTimeout(renderModelRom));
 
+/* Lecteurs : ce qu'est chaque unité sur le modèle choisi (ou allumé) */
+function baseDriveLabel(tag) {
+  const m = running || starting ? (E._cd || modelOf(E)) : S.model;
+  if (m === "cd32" || m === "cdtv") return tag === "df0" || tag === "df1" ? "pas de lecteur sur la console" : "non branché sur la console";
+  if (isHd(tag) && m === "a500") return "non branché (l'A500 n'a pas d'IDE)";
+  if (isHd(tag) && m === "a3000") return "disque UAE (SCSI)";
+  if (tag === "dh0") return m === "a4000" ? "IDE interne 3,5\"" : "IDE interne 2,5\"";
+  return BASE_LABEL[tag];
+}
+{ const _d = driveLabel; driveLabel = tag => { const t = _d(tag); return t === BASE_LABEL[tag] ? baseDriveLabel(tag) : t; }; }
+const refreshDriveLabels = () => DRIVE_TAGS.forEach(refreshDriveLabel);
+{ const _r = renderLauncher; renderLauncher = async (...a) => { await _r(...a); refreshDriveLabels(); }; }
+{ const _s = onStarted; onStarted = (...a) => { _s(...a); refreshDriveLabels(); }; }
+$$('#winSettings input[name="model"]').forEach(i => i.addEventListener("change", () => setTimeout(refreshDriveLabels)));
+refreshDriveLabels();
+
 /* =========================================================
    Panneaux d'Amiberry : Chipset, mémoire Chip/Slow, commandes personnalisées, configurations nommées
    =========================================================
@@ -4387,7 +4399,7 @@ function abState() {
 function abOpen(panel) {
   if (!ab.el) abBuild();
   if (!ab.open) {
-    abAdopt(); ab.open = true; ab.el.hidden = false; $("#abOpenBtn").hidden = true;
+    abAdopt(); ab.open = true; ab.el.hidden = false;
     if (running && !paused) { ab.pausedByGui = true; $("#btnPause").click(); }
     document.body.style.overflow = "hidden";
   }
@@ -4398,7 +4410,7 @@ function abClose() {
   if (!ab.open) return;
   const content = ab.el.querySelector(".ab-content"), park = ab.el.querySelector(".ab-park");
   for (const el of [...content.children]) park.appendChild(el);
-  abRelease(); ab.open = false; ab.el.hidden = true; $("#abOpenBtn").hidden = false;
+  abRelease(); ab.open = false; ab.el.hidden = true;
   document.body.style.overflow = "";
   if (ab.pausedByGui && running && paused) $("#btnPause").click();
   ab.pausedByGui = false;
@@ -4415,7 +4427,9 @@ async function abAction(a) {
 
 /* Raccordements : boutons de la page, fenêtres, allumage et extinction, F12 */
 { const _sw = showWin; showWin = id => { if (AB_WIN_PANEL[id]) return abOpen(AB_WIN_PANEL[id]); return _sw(id); }; }
-$("#btnSettings").onclick = () => abOpen("quick");
+/* Le bouton Réglages de la barre devient celui de l'interface (elle s'ouvre sur le dernier panneau affiché) */
+{ const b = $("#btnSettings"); b.onclick = () => abOpen(); b.title = "Interface de l'émulateur (F12)";
+  const t = [...b.childNodes].reverse().find(n => n.nodeType === 3 && n.textContent.trim()); if (t) t.textContent = " Interface"; }
 $("#btnLib").onclick = () => abOpen("library");
 $("#btnStates").onclick = () => abOpen("states");
 $("#btnHelp").onclick = () => abOpen("about");
@@ -4427,11 +4441,9 @@ window.addEventListener("keydown", e => {
   e.preventDefault(); e.stopPropagation();
   ab.open ? abClose() : abOpen();
 }, true);
-{ const b = document.createElement("button"); b.id = "abOpenBtn"; b.className = "ab-open"; b.type = "button"; b.textContent = "Interface (F12)"; b.hidden = true;
-  b.onclick = () => abOpen(); document.body.appendChild(b); }
 abWrapSettings();
 /* Au chargement : l'interface, sauf si l'Amiga se rallume tout seul (rallumage, reprise d'une sauvegarde) */
-if (!sessionStorage.getItem("a1200.autostart")) abOpen("play"); else $("#abOpenBtn").hidden = false;
+if (!sessionStorage.getItem("a1200.autostart")) abOpen("play");
 
 /* Profil par disque */
 let profTarget = null;

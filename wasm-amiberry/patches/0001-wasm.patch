@@ -1,8 +1,19 @@
 diff --git a/libretro/libretro.cpp b/libretro/libretro.cpp
-index 096730bb..12e7aa20 100644
+index 096730bb..e4b42f60 100644
 --- a/libretro/libretro.cpp
 +++ b/libretro/libretro.cpp
-@@ -3516,7 +3516,8 @@ static void apply_port_device(struct uae_prefs* prefs, unsigned port, unsigned d
+@@ -2960,7 +2960,9 @@ libretro_crop libretro_compute_crop(void)
+ 		return libretro_cache_crop(crop);
+ 	}
+ 
+-	if (libretro_cached_crop_valid && libretro_cached_crop_frame == libretro_crop_frame)
++	/* Le recadrage automatique parcourt toute l'image : en WebAssembly il doublait le temps de calcul d'une
++	   image. Il est refait toutes les 8 images (le cadrage ne change presque jamais d'une image à l'autre) */
++	if (libretro_cached_crop_valid && libretro_crop_frame - libretro_cached_crop_frame < 8)
+ 		return libretro_cached_crop;
+ 
+ 	if (!libretro_crop_was_enabled) {
+@@ -3516,7 +3518,8 @@ static void apply_port_device(struct uae_prefs* prefs, unsigned port, unsigned d
  		TCHAR joy_name[8];
  		_sntprintf(joy_name, sizeof joy_name, _T("joy%d"), joy_index);
  		name = joy_name;
@@ -12,7 +23,7 @@ index 096730bb..12e7aa20 100644
  	}
  	inputdevice_joyport_config(prefs, name, nullptr, static_cast<int>(port), mode, -1, 0, true);
  }
-@@ -5299,6 +5300,9 @@ size_t retro_serialize_size(void)
+@@ -5299,6 +5302,9 @@ size_t retro_serialize_size(void)
  	total += currprefs.z3chipmem.size;
  	total += currprefs.mbresmem_low.size;
  	total += currprefs.mbresmem_high.size;
@@ -93,3 +104,33 @@ index cbed0018..9216d1fb 100644
  
  	write_log (_T("MMAN: Total physical RAM %llu MB, all RAM %llu MB\n"),
  	           totalphys64 >> 20, total64 >> 20);
+diff --git a/src/vm.cpp b/src/vm.cpp
+index c7b0e1b5..cdb92a43 100644
+--- a/src/vm.cpp
++++ b/src/vm.cpp
+@@ -382,11 +382,25 @@ static void *try_reserve(uintptr_t try_addr, size_t size, int flags)
+         try_addr = 0x10000000;
+     }
+     #endif
++#ifdef __EMSCRIPTEN__
++	/* WebAssembly : un mmap anonyme y est un malloc suivi d'une mise à zéro de toute la réserve (2 s pour 384 Mo
++	   au démarrage). La mémoire prise au sommet du tas par sbrk est neuve, donc déjà à zéro : l'allocateur
++	   d'Emscripten ne rend jamais de mémoire (MORECORE_CANNOT_TRIM) */
++	(void)mmap_flags;
++	{
++		const uintptr_t align = 65536;
++		void *base = sbrk(size + align);
++		if (base == (void *) -1)
++			return NULL;
++		address = (void *) (((uintptr_t) base + align - 1) & ~(align - 1));
++	}
++#else
+ 	address = mmap((void *) try_addr, size, PROT_NONE, mmap_flags, -1, 0);
+ 	if (address == MAP_FAILED) {
+ 		return NULL;
+ 	}
+ #endif
++#endif
+ #ifdef CPU_64_BIT
+ 	if (flags & UAE_VM_32BIT) {
+ 		uintptr_t end = (uintptr_t) address + size;

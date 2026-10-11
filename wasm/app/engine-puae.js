@@ -133,7 +133,10 @@ function amberryLines(model, key) {
   if (+E.fast > 0) l.push("fastmem_size=" + (+E.fast));
   if (acc !== ACCEL.none) l.push("cpu_model=" + acc.cpu, "fpu_model=" + (acc.fpu === "cpu" ? acc.cpu : acc.fpu), "cpu_24bit_addressing=false", "cpu_multiplier=" + acc.mult);
   if (E.cpu === "max") l.push("cpu_speed=max", "cpu_cycle_exact=false", "cpu_memory_cycle_exact=false");
+  /* Les préréglages de WinUAE sont au cycle près : « Rapide » revient à l'équivalent du mode normal de PUAE
+     (sans prélecture ni cycle exact), plus de deux fois moins de calcul */
   if (E.compat === "max") l.push("cycle_exact=true");
+  else l.push("cycle_exact=false", "cpu_compatible=false");
   l.push("ntsc=" + (E.region === "ntsc"));
   if (E.floppy === "turbo") l.push("floppy_speed=0");
   if (S.center) l.push("gfx_auto_crop=true");
@@ -180,7 +183,7 @@ async function powerOn() {
     if (cd && !cdRoms) throw new Error("ROM de la CD32 absentes de la Bibliothèque");
     const a500 = modelOf(E) === "a500";
     /* Cœur : celui de la sauvegarde reprise, sinon celui des réglages */
-    E.core = resume ? E.core || "puae" : S.core || "puae";
+    E.core = resume ? E.core || "puae" : S.core || "winuae6"; /* une sauvegarde sans cœur noté date de PUAE */
     const amb = E.core === "winuae6";
     const romId = cd ? cdRoms.id : resume ? resume.ctx.rom : a500 ? await romFor500() : S.romId;
     if (a500 && romId === "aros" && !resume) toast("Mode Amiga 500 sans Kickstart 1.3 : AROS démarre, mais la plupart des jeux A500 ont besoin du vrai Kickstart (Réglages).", true);

@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Amiga 1200">
+<meta name="apple-mobile-web-app-title" content="Amiga">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="description" content="Émulateur Amiga 1200 (68EC020, chipset AGA, IDE Gayle) dans le navigateur.">
 <script src="coi.js"></script>
@@ -953,7 +953,7 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
       <p>L'écran se comporte comme un pavé tactile : glissez un doigt pour déplacer la souris, touchez pour cliquer, touchez deux fois et gardez le doigt posé pour glisser une fenêtre ou une icône. Pour les menus, posez deux doigts (bouton droit), glissez jusqu'à l'option et relevez.</p>
       <h3>Installer l'application</h3>
       <p>L'émulateur s'installe comme une application et fonctionne ensuite <b>sans connexion</b>, avec votre Bibliothèque et vos réglages.
-      <b>Android, ordinateur (Chrome, Edge)</b> : bouton <b>Installer</b> de la barre d'outils, ou menu du navigateur → « Installer l'application ».
+      <b>Android, ordinateur (Chrome, Edge)</b> : bouton <b>Installer</b> en bas de l'interface (ou dans la barre d'outils), ou menu du navigateur → « Installer l'application ». L'application se lance depuis son icône, en plein écran sur téléphone ; sur ordinateur, elle ouvre aussi les fichiers .adf, .hdf, .lha et .uae (clic droit → Ouvrir avec).
       <b>iPhone, iPad</b> : dans Safari, bouton Partager → « Sur l'écran d'accueil ». Les mises à jour arrivent seules, au lancement suivant une connexion.</p>
       <h3>Amiga 500</h3>
       <p>Certains jeux A500 ne fonctionnent pas sur l'A1200. Choisissez <b>Amiga 500</b> sur l'écran d'accueil ou dans Réglages (68000, chipset OCS, 512 Ko de Chip + 512 Ko de Slow), ou seulement pour une disquette dans son <b>Profil</b>. Importez le Kickstart 1.3 dans Réglages : il est choisi automatiquement pour l'A500. Les jeux A500 installés sur disque dur se lancent, eux, avec WHDLoad sur l'A1200.</p>
@@ -976,7 +976,7 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
       <h3>A600, A3000, A4000 et CDTV</h3>
       <p>Avec le cœur WinUAE 6, le choix du modèle (accueil ou Réglages) s'étend à l'<b>Amiga 600</b> (68000, ECS, IDE), à l'<b>Amiga 3000</b> (68030, ECS, 32 bits), à l'<b>Amiga 4000</b> (68030, AGA, 32 bits ; la carte accélératrice 68040/68060 et la carte RTG s'y ajoutent) et au <b>CDTV</b> (la console CD de 1991). Le Kickstart est pris tout seul dans la Bibliothèque : celui du modèle s'il y est (reconnu par son empreinte), sinon un voisin (3.1 de l'A4000 pour l'A3000…), sinon celui de l'A1200, sinon AROS. Le CDTV demande un Kickstart 1.3 et sa ROM d'extension de 256 Ko ; ses CD se lancent comme ceux de la CD32, d'une touche sur leur vignette.</p>
       <h3>Configurations, chipset et commandes</h3>
-      <p>Dans l'interface (F12) : <b>Configurations</b> enregistre tous les réglages sous un nom et les recharge d'un clic ; l'export .uae s'ouvre dans WinUAE ou Amiberry, et l'import lit leurs fichiers (disquettes, disques et Kickstart retrouvés dans la Bibliothèque par leur nom). <b>Chipset</b> choisit OCS, ECS ou AGA (WinUAE 6), le blitter et les collisions ; <b>Mémoire</b> la Chip et la Slow. <b>Entrées</b> change les touches du joystick au clavier et le rôle de chaque bouton de la manette (bouton, direction ou touche du clavier), pour tous les jeux ou pour le jeu en place seulement.</p>
+      <p>Dans l'interface (F12) : <b>Configurations</b> enregistre tous les réglages sous un nom et les recharge d'un clic ; l'export .uae s'ouvre dans WinUAE ou Amiberry, et l'import lit leurs fichiers (disquettes, disques et Kickstart retrouvés dans la Bibliothèque par leur nom). <b>Chipset</b> choisit OCS, ECS ou AGA (WinUAE 6), le blitter et les collisions ; <b>Mémoire</b> la Chip et la Slow. <b>Entrées</b> change les touches du joystick au clavier et le rôle de chaque bouton de la manette (bouton, direction ou touche du clavier), pour tous les jeux ou pour le jeu en place seulement. Pour jouer <b>à deux</b>, choisissez « 2 joueurs » dans Entrées : la première manette branchée garde le port joystick, la deuxième (ou le clavier, en ZQSD) prend le port de la souris.</p>
       <h3>Copier des fichiers sur le disque dur</h3>
       <p>Amiga éteint, le bouton <b>Fichiers…</b> du disque dur (ou de la Bibliothèque) copie des fichiers, un dossier entier ou des archives .lha et .zip, décompressées au passage, dans le dossier de votre choix. C'est la façon d'installer des jeux <b>WHDLoad</b> : copiez WHDLoad dans C:, vos jeux .lha dans Jeux, et vos Kickstart dans Devs:Kickstarts avec le bouton prévu (1.3 pour l'A500, 3.1 pour l'A1200). Disques OFS et FFS ; PFS, SFS et FFS à cache de dossiers ne sont pas modifiables ici.</p>
       <h3>Sauvegardes d'état</h3>
@@ -1373,7 +1373,8 @@ async function powerOn() {
     /* uaehf.device a besoin de la ROM de démarrage d'UAE : seulement si DH2: ou DH3: est branché (voir plus haut) */
     if (fsPath.dh2 || fsPath.dh3 || (model === "a3000" && HD_TAGS.some(t => fsPath[t]))) lines.splice(0, lines.length, ...lines.filter(l => !/^(boot_rom_uae|uaeboard)=/.test(l)));
     let content = "/cfg/a1200.uae", options = coreOptions();
-    if (amb) options = { amiberry_crop_overscan: S.center ? "enabled" : "disabled", amiberry_statusline: "disabled", amiberry_midi_output: S.midi === "on" ? "libretro" : "disabled" };
+    if (amb) options = { amiberry_crop_overscan: S.center ? "enabled" : "disabled", amiberry_statusline: "disabled", amiberry_midi_output: S.midi === "on" ? "libretro" : "disabled",
+      amiberry_joyport_order: "21" }; /* manette 0 au port joystick, manette 1 au port souris quand il reçoit un joystick (2 joueurs) */
     /* Chipset, blitter, collisions, mémoire Chip et Slow (panneau Chipset) : pas pour WHDLoad ni les consoles CD */
     if (!cd && !whd) { if (amb) lines.push(...chipLines(E)); else Object.assign(options, chipOpts(E)); }
     if (cd) {
@@ -2379,23 +2380,52 @@ DB.del = async id => {
   return _dbDel(id);
 };
 
-/* Application installable : bouton Installer (Chrome, Edge, Android) et état de la copie hors ligne */
-(function pwa() {
-  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
-  let deferred = null; const b = $("#btnInstall");
-  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferred = e; if (!standalone) b.hidden = false; });
-  window.addEventListener("appinstalled", () => { b.hidden = true; deferred = null; toast("Amiga 1200 est installé : il fonctionne aussi hors ligne."); });
-  b.onclick = async () => { if (!deferred) return; deferred.prompt(); try { await deferred.userChoice; } catch (x) {} deferred = null; b.hidden = true; };
-  if (!("serviceWorker" in navigator) || !window.caches) return;
-  /* Premier passage : prévenir quand tout est copié pour le hors ligne */
+/* Application installable : bouton Installer (Chrome, Edge, Android ; explication pour iPhone et iPad), fichiers
+   ouverts avec l'application installée, et état de la copie hors ligne */
+const pwa = {
+  deferred: null,
+  standalone: matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone === true,
+  ios: /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1),
+  offline: null
+};
+function pwaRefresh() {
+  const can = !pwa.standalone && (!!pwa.deferred || pwa.ios);
+  $$('#btnInstall, [data-ab="install"]').forEach(b => b.hidden = !can);
+  const st = $("#abOffline");
+  if (st) st.textContent = (pwa.standalone ? "application installée" : "dans le navigateur") + " ; copie hors ligne "
+    + (pwa.offline === true ? "prête" : pwa.offline === false ? "en cours…" : "indisponible dans ce navigateur");
+}
+async function pwaInstall() {
+  if (pwa.deferred) { const d = pwa.deferred; pwa.deferred = null; d.prompt(); try { await d.userChoice; } catch (x) {} pwaRefresh(); }
+  else if (pwa.ios) toast("Sur iPhone et iPad : dans Safari, touchez le bouton Partager, puis « Sur l'écran d'accueil ».");
+}
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); pwa.deferred = e; pwaRefresh(); });
+window.addEventListener("appinstalled", () => { pwa.deferred = null; pwaRefresh(); toast("L'émulateur est installé : il se lance depuis son icône et fonctionne aussi hors ligne."); });
+$("#btnInstall").onclick = pwaInstall;
+/* Fichiers ouverts avec l'application installée (ordinateur : clic droit → Ouvrir avec) : rangés dans la Bibliothèque */
+if ("launchQueue" in window) launchQueue.setConsumer(async p => {
+  if (!p.files || !p.files.length) return;
+  const files = await Promise.all(p.files.map(h => h.getFile()));
+  importBatch = files;
+  for (const f of files) {
+    if (/\.uae$/i.test(f.name)) await cfgImport(await f.text(), f.name);
+    else await importFile(f, null);
+  }
+});
+(function pwaOffline() {
+  if (!("serviceWorker" in navigator) || !window.caches) return pwaRefresh();
+  pwa.offline = false; pwaRefresh();
+  /* Copie hors ligne : prête quand la page, les deux cœurs et AROS sont dans le cache de la version en service */
+  const KEY_FILES = ["./", "amiberry.wasm", "amiberry.js", "puae.wasm", "aros-rom.bin.gz"];
   navigator.serviceWorker.ready.then(async () => {
-    let said = false; try { said = localStorage.getItem("a1200.offline") === "1"; } catch (x) {}
-    if (said) return;
-    for (let i = 0; i < 60; i++) {
+    let said = false; try { said = localStorage.getItem("a1200.offline2") === "1"; } catch (x) {}
+    for (let i = 0; i < 90; i++) {
       for (const k of await caches.keys()) {
-        if (k.startsWith("a1200-") && await (await caches.open(k)).match("puae.wasm")) {
-          try { localStorage.setItem("a1200.offline", "1"); } catch (x) {}
-          if (!running) toast("L'émulateur est prêt à fonctionner hors ligne.");
+        if (!k.startsWith("a1200-")) continue;
+        const c = await caches.open(k);
+        if ((await Promise.all(KEY_FILES.map(f => c.match(f, { ignoreSearch: true })))).every(Boolean)) {
+          pwa.offline = true; pwaRefresh();
+          if (!said) { try { localStorage.setItem("a1200.offline2", "1"); } catch (x) {} if (!running) toast("L'émulateur est prêt à fonctionner hors ligne."); }
           return;
         }
       }
@@ -3903,8 +3933,16 @@ function keyName(code, ctl) {
   if (ctl && ctl.labels && ctl.labels[code]) return ctl.labels[code];
   return KEY_NAMES[code] || code.replace(/^Key|^Digit/, "").replace(/^Numpad/, "Pavé ");
 }
-const ctlDefault = () => ({ keys: Object.assign({}, CTL_KEYS_DEF), pad: {}, labels: {} });
-const ctlClean = c => Object.assign(ctlDefault(), c ? JSON.parse(JSON.stringify(c)) : {});
+/* Joueur 2 au clavier : ZQSD sur un clavier AZERTY (WASD en QWERTY), tir sur Maj et Ctrl gauches */
+const CTL_KEYS2_DEF = { up: "KeyW", down: "KeyS", left: "KeyA", right: "KeyD", fire1: "ShiftLeft", fire2: "ControlLeft" };
+const ctlDefault = () => ({ keys: Object.assign({}, CTL_KEYS_DEF), keys2: Object.assign({}, CTL_KEYS2_DEF), pad: {},
+  labels: S.kbd === "azerty" ? { KeyW: "Z", KeyA: "Q" } : {}, players: "1", swap: false, p2kbd: false });
+function ctlClean(c) {
+  const d = ctlDefault(); if (!c) return d;
+  c = JSON.parse(JSON.stringify(c));
+  for (const k of ["keys", "keys2", "labels"]) c[k] = Object.assign(d[k], c[k] || {});
+  return Object.assign(d, c);
+}
 /* Jeu en place : celui dont les commandes propres s'appliquent (jeu WHDLoad, CD, sinon disquette DF0: ou disque DH0:) */
 async function ctlTargetRec() {
   for (const ref of [whdGame, cdGame, mounted.df0, mounted.dh0]) {
@@ -3915,16 +3953,38 @@ async function ctlTargetRec() {
 }
 async function ctlEffective() { const r = await ctlTargetRec(); return ctlClean(r && r.ctl ? r.ctl : S.ctl); }
 /* Joystick au clavier (JOY_KEYS, lu par la page) et manette (padMap, lu par le frontal) */
+/* Joystick du joueur 2 au clavier (port souris) */
+const JOY_KEYS2 = {};
+let joyKeys2 = 0;
+function joyKey2(e) {
+  if (!running || !machine || !(e.code in JOY_KEYS2) || openWin) return;
+  const bit = 1 << JOY_KEYS2[e.code];
+  joyKeys2 = e.type === "keydown" ? joyKeys2 | bit : joyKeys2 & ~bit;
+  machine.setJoy(1, joyKeys2);
+}
+window.addEventListener("keydown", joyKey2);
+window.addEventListener("keyup", joyKey2);
+/* Deux joueurs : WinUAE 6 branche un joystick sur le port souris (la souris est alors débranchée, comme sur l'Amiga) ;
+   PUAE y envoie déjà la deuxième manette, avec la souris */
+const RETRO_JOYPAD = 1, RETRO_MOUSE = 2;
+function ctlPorts(c) {
+  if (!machine || !running || E.core !== "winuae6" || E._cd) return;
+  machine.M._retro_set_controller_port_device(0, c.players === "2" ? RETRO_JOYPAD : RETRO_MOUSE);
+}
 function ctlInstall(c) {
   for (const k of Object.keys(JOY_KEYS)) delete JOY_KEYS[k];
   for (const [act, code] of Object.entries(c.keys)) if (code) JOY_KEYS[code] = CTL_BIT[act];
+  for (const k of Object.keys(JOY_KEYS2)) delete JOY_KEYS2[k];
+  if (c.players === "2" && c.p2kbd) for (const [act, code] of Object.entries(c.keys2)) if (code) JOY_KEYS2[code] = CTL_BIT[act];
+  joyKeys2 = 0;
   const pm = {};
   for (const [j, v] of Object.entries(c.pad)) {
     if (v === "none") pm[j] = -1;
     else if (v in CTL_BIT) pm[j] = CTL_BIT[v];
     else if (/^key:/.test(v)) pm[j] = v.slice(4);
   }
-  if (machine) machine.padMap = pm;
+  if (machine) { machine.padMap = pm; machine.padSwap = !!c.swap; if (running) machine.setJoy(1, 0); }
+  ctlPorts(c);
 }
 async function ctlApply() { try { ctlInstall(await ctlEffective()); } catch (e) { console.warn(e); } }
 { const _s = onStarted; onStarted = (...x) => { _s(...x); ctlApply(); }; }
@@ -3935,6 +3995,15 @@ const ctlUi = { scope: "all", rec: null, c: null, capture: null, timer: 0 };
   box.innerHTML = `<h3>Commandes personnalisées</h3>
     <div class="opt"><label><input type="radio" name="ctlScope" value="all"> Pour tous les jeux</label>
       <label><input type="radio" name="ctlScope" value="game"> Pour ce jeu seulement<span class="ctl-game"></span></label></div>
+    <h3>Joueurs</h3>
+    <div class="opt"><label><input type="radio" name="ctlPlayers" value="1"> 1 joueur (la souris sur le port 1)</label>
+      <label><input type="radio" name="ctlPlayers" value="2"> 2 joueurs (le joueur 2 sur le port 1, à la place de la souris)</label></div>
+    <div class="opt"><label><input type="checkbox" class="ctl-swap"> Échanger les manettes (la première branchée joue en joueur 2)</label></div>
+    <p class="hint ctl-pads"></p>
+    <div class="opt ctl-p2"><label><input type="checkbox" class="ctl-p2kbd"> Joueur 2 au clavier :</label></div>
+    <div class="ctl-grid ctl-keys2"></div>
+    <p class="hint">Joueur 1 : première manette branchée, ou le clavier (réglage « Flèches + Ctrl droit ») ; il garde le port joystick (port 2). Joueur 2 : deuxième manette, ou le clavier. Avec WinUAE 6, la souris ne répond plus en mode 2 joueurs, comme sur un vrai Amiga quand le second joystick prend sa place ; avec PUAE, elle reste active sur le même port. Le réglage s'applique tout de suite, même pendant une partie.</p>
+    <h3>Touches et boutons</h3>
     <p class="hint">Joystick au clavier (réglage « Flèches + Ctrl droit » ci-dessus) : touchez un bouton, puis la touche voulue.</p>
     <div class="ctl-grid ctl-keys"></div>
     <p class="hint">Manette USB ou Bluetooth : chaque bouton peut devenir un bouton du joystick, une direction ou une touche du clavier de l'Amiga (F1, Espace…). Le bouton pressé s'allume dans la liste.</p>
@@ -3943,6 +4012,9 @@ const ctlUi = { scope: "all", rec: null, c: null, capture: null, timer: 0 };
   const stash = document.createElement("div"); stash.hidden = true; stash.id = "abStash"; stash.appendChild(box); document.body.appendChild(stash);
   box.addEventListener("change", e => {
     if (e.target.name === "ctlScope") return ctlScope(e.target.value);
+    if (e.target.name === "ctlPlayers") { ctlUi.c.players = e.target.value; return ctlSave(); }
+    if (e.target.classList.contains("ctl-swap")) { ctlUi.c.swap = e.target.checked; return ctlSave(); }
+    if (e.target.classList.contains("ctl-p2kbd")) { ctlUi.c.p2kbd = e.target.checked; return ctlSave(); }
     const j = e.target.dataset.pad; if (j === undefined) return;
     if (e.target.value === "key") return ctlCapture(k => { ctlUi.c.pad[j] = "key:" + k; }, e.target);
     if (e.target.value === "def") delete ctlUi.c.pad[j]; else ctlUi.c.pad[j] = e.target.value;
@@ -3951,6 +4023,8 @@ const ctlUi = { scope: "all", rec: null, c: null, capture: null, timer: 0 };
   box.addEventListener("click", e => {
     const b = e.target.closest("[data-key]");
     if (b) return ctlCapture(k => { ctlUi.c.keys[b.dataset.key] = k; }, b);
+    const b2 = e.target.closest("[data-key2]");
+    if (b2) return ctlCapture(k => { ctlUi.c.keys2[b2.dataset.key2] = k; }, b2);
     if (e.target.closest(".ctl-reset")) { ctlUi.c = ctlDefault(); ctlSave(); }
   });
 }
@@ -3999,6 +4073,14 @@ function ctlRender() {
   box.querySelectorAll('input[name="ctlScope"]').forEach(i => i.checked = i.value === ctlUi.scope);
   box.querySelector(".ctl-keys").innerHTML = CTL_ACTS.map(([a, t]) => `<span>${t}</span><button class="gad" type="button" data-key="${a}"></button>`).join("");
   for (const [a] of CTL_ACTS) box.querySelector(`[data-key="${a}"]`).textContent = c.keys[a] ? keyName(c.keys[a], c) : "—";
+  box.querySelectorAll('input[name="ctlPlayers"]').forEach(i => i.checked = i.value === c.players);
+  box.querySelector(".ctl-swap").checked = !!c.swap;
+  box.querySelector(".ctl-p2kbd").checked = !!c.p2kbd;
+  const two = c.players === "2";
+  box.querySelector(".ctl-p2").hidden = !two;
+  const k2 = box.querySelector(".ctl-keys2"); k2.hidden = !two || !c.p2kbd;
+  k2.innerHTML = CTL_ACTS.map(([a, t]) => `<span>${t}</span><button class="gad" type="button" data-key2="${a}"></button>`).join("");
+  for (const [a] of CTL_ACTS) k2.querySelector(`[data-key2="${a}"]`).textContent = c.keys2[a] ? keyName(c.keys2[a], c) : "—";
   const opts = [["up", "Haut"], ["down", "Bas"], ["left", "Gauche"], ["right", "Droite"], ["fire1", "Tir 1"], ["fire2", "Tir 2"], ["none", "Aucun effet"]];
   box.querySelector(".ctl-pad").innerHTML = CTL_PAD.map(([j, name, def]) => {
     const v = c.pad[j], key = v && /^key:/.test(v) ? v.slice(4) : null;
@@ -4012,7 +4094,13 @@ function ctlRender() {
 function ctlLive() {
   const box = $("#abCtl");
   if (!box.isConnected || box.closest("[hidden]") || !box.offsetParent) { clearInterval(ctlUi.timer); return; }
-  const pads = navigator.getGamepads ? [...navigator.getGamepads()].filter(Boolean) : [];
+  const pads = navigator.getGamepads ? [...navigator.getGamepads()].filter(g => g && g.connected) : [];
+  /* Manettes vues par le navigateur (une manette n'apparaît qu'après un premier appui sur un de ses boutons) */
+  const sw = ctlUi.c && ctlUi.c.swap, who = [pads[sw ? 1 : 0], pads[sw ? 0 : 1]];
+  const nm = g => g ? g.id.replace(/\s*\(.*$/, "").slice(0, 40) || "manette" : "—";
+  const t = pads.length ? "Manettes : joueur 1 → " + nm(who[0]) + " ; joueur 2 → " + nm(who[1]) + "."
+    : "Aucune manette détectée : branchez-la, puis appuyez sur un de ses boutons.";
+  const el = box.querySelector(".ctl-pads"); if (el.textContent !== t) el.textContent = t;
   for (const el of box.querySelectorAll("[data-padrow]")) {
     const j = +el.dataset.padrow;
     el.classList.toggle("on", pads.some(g => g.buttons[j] && g.buttons[j].pressed));
@@ -4284,6 +4372,7 @@ function abBuild() {
       <button class="ab-btn" data-ab="quit" title="Quitter l'interface pour la présentation classique de la page">${abSvg("quit")} Quitter</button>
       <button class="ab-btn" data-ab="reload" title="Rallumer l'Amiga avec les réglages affichés">${abSvg("reload")} Recharger</button>
       <span class="ab-sp"></span>
+      <button class="ab-btn" data-ab="install" hidden title="Installer l'émulateur comme une application, utilisable hors ligne">${abSvg("download")} Installer</button>
       <button class="ab-btn ab-primary" data-ab="start">${abSvg("play")} <span>Démarrer</span></button>
       <button class="ab-btn" data-ab="help">${abSvg("help")} Aide</button>
     </div>
@@ -4297,6 +4386,7 @@ function abBuild() {
     <dt>Cœur par défaut</dt><dd>WinUAE 6, par le cœur libretro d'Amiberry 8.3 (GPL v3), compilé en WebAssembly</dd>
     <dt>Autre cœur</dt><dd>PUAE (base WinUAE 5, libretro)</dd>
     <dt>Kickstart libre</dt><dd>AROS (AROS Public License)</dd>
+    <dt>Hors ligne</dt><dd id="abOffline"></dd>
     <dt>Interface</dt><dd>inspirée de celle d'Amiberry ; police Amiga Topaz de Patrick Lauke (CC BY 3.0)</dd>
   </dl>`;
   const sound = document.createElement("div"); sound.id = "abSound";
@@ -4311,6 +4401,7 @@ function abBuild() {
   g.querySelector(".ab-search").oninput = () => abNav();
   g.querySelector(".ab-bar").onclick = e => { const b = e.target.closest("[data-ab]"); if (b) abAction(b.dataset.ab); };
   abNav();
+  pwaRefresh();
 }
 function abVisible(p) {
   if (!p) return false;
@@ -4418,6 +4509,7 @@ function abClose() {
 }
 async function abAction(a) {
   if (a === "help") return abShow("about");
+  if (a === "install") return pwaInstall();
   if (a === "quit") return abClose();
   if (a === "start") { if (running) return abClose(); return powerOn(); }
   if (a === "reset") { if (running) { $("#btnReset").click(); abClose(); } return; }

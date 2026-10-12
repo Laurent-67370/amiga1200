@@ -245,9 +245,14 @@ export class PuaeMachine {
   setJoy(port, mask) { this.joyMask[port] = mask; if (this.running) this.M._fe_joy(port, mask); }
   _pollGamepads() {
     if (!navigator.getGamepads) return;
-    const pads = navigator.getGamepads();
+    /* Joueur 1 = première manette branchée (port joystick), joueur 2 = la deuxième (port souris) ; padSwap les échange */
+    const list = [...navigator.getGamepads()].filter(g => g && g.connected);
+    const slot = this.padSwap ? [list[1], list[0]] : [list[0], list[1]];
+    const was = this._padOn || (this._padOn = [false, false]);
     for (let i = 0; i < 2; i++) {
-      const g = pads[i]; if (!g) continue;
+      const g = slot[i];
+      if (!g) { if (was[i]) { was[i] = false; this.M._fe_joy(i, this.joyMask[i]); } continue; } /* manette débranchée : plus rien d'enfoncé */
+      was[i] = true;
       const ax = g.axes[0] || 0, ay = g.axes[1] || 0, map = this.padMap || {};
       const prev = (this._padPrev || (this._padPrev = [[], []]))[i];
       let m = 0;
@@ -260,7 +265,7 @@ export class PuaeMachine {
         else if (on && t >= 0) m |= 1 << t;
         prev[j] = on;
       });
-      this.M._fe_joy(i === 0 ? 0 : 1, m | this.joyMask[i === 0 ? 0 : 1]);
+      this.M._fe_joy(i, m | this.joyMask[i]);
     }
   }
 

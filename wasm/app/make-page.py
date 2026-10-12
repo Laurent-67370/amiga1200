@@ -780,6 +780,11 @@ _topaz = base64.b64encode((APP / "amiga-topaz.ttf").read_bytes()).decode()
 rep("</style>", (APP / "amberry-gui-puae.css").read_text(encoding="utf-8").replace("__TOPAZ__", _topaz) + "</style>")
 # Disquettes IPF : converties à l'import en flux SCP (module ipf.js à part)
 rep("/* Profil par disque */", (APP / "ipf-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+# Exécutables Amiga (disquette de démarrage) et installations WHDLoad complétées avec les disquettes originales
+rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Programmes seuls et paquets d'installation WHDLoad</h3>
+      <p>Un <b>programme Amiga seul</b> (une intro, une démo en un fichier) s'importe comme une disquette : la page le met sur une disquette de démarrage qui le lance. Un <b>paquet d'installation WHDLoad</b> (le .slave et le script Install, sans les données du jeu) se reconnaît à l'import : touchez sa vignette, puis choisissez la ou les disquettes originales (.adf), ou le fichier demandé. La page suit le script Install comme l'Installer de l'Amiga — images de disquettes (DIC), fichiers copiés depuis la disquette, ou fichier unique — et le paquet devient un jeu prêt à lancer. Les installations RawDIC et Patcher (disquettes à format spécial) doivent être faites sur un Amiga ou dans WinUAE ; les fichiers compactés (XFD) ne sont pas décompactés.</p>
+      <h3>Copier des fichiers sur le disque dur</h3>''')
+rep("/* Profil par disque */", (APP / "whdinst-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 rep("<p>Disquettes .adf, .dms, .adz et ADF étendus.", "<p>Disquettes .adf, .dms, .adz, ADF étendus, .ipf (protégées, converties à l'import) et .scp.")
 page = page.replace('accept = ".adf,', 'accept = ".adf,.ipf,.scp,').replace('pickFile(tag === "dh0" ? ".hdf,.hdz,.zip,.gz" : ".adf,', 'pickFile(tag === "dh0" ? ".hdf,.hdz,.zip,.gz" : ".adf,.ipf,.scp,').replace('pickFile(".adf,', 'pickFile(".adf,.ipf,.scp,')
 rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Disquettes protégées (IPF, SCP)</h3>

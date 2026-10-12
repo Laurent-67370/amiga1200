@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Amiga 1200">
+<meta name="apple-mobile-web-app-title" content="Amiga">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="description" content="Émulateur Amiga 1200 (68EC020, chipset AGA, IDE Gayle) dans le navigateur.">
 <script src="coi.js"></script>
@@ -953,7 +953,7 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
       <p>L'écran se comporte comme un pavé tactile : glissez un doigt pour déplacer la souris, touchez pour cliquer, touchez deux fois et gardez le doigt posé pour glisser une fenêtre ou une icône. Pour les menus, posez deux doigts (bouton droit), glissez jusqu'à l'option et relevez.</p>
       <h3>Installer l'application</h3>
       <p>L'émulateur s'installe comme une application et fonctionne ensuite <b>sans connexion</b>, avec votre Bibliothèque et vos réglages.
-      <b>Android, ordinateur (Chrome, Edge)</b> : bouton <b>Installer</b> de la barre d'outils, ou menu du navigateur → « Installer l'application ».
+      <b>Android, ordinateur (Chrome, Edge)</b> : bouton <b>Installer</b> en bas de l'interface (ou dans la barre d'outils), ou menu du navigateur → « Installer l'application ». L'application se lance depuis son icône, en plein écran sur téléphone ; sur ordinateur, elle ouvre aussi les fichiers .adf, .hdf, .lha et .uae (clic droit → Ouvrir avec).
       <b>iPhone, iPad</b> : dans Safari, bouton Partager → « Sur l'écran d'accueil ». Les mises à jour arrivent seules, au lancement suivant une connexion.</p>
       <h3>Amiga 500</h3>
       <p>Certains jeux A500 ne fonctionnent pas sur l'A1200. Choisissez <b>Amiga 500</b> sur l'écran d'accueil ou dans Réglages (68000, chipset OCS, 512 Ko de Chip + 512 Ko de Slow), ou seulement pour une disquette dans son <b>Profil</b>. Importez le Kickstart 1.3 dans Réglages : il est choisi automatiquement pour l'A500. Les jeux A500 installés sur disque dur se lancent, eux, avec WHDLoad sur l'A1200.</p>
@@ -2379,23 +2379,52 @@ DB.del = async id => {
   return _dbDel(id);
 };
 
-/* Application installable : bouton Installer (Chrome, Edge, Android) et état de la copie hors ligne */
-(function pwa() {
-  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
-  let deferred = null; const b = $("#btnInstall");
-  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferred = e; if (!standalone) b.hidden = false; });
-  window.addEventListener("appinstalled", () => { b.hidden = true; deferred = null; toast("Amiga 1200 est installé : il fonctionne aussi hors ligne."); });
-  b.onclick = async () => { if (!deferred) return; deferred.prompt(); try { await deferred.userChoice; } catch (x) {} deferred = null; b.hidden = true; };
-  if (!("serviceWorker" in navigator) || !window.caches) return;
-  /* Premier passage : prévenir quand tout est copié pour le hors ligne */
+/* Application installable : bouton Installer (Chrome, Edge, Android ; explication pour iPhone et iPad), fichiers
+   ouverts avec l'application installée, et état de la copie hors ligne */
+const pwa = {
+  deferred: null,
+  standalone: matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone === true,
+  ios: /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1),
+  offline: null
+};
+function pwaRefresh() {
+  const can = !pwa.standalone && (!!pwa.deferred || pwa.ios);
+  $$('#btnInstall, [data-ab="install"]').forEach(b => b.hidden = !can);
+  const st = $("#abOffline");
+  if (st) st.textContent = (pwa.standalone ? "application installée" : "dans le navigateur") + " ; copie hors ligne "
+    + (pwa.offline === true ? "prête" : pwa.offline === false ? "en cours…" : "indisponible dans ce navigateur");
+}
+async function pwaInstall() {
+  if (pwa.deferred) { const d = pwa.deferred; pwa.deferred = null; d.prompt(); try { await d.userChoice; } catch (x) {} pwaRefresh(); }
+  else if (pwa.ios) toast("Sur iPhone et iPad : dans Safari, touchez le bouton Partager, puis « Sur l'écran d'accueil ».");
+}
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); pwa.deferred = e; pwaRefresh(); });
+window.addEventListener("appinstalled", () => { pwa.deferred = null; pwaRefresh(); toast("L'émulateur est installé : il se lance depuis son icône et fonctionne aussi hors ligne."); });
+$("#btnInstall").onclick = pwaInstall;
+/* Fichiers ouverts avec l'application installée (ordinateur : clic droit → Ouvrir avec) : rangés dans la Bibliothèque */
+if ("launchQueue" in window) launchQueue.setConsumer(async p => {
+  if (!p.files || !p.files.length) return;
+  const files = await Promise.all(p.files.map(h => h.getFile()));
+  importBatch = files;
+  for (const f of files) {
+    if (/\.uae$/i.test(f.name)) await cfgImport(await f.text(), f.name);
+    else await importFile(f, null);
+  }
+});
+(function pwaOffline() {
+  if (!("serviceWorker" in navigator) || !window.caches) return pwaRefresh();
+  pwa.offline = false; pwaRefresh();
+  /* Copie hors ligne : prête quand la page, les deux cœurs et AROS sont dans le cache de la version en service */
+  const KEY_FILES = ["./", "amiberry.wasm", "amiberry.js", "puae.wasm", "aros-rom.bin.gz"];
   navigator.serviceWorker.ready.then(async () => {
-    let said = false; try { said = localStorage.getItem("a1200.offline") === "1"; } catch (x) {}
-    if (said) return;
-    for (let i = 0; i < 60; i++) {
+    let said = false; try { said = localStorage.getItem("a1200.offline2") === "1"; } catch (x) {}
+    for (let i = 0; i < 90; i++) {
       for (const k of await caches.keys()) {
-        if (k.startsWith("a1200-") && await (await caches.open(k)).match("puae.wasm")) {
-          try { localStorage.setItem("a1200.offline", "1"); } catch (x) {}
-          if (!running) toast("L'émulateur est prêt à fonctionner hors ligne.");
+        if (!k.startsWith("a1200-")) continue;
+        const c = await caches.open(k);
+        if ((await Promise.all(KEY_FILES.map(f => c.match(f, { ignoreSearch: true })))).every(Boolean)) {
+          pwa.offline = true; pwaRefresh();
+          if (!said) { try { localStorage.setItem("a1200.offline2", "1"); } catch (x) {} if (!running) toast("L'émulateur est prêt à fonctionner hors ligne."); }
           return;
         }
       }
@@ -4284,6 +4313,7 @@ function abBuild() {
       <button class="ab-btn" data-ab="quit" title="Quitter l'interface pour la présentation classique de la page">${abSvg("quit")} Quitter</button>
       <button class="ab-btn" data-ab="reload" title="Rallumer l'Amiga avec les réglages affichés">${abSvg("reload")} Recharger</button>
       <span class="ab-sp"></span>
+      <button class="ab-btn" data-ab="install" hidden title="Installer l'émulateur comme une application, utilisable hors ligne">${abSvg("download")} Installer</button>
       <button class="ab-btn ab-primary" data-ab="start">${abSvg("play")} <span>Démarrer</span></button>
       <button class="ab-btn" data-ab="help">${abSvg("help")} Aide</button>
     </div>
@@ -4297,6 +4327,7 @@ function abBuild() {
     <dt>Cœur par défaut</dt><dd>WinUAE 6, par le cœur libretro d'Amiberry 8.3 (GPL v3), compilé en WebAssembly</dd>
     <dt>Autre cœur</dt><dd>PUAE (base WinUAE 5, libretro)</dd>
     <dt>Kickstart libre</dt><dd>AROS (AROS Public License)</dd>
+    <dt>Hors ligne</dt><dd id="abOffline"></dd>
     <dt>Interface</dt><dd>inspirée de celle d'Amiberry ; police Amiga Topaz de Patrick Lauke (CC BY 3.0)</dd>
   </dl>`;
   const sound = document.createElement("div"); sound.id = "abSound";
@@ -4311,6 +4342,7 @@ function abBuild() {
   g.querySelector(".ab-search").oninput = () => abNav();
   g.querySelector(".ab-bar").onclick = e => { const b = e.target.closest("[data-ab]"); if (b) abAction(b.dataset.ab); };
   abNav();
+  pwaRefresh();
 }
 function abVisible(p) {
   if (!p) return false;
@@ -4418,6 +4450,7 @@ function abClose() {
 }
 async function abAction(a) {
   if (a === "help") return abShow("about");
+  if (a === "install") return pwaInstall();
   if (a === "quit") return abClose();
   if (a === "start") { if (running) return abClose(); return powerOn(); }
   if (a === "reset") { if (running) { $("#btnReset").click(); abClose(); } return; }

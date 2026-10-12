@@ -4,18 +4,34 @@
    2. garde une copie de tous les fichiers du site pour fonctionner hors ligne (application installée).
    La version est le résumé des fichiers publiés : à chaque publication le navigateur voit un service worker
    différent, télécharge la nouvelle copie, puis efface l'ancienne. */
-const VERSION = "20e18ce2256c";
+const VERSION = "65984c9fe315";
 const CACHE = "a1200-" + VERSION;
 const FILES = ["./", "index.html", "puae.js", "puae.wasm", "amiberry.js", "amiberry.wasm", "whd/WHDLoad", "whd/boot-data.zip", "sons/drive_click.wav", "sons/drive_spin.wav", "sons/drive_spinnd.wav", "sons/drive_startup.wav", "sons/drive_snatch.wav", "puae-frontend.js", "adf.js", "hdf.js", "lha.js", "ffs.js", "coi.js",
   "aros-rom.bin.gz", "aros-ext.bin.gz", "manifest.webmanifest", "icon-192.png", "icon-512.png",
   "icon-maskable-512.png", "apple-touch-icon.png"];
 
-self.addEventListener("install", e => {
-  e.waitUntil(caches.open(CACHE)
-    .then(c => c.addAll(FILES.map(f => new Request(f, { cache: "reload" }))))
-    .catch(err => console.warn("copie hors ligne incomplète", err)) /* le site reste utilisable en ligne */
-    .then(() => self.skipWaiting()));
-});
+/* Copie de chaque fichier (trois essais) : une coupure passagère ne fait plus perdre toute la copie hors ligne */
+async function copy(c, f) {
+  for (let i = 0; i < 3; i++) {
+    try { const r = await fetch(new Request(f, { cache: "reload" })); if (r.ok) { await c.put(f, r); return true; } } catch (x) {}
+  }
+  return false;
+}
+self.addEventListener("install", e => e.waitUntil((async () => {
+  const c = await caches.open(CACHE);
+  const files = FILES.filter((f, i, a) => a.indexOf(f) === i);
+  const ok = await Promise.all(files.map(f => copy(c, f)));
+  const lost = files.filter((f, i) => !ok[i]);
+  if (lost.length) {
+    /* Mise à jour incomplète : l'ancienne version reste en service (complète, hors ligne), nouvel essai au prochain
+       lancement. Premier passage : on s'installe quand même (l'isolation est indispensable), les fichiers manquants
+       se copient quand la page les demande. */
+    const older = (await caches.keys()).some(k => k.startsWith("a1200-") && k !== CACHE);
+    console.warn("copie hors ligne incomplète :", lost.join(", "));
+    if (older) { await caches.delete(CACHE); throw new Error("mise à jour reportée"); }
+  }
+  await self.skipWaiting();
+})()));
 self.addEventListener("activate", e => e.waitUntil(
   caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith("a1200-") && k !== CACHE).map(k => caches.delete(k))))
     .then(() => self.clients.claim())));
@@ -44,7 +60,14 @@ self.addEventListener("fetch", e => {
       const hit = await caches.match(key, { cacheName: CACHE, ignoreSearch: true });
       if (hit) return isolate(hit);
     }
-    try { return isolate(await fetch(r)); }
+    try {
+      const res = await fetch(r);
+      /* Fichier du site absent de la copie (premier passage interrompu) : copié au passage */
+      if (ours && res.ok && FILES.includes(url.pathname.slice(scope.pathname.length) || "./")) {
+        const c = await caches.open(CACHE); await c.put(url.pathname.slice(scope.pathname.length) || "./", res.clone());
+      }
+      return isolate(res);
+    }
     catch (err) {
       /* Hors ligne : une page inconnue retombe sur l'émulateur */
       if (ours && r.mode === "navigate") { const p = await caches.match("./", { cacheName: CACHE }); if (p) return isolate(p); }

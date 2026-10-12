@@ -57,6 +57,22 @@ jobs:
           open(p, "w", encoding="utf-8").write(s)
           PY
           grep -n -A4 'style.ScaleAllSizes(scaling_factor)' amiberry/src/osdep/gui/main_window.cpp
+          # Échelle de l'interface avancée : toute la fenêtre de la version ordinateur (860 x 720) tient à l'écran,
+          # à l'identique, au lieu d'un agrandissement selon la plus grande dimension qui la faisait déborder (texte tronqué)
+          python3 - amiberry/src/osdep/dpi_handler.cpp <<'PY'
+          import sys, re
+          p = sys.argv[1]; s = open(p, encoding="utf-8").read()
+          old = re.search(r"int max_dim = std::max\(bounds\.w, bounds\.h\);.*?return \(scaling_factor < 1\.0f\) \? 1\.0f : scaling_factor;", s, re.S)
+          assert old, "échelle Android introuvable"
+          new = ("const float long_side = static_cast<float>(std::max(bounds.w, bounds.h));\n"
+                 "        const float short_side = static_cast<float>(std::min(bounds.w, bounds.h));\n"
+                 "        // Paysage : la fenêtre 860 x 720 de l'interface tient entièrement à l'écran\n"
+                 "        const float scaling_factor = std::min(long_side / 860.0f, short_side / 720.0f);\n"
+                 "        return (scaling_factor < 1.0f) ? 1.0f : scaling_factor;")
+          s = s[:old.start()] + new + s[old.end():]
+          open(p, "w", encoding="utf-8").write(s)
+          PY
+          grep -n -B2 -A6 'long_side' amiberry/src/osdep/dpi_handler.cpp
 
       - uses: actions/setup-java@v4
         with:

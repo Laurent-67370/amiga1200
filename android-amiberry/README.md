@@ -9,6 +9,7 @@ L'action `.github/workflows/amiberry-android.yml` compile l'application Android 
   (en portrait, l'interface ImGui d'Amiberry est illisible sur un téléphone).
 - Interface Android traduite en français (`res/values-fr/strings.xml`, 342 textes sur 364 ; les termes techniques restent tels quels).
 - Interface avancée (ImGui) : zones de toucher élargies et barres de défilement plus larges.
+- Interface avancée à l'échelle de l'écran : la fenêtre de la version ordinateur (860 x 720) tient entière en paysage, sans texte tronqué.
 - Signature : `amiberry-perso.jks`, une clé à usage personnel (mot de passe dans l'action). La garder permet d'installer
   les versions suivantes par-dessus sans perdre ses réglages. Ce n'est pas la clé du Play Store : la version officielle
   et celle-ci ne peuvent pas se mettre à jour l'une l'autre.

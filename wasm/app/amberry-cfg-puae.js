@@ -69,8 +69,16 @@ function keyName(code, ctl) {
   if (ctl && ctl.labels && ctl.labels[code]) return ctl.labels[code];
   return KEY_NAMES[code] || code.replace(/^Key|^Digit/, "").replace(/^Numpad/, "Pavé ");
 }
-const ctlDefault = () => ({ keys: Object.assign({}, CTL_KEYS_DEF), pad: {}, labels: {} });
-const ctlClean = c => Object.assign(ctlDefault(), c ? JSON.parse(JSON.stringify(c)) : {});
+/* Joueur 2 au clavier : ZQSD sur un clavier AZERTY (WASD en QWERTY), tir sur Maj et Ctrl gauches */
+const CTL_KEYS2_DEF = { up: "KeyW", down: "KeyS", left: "KeyA", right: "KeyD", fire1: "ShiftLeft", fire2: "ControlLeft" };
+const ctlDefault = () => ({ keys: Object.assign({}, CTL_KEYS_DEF), keys2: Object.assign({}, CTL_KEYS2_DEF), pad: {},
+  labels: S.kbd === "azerty" ? { KeyW: "Z", KeyA: "Q" } : {}, players: "1", swap: false, p2kbd: false });
+function ctlClean(c) {
+  const d = ctlDefault(); if (!c) return d;
+  c = JSON.parse(JSON.stringify(c));
+  for (const k of ["keys", "keys2", "labels"]) c[k] = Object.assign(d[k], c[k] || {});
+  return Object.assign(d, c);
+}
 /* Jeu en place : celui dont les commandes propres s'appliquent (jeu WHDLoad, CD, sinon disquette DF0: ou disque DH0:) */
 async function ctlTargetRec() {
   for (const ref of [whdGame, cdGame, mounted.df0, mounted.dh0]) {
@@ -81,16 +89,38 @@ async function ctlTargetRec() {
 }
 async function ctlEffective() { const r = await ctlTargetRec(); return ctlClean(r && r.ctl ? r.ctl : S.ctl); }
 /* Joystick au clavier (JOY_KEYS, lu par la page) et manette (padMap, lu par le frontal) */
+/* Joystick du joueur 2 au clavier (port souris) */
+const JOY_KEYS2 = {};
+let joyKeys2 = 0;
+function joyKey2(e) {
+  if (!running || !machine || !(e.code in JOY_KEYS2) || openWin) return;
+  const bit = 1 << JOY_KEYS2[e.code];
+  joyKeys2 = e.type === "keydown" ? joyKeys2 | bit : joyKeys2 & ~bit;
+  machine.setJoy(1, joyKeys2);
+}
+window.addEventListener("keydown", joyKey2);
+window.addEventListener("keyup", joyKey2);
+/* Deux joueurs : WinUAE 6 branche un joystick sur le port souris (la souris est alors débranchée, comme sur l'Amiga) ;
+   PUAE y envoie déjà la deuxième manette, avec la souris */
+const RETRO_JOYPAD = 1, RETRO_MOUSE = 2;
+function ctlPorts(c) {
+  if (!machine || !running || E.core !== "winuae6" || E._cd) return;
+  machine.M._retro_set_controller_port_device(0, c.players === "2" ? RETRO_JOYPAD : RETRO_MOUSE);
+}
 function ctlInstall(c) {
   for (const k of Object.keys(JOY_KEYS)) delete JOY_KEYS[k];
   for (const [act, code] of Object.entries(c.keys)) if (code) JOY_KEYS[code] = CTL_BIT[act];
+  for (const k of Object.keys(JOY_KEYS2)) delete JOY_KEYS2[k];
+  if (c.players === "2" && c.p2kbd) for (const [act, code] of Object.entries(c.keys2)) if (code) JOY_KEYS2[code] = CTL_BIT[act];
+  joyKeys2 = 0;
   const pm = {};
   for (const [j, v] of Object.entries(c.pad)) {
     if (v === "none") pm[j] = -1;
     else if (v in CTL_BIT) pm[j] = CTL_BIT[v];
     else if (/^key:/.test(v)) pm[j] = v.slice(4);
   }
-  if (machine) machine.padMap = pm;
+  if (machine) { machine.padMap = pm; machine.padSwap = !!c.swap; if (running) machine.setJoy(1, 0); }
+  ctlPorts(c);
 }
 async function ctlApply() { try { ctlInstall(await ctlEffective()); } catch (e) { console.warn(e); } }
 { const _s = onStarted; onStarted = (...x) => { _s(...x); ctlApply(); }; }
@@ -101,6 +131,15 @@ const ctlUi = { scope: "all", rec: null, c: null, capture: null, timer: 0 };
   box.innerHTML = `<h3>Commandes personnalisées</h3>
     <div class="opt"><label><input type="radio" name="ctlScope" value="all"> Pour tous les jeux</label>
       <label><input type="radio" name="ctlScope" value="game"> Pour ce jeu seulement<span class="ctl-game"></span></label></div>
+    <h3>Joueurs</h3>
+    <div class="opt"><label><input type="radio" name="ctlPlayers" value="1"> 1 joueur (la souris sur le port 1)</label>
+      <label><input type="radio" name="ctlPlayers" value="2"> 2 joueurs (le joueur 2 sur le port 1, à la place de la souris)</label></div>
+    <div class="opt"><label><input type="checkbox" class="ctl-swap"> Échanger les manettes (la première branchée joue en joueur 2)</label></div>
+    <p class="hint ctl-pads"></p>
+    <div class="opt ctl-p2"><label><input type="checkbox" class="ctl-p2kbd"> Joueur 2 au clavier :</label></div>
+    <div class="ctl-grid ctl-keys2"></div>
+    <p class="hint">Joueur 1 : première manette branchée, ou le clavier (réglage « Flèches + Ctrl droit ») ; il garde le port joystick (port 2). Joueur 2 : deuxième manette, ou le clavier. Avec WinUAE 6, la souris ne répond plus en mode 2 joueurs, comme sur un vrai Amiga quand le second joystick prend sa place ; avec PUAE, elle reste active sur le même port. Le réglage s'applique tout de suite, même pendant une partie.</p>
+    <h3>Touches et boutons</h3>
     <p class="hint">Joystick au clavier (réglage « Flèches + Ctrl droit » ci-dessus) : touchez un bouton, puis la touche voulue.</p>
     <div class="ctl-grid ctl-keys"></div>
     <p class="hint">Manette USB ou Bluetooth : chaque bouton peut devenir un bouton du joystick, une direction ou une touche du clavier de l'Amiga (F1, Espace…). Le bouton pressé s'allume dans la liste.</p>
@@ -109,6 +148,9 @@ const ctlUi = { scope: "all", rec: null, c: null, capture: null, timer: 0 };
   const stash = document.createElement("div"); stash.hidden = true; stash.id = "abStash"; stash.appendChild(box); document.body.appendChild(stash);
   box.addEventListener("change", e => {
     if (e.target.name === "ctlScope") return ctlScope(e.target.value);
+    if (e.target.name === "ctlPlayers") { ctlUi.c.players = e.target.value; return ctlSave(); }
+    if (e.target.classList.contains("ctl-swap")) { ctlUi.c.swap = e.target.checked; return ctlSave(); }
+    if (e.target.classList.contains("ctl-p2kbd")) { ctlUi.c.p2kbd = e.target.checked; return ctlSave(); }
     const j = e.target.dataset.pad; if (j === undefined) return;
     if (e.target.value === "key") return ctlCapture(k => { ctlUi.c.pad[j] = "key:" + k; }, e.target);
     if (e.target.value === "def") delete ctlUi.c.pad[j]; else ctlUi.c.pad[j] = e.target.value;
@@ -117,6 +159,8 @@ const ctlUi = { scope: "all", rec: null, c: null, capture: null, timer: 0 };
   box.addEventListener("click", e => {
     const b = e.target.closest("[data-key]");
     if (b) return ctlCapture(k => { ctlUi.c.keys[b.dataset.key] = k; }, b);
+    const b2 = e.target.closest("[data-key2]");
+    if (b2) return ctlCapture(k => { ctlUi.c.keys2[b2.dataset.key2] = k; }, b2);
     if (e.target.closest(".ctl-reset")) { ctlUi.c = ctlDefault(); ctlSave(); }
   });
 }
@@ -165,6 +209,14 @@ function ctlRender() {
   box.querySelectorAll('input[name="ctlScope"]').forEach(i => i.checked = i.value === ctlUi.scope);
   box.querySelector(".ctl-keys").innerHTML = CTL_ACTS.map(([a, t]) => `<span>${t}</span><button class="gad" type="button" data-key="${a}"></button>`).join("");
   for (const [a] of CTL_ACTS) box.querySelector(`[data-key="${a}"]`).textContent = c.keys[a] ? keyName(c.keys[a], c) : "—";
+  box.querySelectorAll('input[name="ctlPlayers"]').forEach(i => i.checked = i.value === c.players);
+  box.querySelector(".ctl-swap").checked = !!c.swap;
+  box.querySelector(".ctl-p2kbd").checked = !!c.p2kbd;
+  const two = c.players === "2";
+  box.querySelector(".ctl-p2").hidden = !two;
+  const k2 = box.querySelector(".ctl-keys2"); k2.hidden = !two || !c.p2kbd;
+  k2.innerHTML = CTL_ACTS.map(([a, t]) => `<span>${t}</span><button class="gad" type="button" data-key2="${a}"></button>`).join("");
+  for (const [a] of CTL_ACTS) k2.querySelector(`[data-key2="${a}"]`).textContent = c.keys2[a] ? keyName(c.keys2[a], c) : "—";
   const opts = [["up", "Haut"], ["down", "Bas"], ["left", "Gauche"], ["right", "Droite"], ["fire1", "Tir 1"], ["fire2", "Tir 2"], ["none", "Aucun effet"]];
   box.querySelector(".ctl-pad").innerHTML = CTL_PAD.map(([j, name, def]) => {
     const v = c.pad[j], key = v && /^key:/.test(v) ? v.slice(4) : null;
@@ -178,7 +230,13 @@ function ctlRender() {
 function ctlLive() {
   const box = $("#abCtl");
   if (!box.isConnected || box.closest("[hidden]") || !box.offsetParent) { clearInterval(ctlUi.timer); return; }
-  const pads = navigator.getGamepads ? [...navigator.getGamepads()].filter(Boolean) : [];
+  const pads = navigator.getGamepads ? [...navigator.getGamepads()].filter(g => g && g.connected) : [];
+  /* Manettes vues par le navigateur (une manette n'apparaît qu'après un premier appui sur un de ses boutons) */
+  const sw = ctlUi.c && ctlUi.c.swap, who = [pads[sw ? 1 : 0], pads[sw ? 0 : 1]];
+  const nm = g => g ? g.id.replace(/\s*\(.*$/, "").slice(0, 40) || "manette" : "—";
+  const t = pads.length ? "Manettes : joueur 1 → " + nm(who[0]) + " ; joueur 2 → " + nm(who[1]) + "."
+    : "Aucune manette détectée : branchez-la, puis appuyez sur un de ses boutons.";
+  const el = box.querySelector(".ctl-pads"); if (el.textContent !== t) el.textContent = t;
   for (const el of box.querySelectorAll("[data-padrow]")) {
     const j = +el.dataset.padrow;
     el.classList.toggle("on", pads.some(g => g.buttons[j] && g.buttons[j].pressed));

@@ -7,8 +7,9 @@
       les disquettes originales : la page lit le script Install, comme le ferait l'Installer d'AmigaOS, et en tire
       ce qu'il faut — disques entiers (DIC : Disk.1, Disk.2…), fichiers copiés depuis la disquette (Files), ou un
       fichier unique (SingleFile). Elle les ajoute à l'archive, qui devient un jeu prêt à lancer. Les
-      installations RawDIC et Patcher (formats de pistes particuliers) demandent leur programme d'imagerie sur un
-      vrai Amiga : elles ne sont pas faites ici. */
+      installations RawDIC et Patcher (formats de pistes particuliers) se font dans l'Amiga émulé : la page démarre
+      sur un petit volume Inst: avec les outils du paquet utilisateur de WHDLoad (whd/WHDLoad_usr.lha, distribué
+      tel quel) et lance la commande que le script Install aurait lancée, puis récupère les fichiers produits. */
 
 /* ---- Lecture des fichiers d'une disquette (OFS/FFS, sans écriture) ---- */
 function adfFiles(u8) {
@@ -181,6 +182,7 @@ function instPlan(src, appName) {
     }
   };
   if (branch) run(Array.isArray(branch[0]) || branch.length === 0 ? branch : [branch]);
+  plan.lastFile = String(V["#last-file"] || "");
   return plan;
 }
 /* Motif AmigaDOS → expression régulière (#? = *, ? = un caractère, (a|b), [a-z], ~ = sauf) */
@@ -283,10 +285,11 @@ async function whdInstall(rec) {
   const info = whdInstallInfo(u8, app);
   if (!info) { rec.inst = { done: true }; await DB.put(rec); return launchWhd(rec); }
   const v = info.plan.version, kind = WHD_KINDS[v] || "inconnue";
-  if (v === 0 || v === 1 || v === 4 || v === 6) {
-    toast(rec.name + " est un paquet d'installation WHDLoad de type " + kind + " : il faut l'installer sur un vrai Amiga (ou WinUAE) avec ses outils, puis importer le jeu installé. La page sait installer les types DIC, fichiers et fichier unique.", true);
+  if (v === 4 || v === 6) {
+    toast(rec.name + " est un paquet d'installation WHDLoad de type " + kind + " : il faut l'installer sur un Amiga (ou WinUAE), puis importer le jeu installé.", true);
     return;
   }
+  if (v === 0 || v === 1) return instAsk(rec, info, v === 0 ? "RawDIC" : "Patcher");
   const n = v === 2 ? Math.max(1, ...info.plan.ops.filter(o => o.type === "dic").map(o => o.num)) : 0;
   toast("Installation de " + app + " (type " + kind + ") : choisissez " + (v === 5 ? "la disquette originale (.adf) ou le fichier du jeu" : n > 1 ? "les " + n + " disquettes originales (.adf), dans l'ordre" : "la disquette originale (.adf)") + ".");
   pickFiles("", async files => { /* tous les fichiers : le programme d'un jeu n'a pas toujours d'extension */
@@ -343,3 +346,102 @@ async function whdInstall(rec) {
     }
     return _ib(name, u8, target, mount, quiet);
   }; }
+
+
+/* ---- Installations RawDIC et Patcher : dans l'Amiga émulé ----
+   Les disquettes originales vont dans la Bibliothèque (la première dans DF0:) ; l'Amiga démarre sur Inst:
+   (C:RawDIC, C:Patcher, C:DIC et le slave d'imagerie du paquet), qui lance l'outil puis écrit Inst:fini. */
+let instJob = null, instTimer = 0, whdTools = null;
+function whdToolsGet() {
+  if (!whdTools) whdTools = (async () => {
+    const r = await fetch("whd/WHDLoad_usr.lha"); if (!r.ok) throw new Error("paquet WHDLoad introuvable (" + r.status + ")");
+    const t = {}; for (const e of readLha(new Uint8Array(await r.arrayBuffer()))) if (!e.dir && /^WHDLoad\/C\//.test(e.path)) t[e.path.slice(10)] = e.data;
+    return t;
+  })().catch(e => { whdTools = null; throw e; });
+  return whdTools;
+}
+function instMake(rec, info, tool) {
+  const pkgFile = ext => info.ents.find(e => !e.dir && e.path.toLowerCase().endsWith(ext));
+  const helper = tool === "RawDIC" ? pkgFile(".islave") : tool === "Patcher" ? pkgFile(".imager") : null;
+  return { recId: rec.id, rec, info, tool, helper: helper ? helper.path.split("/").pop() : "", last: info.plan.lastFile };
+}
+function instAsk(rec, info, tool) {
+  const job = instMake(rec, info, tool);
+  if (!job.helper) { toast(rec.name + " : le fichier d'imagerie (." + (tool === "RawDIC" ? "islave" : "imager") + ") manque dans le paquet.", true); return; }
+  toast("Installation de " + rec.name.replace(/\.(lha|lzh)$/i, "") + " avec " + tool + " : choisissez la ou les disquettes originales (.adf), dans l'ordre. L'Amiga démarrera pour les lire.");
+  pickFiles("", async files => {
+    const list = [...files].sort((a, b) => a.name.localeCompare(b.name, "fr", { numeric: true }));
+    let first = true;
+    for (const f of list) { const r = await importFile(f, first ? "df0" : null); if (r || first) first = false; }
+    if (!mounted.df0) { toast("Aucune disquette dans DF0: : l'installation ne peut pas commencer.", true); return; }
+    instStart(job);
+  });
+}
+function instStart(job) {
+  if (running || starting) { toast("Éteignez d'abord l'Amiga.", true); return; }
+  instJob = job; whdGame = null; cdGame = null;
+  if (S.romId === "aros") toast("Installation avec AROS : si la lecture échoue, importez votre Kickstart 3.1 et recommencez.", true);
+  toast("L'Amiga va lancer " + job.tool + " : répondez à ses questions (Entrée pour continuer) ; s'il demande la disquette suivante, insérez-la dans DF0: (F12 → Lecteurs de disquettes). La page récupère les fichiers à la fin.");
+  powerOn();
+}
+async function instRestore() {
+  const id = sessionStorage.getItem("a1200.inst"); if (!id) return;
+  sessionStorage.removeItem("a1200.inst");
+  const rec = await DB.get(id); if (!rec) return;
+  const u8 = new Uint8Array(await rec.blob.arrayBuffer());
+  const info = whdInstallInfo(u8, rec.slave ? rec.slave.split("/").pop().replace(/\.slave$/i, "") : rec.name);
+  if (info) instJob = instMake(rec, info, info.plan.version === 0 ? "RawDIC" : info.plan.version === 1 ? "Patcher" : "DIC");
+}
+async function instBootAmb(m, lines) {
+  const job = instJob, tools = await whdToolsGet(), FS = m.M.FS;
+  for (const d of ["/whd/inst/C", "/whd/inst/Work"]) FS.mkdirTree(d);
+  for (const [n, d] of Object.entries(tools)) if (/^(DIC|RawDIC|Patcher)$/.test(n)) m.writeFile("/whd/inst/C/" + n, d);
+  for (const e of job.info.ents) if (!e.dir && /\.(islave|imager)$/i.test(e.path)) m.writeFile("/whd/inst/Work/" + e.path.split("/").pop(), e.data);
+  try { FS.unlink("/whd/inst/fini"); } catch (x) {}
+  const app = job.helper.replace(/\.(islave|imager)$/i, "");
+  const cmd = job.tool === "RawDIC" ? `Inst:C/RawDIC SLAVE=${job.helper} SOURCE=DF0:`
+    : job.tool === "Patcher" ? `Inst:C/Patcher -p${app}.imager -sDF0:`
+    : `Inst:C/DIC DF0: FD=1 LD=1 SIZE=${(job.info.plan.ops.find(o => o.type === "dic") || {}).len || 901120} PEDANTIC`;
+  const script = ["FAILAT 999", "CD Inst:Work", cmd, "CD Inst:", "Echo >Inst:fini fini"];
+  m.writeFile("/whd/inst/S/Startup-Sequence", new TextEncoder().encode(script.join("\n") + "\n"));
+  /* le volume Inst: démarre avant la disquette (priorité 10 contre 5) ; il lui faut la ROM de démarrage d'UAE */
+  lines.splice(0, lines.length, ...lines.filter(l => !/^(boot_rom_uae|uaeboard)=/.test(l)), "filesystem2=rw,DH0:Inst:/whd/inst,10");
+}
+async function instFinish() {
+  const job = instJob, FS = machine.M.FS;
+  instJob = null; clearInterval(instTimer);
+  const made = [];
+  const walk = (dir, rel) => {
+    for (const n of FS.readdir(dir)) {
+      if (n === "." || n === "..") continue;
+      const p = dir + "/" + n, st = FS.stat(p), r = rel ? rel + "/" + n : n;
+      if (FS.isDir(st.mode)) walk(p, r); else if (!/\.(islave|imager)$/i.test(n)) made.push({ path: r, data: FS.readFile(p) });
+    }
+  };
+  walk("/whd/inst/Work", "");
+  const want = job.last || (job.tool === "DIC" ? "Disk.1" : "");
+  const ok = made.length && (!want || made.some(f => f.path.toLowerCase() === want.toLowerCase()));
+  if (!ok) { toast(job.tool + " n'a pas créé tous les fichiers" + (want ? " (" + want + " manque)" : "") + " : regardez le message à l'écran de l'Amiga, puis éteignez-le.", true); return; }
+  const rec = await DB.get(job.recId) || job.rec;
+  const out = lhaWrite([...job.info.ents.filter(e => !e.dir && e.data), ...made.map(f => ({ path: job.info.ddir + f.path, data: f.data, date: new Date() }))]);
+  Object.assign(rec, { blob: new Blob([out]), size: out.length, crc: crc32u8(out), inst: { done: true, version: job.info.plan.version, files: made.map(f => f.path) } });
+  rec.name = rec.name.replace(/_?install(?=\.(lha|lzh)$)/i, "");
+  await DB.put(rec);
+  await powerOff();
+  toast(rec.name.replace(/\.(lha|lzh)$/i, "") + " est installé (" + made.length + " fichier" + (made.length > 1 ? "s" : "") + " créé" + (made.length > 1 ? "s" : "") + " par " + job.tool + ") : touchez sa vignette pour jouer.");
+  renderLauncherSoon();
+}
+{ const _s = onStarted; onStarted = (...x) => {
+    _s(...x);
+    if (!instJob) return;
+    clearInterval(instTimer);
+    instTimer = setInterval(() => {
+      if (!running || !instJob) { clearInterval(instTimer); return; }
+      try { machine.flush(); if (machine.M.FS.analyzePath("/whd/inst/fini").exists) instFinish(); } catch (e) { console.warn(e); }
+    }, 1000);
+  }; }
+/* Diagnostic depuis la console : la même installation, mais avec C:DIC dans l'Amiga émulé (paquet de type DIC) */
+window.__a1200.instDIC = async id => {
+  const rec = await DB.get(id), info = rec && whdInstallInfo(new Uint8Array(await rec.blob.arrayBuffer()), "test");
+  if (info) instStart(instMake(rec, info, "DIC"));
+};

@@ -1,0 +1,7 @@
+WHDLoad_usr.lha : paquet utilisateur de WHDLoad 20.0 (© 1995-2026 Bert Jahn), distribué tel quel,
+sans modification, comme le permet sa licence (redistribution gratuite uniquement ; usage commercial
+interdit sans autorisation écrite de l'auteur ; voir WHDLoad/Docs/en/copy.html dans l'archive).
+WHDLoad.VFS : licence BSD 2 clauses (© 2020 Teemu Suutari).
+
+La page en extrait C:DIC, C:RawDIC et C:Patcher pour faire, dans l'Amiga émulé, les installations
+WHDLoad de type RawDIC et Patcher. Site officiel : https://www.whdload.de/

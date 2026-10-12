@@ -285,7 +285,8 @@ async function powerOn() {
     /* uaehf.device a besoin de la ROM de démarrage d'UAE : seulement si DH2: ou DH3: est branché (voir plus haut) */
     if (fsPath.dh2 || fsPath.dh3 || (model === "a3000" && HD_TAGS.some(t => fsPath[t]))) lines.splice(0, lines.length, ...lines.filter(l => !/^(boot_rom_uae|uaeboard)=/.test(l)));
     let content = "/cfg/a1200.uae", options = coreOptions();
-    if (amb) options = { amiberry_crop_overscan: S.center ? "enabled" : "disabled", amiberry_statusline: "disabled", amiberry_midi_output: S.midi === "on" ? "libretro" : "disabled" };
+    if (amb) options = { amiberry_crop_overscan: S.center ? "enabled" : "disabled", amiberry_statusline: "disabled", amiberry_midi_output: S.midi === "on" ? "libretro" : "disabled",
+      amiberry_joyport_order: "21" }; /* manette 0 au port joystick, manette 1 au port souris quand il reçoit un joystick (2 joueurs) */
     /* Chipset, blitter, collisions, mémoire Chip et Slow (panneau Chipset) : pas pour WHDLoad ni les consoles CD */
     if (!cd && !whd) { if (amb) lines.push(...chipLines(E)); else Object.assign(options, chipOpts(E)); }
     if (cd) {

@@ -18,9 +18,9 @@ function stateCtx() {
   for (const t of ["df0", "df1", ...HD_TAGS]) c[t] = mounted[t] ? mounted[t].id : null;
   return c;
 }
-const STATE_SETTINGS = ["compat", "cpu", "fast", "region", "joy", "floppy", "accel", "model", "core", "rtg", "chipset", "blitter", "collision", "chipmem", "slowmem"];
+const STATE_SETTINGS = ["compat", "cpu", "fast", "region", "joy", "floppy", "accel", "model", "core", "rtg", "z3", "chipset", "blitter", "collision", "chipmem", "slowmem"];
 /* Valeur d'un réglage absent des sauvegardes anciennes */
-const STATE_DEFAULTS = { accel: "none", model: "a1200", core: "puae", rtg: "0", chipset: "auto", blitter: "auto", collision: "playfields", chipmem: "auto", slowmem: "auto" };
+const STATE_DEFAULTS = { accel: "none", model: "a1200", core: "puae", rtg: "0", z3: "0", chipset: "auto", blitter: "auto", collision: "playfields", chipmem: "auto", slowmem: "auto" };
 
 async function statesFor(key) {
   return (await DB.all()).filter(r => r.kind === "state" && r.game === key).sort((a, b) => a.slot - b.slot);

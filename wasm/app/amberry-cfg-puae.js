@@ -244,7 +244,7 @@ function ctlLive() {
 }
 
 /* ---- Configurations nommées ---- */
-const CFG_KEYS = ["model", "core", "fast", "cpu", "compat", "region", "accel", "rtg", "floppy", "floppySound", "res", "center", "autoskip",
+const CFG_KEYS = ["model", "core", "fast", "cpu", "compat", "region", "accel", "rtg", "z3", "floppy", "floppySound", "res", "center", "autoskip",
   "crt", "sharp", "joy", "midi", ...CHIP_KEYS, "ctl", "romId", "romId500"];
 let CFGS = [];
 try { CFGS = JSON.parse(localStorage.getItem("a1200.configs") || "[]"); } catch (e) {}
@@ -303,7 +303,9 @@ async function cfgParseUae(text, fname) {
     const NATIVE = { a500: ["ocs", "ecs_agnus"], a600: ["ecs"], a1200: ["aga"], a3000: ["ecs"], a4000: ["aga"], cd32: ["aga"], cdtv: ["ecs_agnus"] };
     s.chipset = cs && ["ocs", "ecs_agnus", "ecs", "aga"].includes(cs) && !NATIVE[s.model].includes(cs) ? cs : "auto";
     if (HAS_ACCEL.has(s.model)) s.accel = cpu >= 60 ? "060" : cpu >= 40 ? "040" : cpu >= 30 && s.model === "a1200" ? "030" : "none";
-    const fastMb = (parseInt(kv.fastmem_size, 10) || 0) + (parseInt(kv.z3mem_size, 10) || 0) + (parseInt(kv.mbresmem_size, 10) || 0);
+    const fastMb = (parseInt(kv.fastmem_size, 10) || 0) + (parseInt(kv.mbresmem_size, 10) || 0);
+    const z3 = parseInt(kv.z3mem_size, 10) || 0;
+    if (HAS_ACCEL.has(s.model)) s.z3 = String(z3 ? [16, 32, 64, 128, 256].find(v => v >= z3) || 256 : 0);
     const vals = $$('#winSettings input[name="fast"]').map(i => +i.value).sort((a, b) => a - b);
     s.fast = String(fastMb ? (vals.filter(v => v && v <= fastMb).pop() || vals.find(v => v) || 0) : 0);
     const chip = parseInt(kv.chipmem_size, 10);

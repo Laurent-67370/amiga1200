@@ -717,7 +717,7 @@ rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>CD3
 rep("Les archives .lzx doivent être extraites avant.", "Images de CD de CD32 : .iso, ou .cue avec ses pistes .bin. Les archives .lzx doivent être extraites avant.")
 
 # Cœur d'émulation : PUAE (WinUAE 5) ou WinUAE 6 (Amiberry)
-rep('kbdOpen: false, compat: "normal",', 'kbdOpen: false, core: "winuae6", rtg: "0", midi: "off", midiOut: "", midiIn: "", compat: "normal",')
+rep('kbdOpen: false, compat: "normal",', 'kbdOpen: false, core: "winuae6", rtg: "0", z3: "0", midi: "off", midiOut: "", midiIn: "", compat: "normal",')
 # WinUAE 6 devient le cœur par défaut : les réglages déjà enregistrés gardaient l'ancienne valeur par défaut (PUAE),
 # on les bascule une fois ; un choix fait ensuite dans les Réglages est respecté
 rep('function saveSettings() { try { localStorage.setItem("a1200.settings", JSON.stringify(S)); } catch (e) {} }',
@@ -742,7 +742,7 @@ rep('''      <h3>Kickstart</h3>
       <p class="hint">Pour l'Amiga 1200 :</p>''')
 lst = '["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel", "model"]'
 assert page.count(lst) == 2
-page = page.replace(lst, '["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel", "model", "core", "rtg"]')
+page = page.replace(lst, '["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel", "model", "core", "rtg", "z3"]')
 rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Deux cœurs d'émulation</h3>
       <p>Réglages → Cœur d'émulation : <b>WinUAE 6</b> (par défaut), compilé depuis le cœur libretro d'Amiberry, ou <b>PUAE</b> (base WinUAE 5, le cœur historique de cette page). WinUAE 6 est plus récent et plus fidèle, et à peine plus gourmand ; sur un téléphone ancien, PUAE garde un peu d'avance. Disquettes, disques durs, Kickstart, cartes accélératrices, WHDLoad, CD32 et sauvegardes d'état marchent avec les deux.</p>
       <h3>Workbench en haute résolution (RTG)</h3>

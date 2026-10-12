@@ -10,7 +10,7 @@ async function kickInfo(r) {
   if (r.kdb === undefined) {
     let info = null;
     try {
-      const p = await plainRomBytes(new Uint8Array(await r.blob.arrayBuffer()));
+      const p = undoubleRom(await plainRomBytes(new Uint8Array(await r.blob.arrayBuffer())));
       const e = p && KICK_DB[crc32u8(p)];
       if (e) info = { name: e[0], models: e[1].split(" "), kind: e[2] };
     } catch (x) {}
@@ -60,7 +60,7 @@ async function modelRomLabel(model, all) {
 { const _ib = importBytes;
   importBytes = async (name, u8, target, mount, quiet) => {
     if (guessKind(name, u8) === "rom") {
-      const p = await plainRomBytes(u8), e = p && KICK_DB[crc32u8(p)];
+      const p = undoubleRom(await plainRomBytes(u8)), e = p && KICK_DB[crc32u8(p)];
       if (e && (e[2] === "cdtvext" || !/A1200|A500\b|A1000|A2000/.test(e[1]))) {
         if ((await DB.all()).some(r => r.kind === "rom" && r.crc === crc32u8(u8))) { if (!quiet) toast(name + " est déjà dans la Bibliothèque."); return null; }
         const rec = { id: newId(), kind: "rom", name, size: u8.length, blob: new Blob([u8]), crc: crc32u8(u8), added: Date.now(), label: e[0],

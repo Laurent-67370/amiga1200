@@ -23,10 +23,16 @@ async function plainRom(rec) {
   for (let i = 0; i < out.length; i++) out[i] ^= key[i % key.length];
   return out;
 }
+/* ROM de 256 Ko enregistrée deux fois de suite (fichier de 512 Ko, courant pour le Kickstart 1.3) : la première moitié */
+function undoubleRom(u8) {
+  if (!u8 || u8.length !== 524288) return u8;
+  for (let i = 0; i < 262144; i++) if (u8[i] !== u8[i + 262144]) return u8;
+  return u8.subarray(0, 262144);
+}
 async function whdKickstarts() {
   const list = [];
   for (const r of (await DB.all()).filter(x => x.kind === "rom")) {
-    const u8 = await plainRom(r); if (!u8) continue;
+    const u8 = undoubleRom(await plainRom(r)); if (!u8) continue;
     const w = WHD_KICKS[crc32u8(u8)]; if (w && !list.some(x => x.file === w[0])) list.push({ file: w[0], label: w[1], data: u8 });
   }
   return list;

@@ -30,17 +30,49 @@ export const LED = { POWER: 0, FLOPPY: 1, HD: 2, DF0: 3, DF1: 4, HDONLY: 7 };
 /* Manette : bouton (disposition standard du navigateur) → bit RETRO_DEVICE_ID_JOYPAD_* : A = B libretro (tir), B = A (2e bouton),
    X = Y, Y = X, LB/RB = gâchettes CD32, Select, Start, croix directionnelle */
 const PAD_DEF = { 0: 0, 1: 8, 2: 1, 3: 9, 4: 10, 5: 11, 8: 2, 9: 3, 12: 4, 13: 5, 14: 6, 15: 7 };
+/* Son : file d'attente à taille cible (50 ms au départ). Chaque image de l'Amiga apporte son lot d'échantillons ;
+   la lecture accélère ou ralentit d'au plus 0,5 % (1 % loin de la cible, inaudible) pour garder la file à sa cible, au lieu de grossir sans
+   fin après un à-coup. Un manque (file vide) relève la cible de 10 ms, jusqu'à 150 ms ; vingt secondes sans manque
+   la redescendent d'autant. Au-delà du double de la cible (à-coup, retour d'un onglet en arrière-plan), les plus vieux
+   lots sont jetés. */
 const WORKLET = `
 class Ring extends AudioWorkletProcessor {
-  constructor() { super(); this.q = []; this.off = 0; this.port.onmessage = e => { this.q.push(e.data); if (this.q.length > 24) this.q.splice(0, this.q.length - 12); }; }
+  constructor() {
+    super();
+    this.q = []; this.pos = 0; this.tot = 0;           /* lots en attente, position (fractionnaire) dans le premier, total */
+    this.min = sampleRate * 0.05; this.max = sampleRate * 0.15; this.target = this.min;
+    this.started = false; this.under = 0; this.calm = 0; this.tick = 0;
+    this.port.onmessage = e => {
+      const b = e.data; this.q.push(b); this.tot += b.length / 2;
+      while (this.q.length > 1 && this.tot - this.pos > Math.max(this.target * 2, this.target + sampleRate * 0.06)) { this.tot -= this.q.shift().length / 2; this.pos = 0; }
+    };
+  }
   process(_, outputs) {
-    const L = outputs[0][0], R = outputs[0][1] || outputs[0][0];
-    for (let i = 0; i < L.length; i++) {
-      if (!this.q.length) { L[i] = 0; R[i] = 0; continue; }
-      const b = this.q[0];
-      L[i] = b[this.off]; R[i] = b[this.off + 1]; this.off += 2;
-      if (this.off >= b.length) { this.q.shift(); this.off = 0; }
+    const L = outputs[0][0], R = outputs[0][1] || outputs[0][0], n = L.length;
+    if (!this.started) {
+      if (this.tot - this.pos >= this.target) this.started = true;
+      else { L.fill(0); R.fill(0); return true; }
     }
+    const err = (this.tot - this.pos - this.target) / this.target;
+    const lim = Math.abs(err) > 0.5 ? 0.01 : 0.005; /* loin de la cible : jusqu'à 1 % */
+    const rate = 1 + Math.max(-lim, Math.min(lim, err * 0.01));
+    for (let i = 0; i < n; i++) {
+      if (this.tot - this.pos < 2) { /* manque : silence, puis on se remplit de nouveau jusqu'à une cible plus haute */
+        L.fill(0, i); R.fill(0, i); this.started = false; this.under++; this.calm = 0;
+        this.target = Math.min(this.max, this.target + sampleRate * 0.01); break;
+      }
+      const k = Math.floor(this.pos), f = this.pos - k;
+      const b0 = this.q[0], j = k * 2;
+      let l1, r1;
+      if (j + 2 < b0.length) { l1 = b0[j + 2]; r1 = b0[j + 3]; }
+      else { const nb = this.q[1]; l1 = nb ? nb[0] : b0[j]; r1 = nb ? nb[1] : b0[j + 1]; }
+      L[i] = b0[j] + (l1 - b0[j]) * f; R[i] = b0[j + 1] + (r1 - b0[j + 1]) * f;
+      this.pos += rate;
+      while (this.q.length && this.pos >= this.q[0].length / 2) { const len = this.q.shift().length / 2; this.pos -= len; this.tot -= len; }
+    }
+    this.calm += n;
+    if (this.calm > sampleRate * 20 && this.target > this.min) { this.target = Math.max(this.min, this.target - sampleRate * 0.01); this.calm = 0; }
+    if ((this.tick += n) >= sampleRate / 2) { this.tick = 0; this.port.postMessage({ queue: (this.tot - this.pos) / sampleRate * 1000, target: this.target / sampleRate * 1000, under: this.under }); }
     return true;
   }
 }
@@ -59,7 +91,7 @@ export class PuaeMachine {
   }
 
   constructor(M, canvas, onStats) {
-    this.M = M; this.canvas = canvas; this.ctx = canvas.getContext("2d");
+    this.M = M; this.canvas = canvas; this._initVideo(canvas);
     this.onStats = onStats || (() => {});
     this.running = false; this.paused = false; this.muted = false;
     this.mouseButtons = 0; this.joyMask = [0, 0];
@@ -192,12 +224,56 @@ export class PuaeMachine {
   driveInsert(num, path) { this._call("fe_drive_insert", num, path); }
   driveEject(num) { this.M._fe_drive_eject(num); }
 
+  /* Affichage basse latence : WebGL lit l'image directement dans la mémoire du cœur (sans copie) et le canevas
+     « désynchronisé » va à l'écran sans attendre la composition de la page (Chrome, Edge, Android). Sans WebGL :
+     canevas 2D, désynchronisé lui aussi quand le navigateur le permet. preserveDrawingBuffer garde l'image pour les
+     captures d'écran et les vignettes des sauvegardes. */
+  _initVideo(canvas) {
+    const o = { alpha: false, antialias: false, depth: false, stencil: false, desynchronized: true, preserveDrawingBuffer: true, powerPreference: "high-performance" };
+    const gl = canvas.getContext("webgl2", o) || canvas.getContext("webgl", o);
+    if (gl) {
+      try {
+        const sh = (t, src) => { const x = gl.createShader(t); gl.shaderSource(x, src); gl.compileShader(x); if (!gl.getShaderParameter(x, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(x)); return x; };
+        const pr = gl.createProgram();
+        gl.attachShader(pr, sh(gl.VERTEX_SHADER, "attribute vec2 p;varying vec2 t;void main(){t=vec2(p.x*.5+.5,.5-p.y*.5);gl_Position=vec4(p,0.,1.);}"));
+        gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, "precision mediump float;varying vec2 t;uniform sampler2D s;void main(){gl_FragColor=vec4(texture2D(s,t).rgb,1.);}"));
+        gl.linkProgram(pr); if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr));
+        gl.useProgram(pr);
+        gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+        const a = gl.getAttribLocation(pr, "p"); gl.enableVertexAttribArray(a); gl.vertexAttribPointer(a, 2, gl.FLOAT, false, 0, 0);
+        gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+        for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.NEAREST], [gl.TEXTURE_MAG_FILTER, gl.NEAREST], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
+        this.gl = gl; this._texW = 0; this._texH = 0; this.videoMode = "webgl";
+        return;
+      } catch (e) { console.warn("WebGL indisponible, affichage 2D", e); }
+    }
+    this.ctx = canvas.getContext("2d", { alpha: false, desynchronized: true }) || canvas.getContext("2d");
+    this.videoMode = "2d";
+  }
   _draw() {
     const M = this.M, w = M._fe_video_w(), h = M._fe_video_h();
     if (!w || !h) return;
     if (this.canvas.width !== w || this.canvas.height !== h) { this.canvas.width = w; this.canvas.height = h; this._img = null; }
-    if (!this._img) this._img = new ImageData(w, h);
     const p = M._fe_video_ptr();
+    if (this.gl) {
+      const gl = this.gl;
+      let px = M.HEAPU8.subarray(p, p + w * h * 4);
+      if (this._glCopy) { /* navigateur qui refuse la mémoire partagée dans WebGL : une copie par image */
+        if (this._glCopy.length !== px.length) this._glCopy = new Uint8Array(px.length);
+        this._glCopy.set(px); px = this._glCopy;
+      }
+      try {
+        if (this._texW !== w || this._texH !== h) { gl.viewport(0, 0, w, h); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, px); this._texW = w; this._texH = h; }
+        else gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      } catch (e) {
+        if (this._glCopy) throw e;
+        this._glCopy = new Uint8Array(0); this._texW = 0; return this._draw();
+      }
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      return;
+    }
+    if (!this._img) this._img = new ImageData(w, h);
     this._img.data.set(M.HEAPU8.subarray(p, p + w * h * 4)); /* copie : la mémoire partagée ne va pas dans ImageData */
     this.ctx.putImageData(this._img, 0, 0);
   }
@@ -205,10 +281,11 @@ export class PuaeMachine {
   /* ---------- son ---------- */
   async _startAudio() {
     try {
-      this.ac = new AudioContext({ sampleRate: this.rate });
+      this.ac = new AudioContext({ sampleRate: this.rate, latencyHint: "interactive" });
       const url = URL.createObjectURL(new Blob([WORKLET], { type: "application/javascript" }));
       await this.ac.audioWorklet.addModule(url);
       this.node = new AudioWorkletNode(this.ac, "ring", { outputChannelCount: [2] });
+      this.audioStats = null; this.node.port.onmessage = e => { this.audioStats = e.data; }; /* file, cible (ms), manques */
       this.gain = this.ac.createGain(); this.gain.gain.value = this.muted ? 0 : 1;
       this.node.connect(this.gain).connect(this.ac.destination);
       this._audioPtr = this.M._malloc(4096 * 2 * 4);

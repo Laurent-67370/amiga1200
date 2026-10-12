@@ -184,6 +184,7 @@ async function powerOn() {
   if (machine) {
     sessionStorage.setItem("a1200.autostart", "1");
     if (whdGame) sessionStorage.setItem("a1200.whd", whdGame.id);
+    if (instJob) sessionStorage.setItem("a1200.inst", instJob.recId);
     if (cdGame) sessionStorage.setItem("a1200.cd", cdGame.id);
     if (pendingResume) sessionStorage.setItem("a1200.resume", pendingResume.id);
     location.reload(); return;
@@ -206,7 +207,9 @@ async function powerOn() {
       if (whd.whdCfg) Object.assign(E, whd.whdCfg.e); /* réglages de la base WHDLoad pour ce jeu */
     }
     /* CD32 : la console telle qu'elle est (2 Mo de Chip, 68EC020), ses propres ROM ; CDTV : de même, avec le cœur WinUAE 6 */
-    const cdConsole = S.model === "cd32" || S.model === "cdtv";
+    const cdConsole = !instJob && (S.model === "cd32" || S.model === "cdtv");
+    /* Installation WHDLoad (RawDIC, Patcher) : un A1200 avec de la mémoire Fast, sur le cœur WinUAE 6 */
+    if (instJob && !resume) Object.assign(E, { model: "a1200", rtg: "0", accel: "none", fast: +E.fast ? E.fast : "8", _profile: "" });
     const cd = cdGame || (!resume && !whdGame && cdConsole) ? cdGame || "sans CD" : null; /* console CD, avec ou sans CD */
     const cdtv = !!cd && (resume ? E.model === "cdtv" : S.model === "cdtv");
     if (cd && !resume) Object.assign(E, { model: cdtv ? "cdtv" : "a1200", fast: "0", accel: "none", rtg: "0", _profile: "" });
@@ -217,6 +220,8 @@ async function powerOn() {
     const model = modelOf(E), a500 = model === "a500";
     /* Cœur : celui de la sauvegarde reprise, sinon celui des réglages */
     E.core = resume ? E.core || "puae" : S.core || "winuae6"; /* une sauvegarde sans cœur noté date de PUAE */
+    if (instJob) E.core = "winuae6";
+    if (whdGame && whdGame.whdArgs) E.core = "winuae6"; /* programme lancé par GenericKick : options de WHDLoad, sur WinUAE 6 */
     if ((WINUAE_ONLY.has(model) || cdtv) && E.core !== "winuae6") { E.core = "winuae6"; toast(MODELS[cdtv ? "cdtv" : model].name + " : allumé avec le cœur WinUAE 6 (PUAE ne l'émule pas)."); }
     const amb = E.core === "winuae6";
     const romId = cd ? (cdtv ? (resume ? resume.ctx.rom : await romForModel("cdtv")) : cdRoms.id) : resume ? resume.ctx.rom : a500 ? await romFor500() : WINUAE_ONLY.has(model) ? await romForModel(model) : S.romId;
@@ -298,7 +303,10 @@ async function powerOn() {
       options.puae_model = "CD32"; options.puae_fastmem_size = "0";
       E._cd = cdtv ? "cdtv" : "cd32";
     }
-    if (whd && amb) {
+    if (instJob && amb) {
+      await instBootAmb(machine, lines);
+      machine.writeFile(content, new TextEncoder().encode(lines.join("\n") + "\n"));
+    } else if (whd && amb) {
       /* WinUAE 6 : la page monte elle-même les volumes et écrit la startup-sequence */
       const r = await DB.get(whd.id);
       if (!r) throw new Error("ce jeu n'est plus dans la Bibliothèque");

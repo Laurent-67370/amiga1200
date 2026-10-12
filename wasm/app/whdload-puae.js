@@ -125,7 +125,7 @@ async function whdBootAmb(m, rec, kicks, lines) {
     /* Tables de relocalisation des Kickstart (.RTB), que WHDLoad cherche à côté des ROM */
     "DH3:C/Copy DH3:Devs/Kickstarts/#?.RTB DEVS:Kickstarts/ QUIET",
     `CD "Games:${dir}"`,
-    `WHDLoad SLAVE="Games:${slave}" PRELOAD NOREQ NOWRITECACHE SPLASHDELAY=0 CONFIGDELAY=0 SAVEPATH=WHDSaves:`
+    `WHDLoad SLAVE="Games:${slave}" PRELOAD NOREQ NOWRITECACHE SPLASHDELAY=0 CONFIGDELAY=0 SAVEPATH=WHDSaves:${rec.whdArgs ? " " + rec.whdArgs : ""}`
   ];
   m.writeFile("/whd/boot/S/Startup-Sequence", new TextEncoder().encode(script.join("\n") + "\n"));
   /* Ni disquettes ni disques IDE ; la ROM de démarrage d'UAE est nécessaire aux volumes de fichiers */

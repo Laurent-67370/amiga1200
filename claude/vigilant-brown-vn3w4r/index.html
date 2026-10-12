@@ -978,7 +978,7 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
       <h3>Configurations, chipset et commandes</h3>
       <p>Dans l'interface (F12) : <b>Configurations</b> enregistre tous les réglages sous un nom et les recharge d'un clic ; l'export .uae s'ouvre dans WinUAE ou Amiberry, et l'import lit leurs fichiers (disquettes, disques et Kickstart retrouvés dans la Bibliothèque par leur nom). <b>Chipset</b> choisit OCS, ECS ou AGA (WinUAE 6), le blitter et les collisions ; <b>Mémoire</b> la Chip et la Slow. <b>Entrées</b> change les touches du joystick au clavier et le rôle de chaque bouton de la manette (bouton, direction ou touche du clavier), pour tous les jeux ou pour le jeu en place seulement. Pour jouer <b>à deux</b>, choisissez « 2 joueurs » dans Entrées : la première manette branchée garde le port joystick, la deuxième (ou le clavier, en ZQSD) prend le port de la souris.</p>
       <h3>Programmes seuls et paquets d'installation WHDLoad</h3>
-      <p>Un <b>programme Amiga seul</b> (une intro, une démo en un fichier) s'importe comme une disquette : la page le met sur une disquette de démarrage qui le lance. Un <b>paquet d'installation WHDLoad</b> (le .slave et le script Install, sans les données du jeu) se reconnaît à l'import : touchez sa vignette, puis choisissez la ou les disquettes originales (.adf), ou le fichier demandé. La page suit le script Install comme l'Installer de l'Amiga — images de disquettes (DIC), fichiers copiés depuis la disquette, ou fichier unique — et le paquet devient un jeu prêt à lancer. Les installations <b>RawDIC</b> et <b>Patcher</b> (disquettes à format spécial) se font dans l'Amiga émulé, avec les outils du paquet utilisateur de WHDLoad (© Bert Jahn, distribué tel quel) : l'Amiga démarre, lit les disquettes (répondez à ses questions, changez de disquette si elle le demande), et la page récupère les fichiers créés. Un vrai Kickstart est conseillé. Les fichiers compactés (XFD) ne sont pas décompactés.</p>
+      <p>Un <b>programme Amiga seul</b> (une intro, une démo en un fichier) s'importe comme une disquette : la page le met sur une disquette de démarrage qui le lance. Si la Bibliothèque contient un vrai Kickstart 1.3 ou 3.1, il devient aussi un jeu WHDLoad grâce à <b>GenericKick</b> (JOTD, Wepl), qui le lance avec la simulation de Kickstart de WHDLoad : depuis le disque, avec la compatibilité de WHDLoad. Un <b>paquet d'installation WHDLoad</b> (le .slave et le script Install, sans les données du jeu) se reconnaît à l'import : touchez sa vignette, puis choisissez la ou les disquettes originales (.adf), ou le fichier demandé. La page suit le script Install comme l'Installer de l'Amiga — images de disquettes (DIC), fichiers copiés depuis la disquette, ou fichier unique — et le paquet devient un jeu prêt à lancer. Les installations <b>RawDIC</b> et <b>Patcher</b> (disquettes à format spécial) se font dans l'Amiga émulé, avec les outils du paquet utilisateur de WHDLoad (© Bert Jahn, distribué tel quel) : l'Amiga démarre, lit les disquettes (répondez à ses questions, changez de disquette si elle le demande), et la page récupère les fichiers créés. Un vrai Kickstart est conseillé. Les fichiers compactés (XFD) ne sont pas décompactés.</p>
       <h3>Disquettes protégées (IPF, SCP)</h3>
       <p>Les images <b>.ipf</b> de la Software Preservation Society, qui gardent les protections contre la copie des disquettes d'origine, sont converties à l'import en flux magnétique SCP : minutage des pistes et bits faibles compris (trois tours de disque). Les captures <b>.scp</b> (SuperCard Pro, Greaseweazle) s'importent aussi. Ces disquettes sont protégées en écriture. Conversion par la bibliothèque SPS Decoder Library 5.1 (© 2001-2014 István Fábián, KryoFlux Products &amp; Services Ltd), licence non commerciale, sources dans le dépôt (vendor/capsimg).</p>
       <h3>Copier des fichiers sur le disque dur</h3>
@@ -1313,6 +1313,7 @@ async function powerOn() {
     /* Cœur : celui de la sauvegarde reprise, sinon celui des réglages */
     E.core = resume ? E.core || "puae" : S.core || "winuae6"; /* une sauvegarde sans cœur noté date de PUAE */
     if (instJob) E.core = "winuae6";
+    if (whdGame && whdGame.whdArgs) E.core = "winuae6"; /* programme lancé par GenericKick : options de WHDLoad, sur WinUAE 6 */
     if ((WINUAE_ONLY.has(model) || cdtv) && E.core !== "winuae6") { E.core = "winuae6"; toast(MODELS[cdtv ? "cdtv" : model].name + " : allumé avec le cœur WinUAE 6 (PUAE ne l'émule pas)."); }
     const amb = E.core === "winuae6";
     const romId = cd ? (cdtv ? (resume ? resume.ctx.rom : await romForModel("cdtv")) : cdRoms.id) : resume ? resume.ctx.rom : a500 ? await romFor500() : WINUAE_ONLY.has(model) ? await romForModel(model) : S.romId;
@@ -3279,7 +3280,7 @@ async function whdBootAmb(m, rec, kicks, lines) {
     /* Tables de relocalisation des Kickstart (.RTB), que WHDLoad cherche à côté des ROM */
     "DH3:C/Copy DH3:Devs/Kickstarts/#?.RTB DEVS:Kickstarts/ QUIET",
     `CD "Games:${dir}"`,
-    `WHDLoad SLAVE="Games:${slave}" PRELOAD NOREQ NOWRITECACHE SPLASHDELAY=0 CONFIGDELAY=0 SAVEPATH=WHDSaves:`
+    `WHDLoad SLAVE="Games:${slave}" PRELOAD NOREQ NOWRITECACHE SPLASHDELAY=0 CONFIGDELAY=0 SAVEPATH=WHDSaves:${rec.whdArgs ? " " + rec.whdArgs : ""}`
   ];
   m.writeFile("/whd/boot/S/Startup-Sequence", new TextEncoder().encode(script.join("\n") + "\n"));
   /* Ni disquettes ni disques IDE ; la ROM de démarrage d'UAE est nécessaire aux volumes de fichiers */
@@ -3907,8 +3908,9 @@ async function gzipBytes(u8) {
       try { if (!quiet) toast("Conversion de " + name + " (disquette IPF)…"); c = await ipfToScp(u8); }
       catch (e) { toast(name + " : " + (e && e.message ? e.message : e), true); return null; }
       const rec = await _ib(name.replace(/\.ipf$/i, ".scp.gz"), await gzipBytes(c.scp), target, mount, true);
-      if (rec && !quiet) toast(name + " convertie (" + c.tracks + " pistes" + (c.flakey ? ", bits faibles sur trois tours" : "")
-        + ") et rangée dans la Bibliothèque" + (mount ? ", insérée" : "") + ". Disquette protégée en écriture, comme avec WinUAE.");
+      /* l'import d'origine ne renvoie rien : message dans tous les cas, après celui de l'insertion */
+      setTimeout(() => toast(name + " convertie (" + c.tracks + " pistes" + (c.flakey ? ", bits faibles sur trois tours" : "")
+        + ") et rangée dans la Bibliothèque" + (mount ? ", insérée" : "") + ". Disquette protégée en écriture, comme avec WinUAE."), 400);
       return rec;
     }
     if (/\.scp$/i.test(name)) { if (!isGz(u8)) u8 = await gzipBytes(u8); name += ".gz"; }
@@ -4257,7 +4259,10 @@ async function whdInstall(rec) {
       try {
         const adf = adfWith(prog.slice(0, 30), [{ path: prog, data: u8 }, { path: "S/Startup-Sequence", data: new TextEncoder().encode(prog + "\n") }]);
         const rec = await _ib(prog + ".adf", adf, target === undefined || target === null ? "df0" : target, mount === undefined ? true : mount, true);
-        if (rec && !quiet) toast(name + " : programme Amiga mis sur une disquette de démarrage (" + prog + ".adf) qui le lance.");
+        const whd = await exeWhd(prog, u8).catch(e => { console.warn(e); return null; });
+        /* après le message d'insertion de l'accueil */
+        setTimeout(() => toast(name + " : programme Amiga mis sur une disquette de démarrage (" + prog + ".adf) qui le lance"
+          + (whd ? ", et en jeu WHDLoad (" + whd + ", avec GenericKick) à lancer depuis sa vignette." : ". Avec un vrai Kickstart 1.3 ou 3.1 dans la Bibliothèque, il deviendrait aussi un jeu WHDLoad (GenericKick).")), 400);
         return rec;
       } catch (e) { toast(name + " : " + (e.message || e), true); return null; }
     }
@@ -4362,6 +4367,27 @@ window.__a1200.instDIC = async id => {
   const rec = await DB.get(id), info = rec && whdInstallInfo(new Uint8Array(await rec.blob.arrayBuffer()), "test");
   if (info) instStart(instMake(rec, info, "DIC"));
 };
+
+
+/* ---- Exécutable seul, version WHDLoad : GenericKick (JOTD, Wepl) le lance avec la simulation de Kickstart de
+   WHDLoad — depuis le disque, avec la touche pour quitter. GenericKick13 demande le Kickstart 1.3 de l'A500,
+   GenericKick31 celui de l'A1200 (3.1) ; le programme va dans le dossier data, et WHDLoad reçoit
+   DATA=data CUSTOM=<programme>. ---- */
+let gkEnts = null;
+async function exeWhd(prog, u8) {
+  const kicks = await whdKickstarts();
+  const k13 = kicks.some(k => /^kick34005/i.test(k.file)), k31 = kicks.some(k => /^kick40068/i.test(k.file));
+  if (!k13 && !k31) return null;
+  if (!gkEnts) { const r = await fetch("whd/GenericKick.lha"); if (!r.ok) throw new Error("GenericKick introuvable"); gkEnts = readLha(new Uint8Array(await r.arrayBuffer())); }
+  const slave = "GenericKick/GenericKick" + (k13 ? "13" : "31") + ".Slave";
+  const out = lhaWrite([...gkEnts.filter(e => !e.dir && e.data && !/put\.files\.here$/i.test(e.path)), { path: "GenericKick/data/" + prog, data: u8, date: new Date() }]);
+  const name = prog + " (WHDLoad).lha";
+  const rec = await importWhd(name, out);
+  if (!rec) return null;
+  Object.assign(rec, { slave, whdArgs: `DATA=data CUSTOM="${prog}"`, inst: { done: true } });
+  await DB.put(rec);
+  return name;
+}
 
 /* =========================================================
    Panneaux d'Amiberry : Chipset, mémoire Chip/Slow, commandes personnalisées, configurations nommées

@@ -106,6 +106,7 @@ function coreOptions() {
   return {
     puae_model: MODELS[modelOf(E)].core,
     puae_fastmem_size: String(+E.fast || 0),
+    puae_z3mem_size: +E.z3 > 0 ? String(+E.z3) : "auto", /* le cœur passe alors le processeur en 32 bits */
     puae_cpu_throttle: E.cpu === "max" ? "4000.0" : "0.0",
     puae_cpu_compatibility: E.compat === "max" ? "exact" : "normal",
     puae_video_standard: E.region === "ntsc" ? "NTSC" : "PAL",
@@ -157,6 +158,8 @@ function amberryLines(model, key, e = E) {
   const l = [`quickstart=${model},0`, "kickstart_rom_file=/sys/kickstart-utilisateur.rom"];
   if (key) l.push("kickstart_key_file=/sys/rom.key");
   if (+e.fast > 0) l.push("fastmem_size=" + (+e.fast));
+  /* Fast Zorro III (jeux WHDLoad gourmands) : il faut un processeur 32 bits, comme pour la carte RTG */
+  if (big && +e.z3 > 0) { l.push("z3mem_size=" + (+e.z3)); if (acc === ACCEL.none && model === "A1200") l.push("cpu_model=68020", "cpu_24bit_addressing=false"); }
   if (acc !== ACCEL.none) l.push("cpu_model=" + acc.cpu, "fpu_model=" + (acc.fpu === "cpu" ? acc.cpu : acc.fpu), "cpu_24bit_addressing=false", "cpu_multiplier=" + acc.mult);
   if (e.cpu === "max") l.push("cpu_speed=max", "cpu_cycle_exact=false", "cpu_memory_cycle_exact=false");
   /* Les préréglages de WinUAE sont au cycle près : « Rapide » revient à l'équivalent du mode normal de PUAE
@@ -205,6 +208,15 @@ async function powerOn() {
     if (whd && !resume) {
       E.model = "a1200"; E.rtg = "0"; if (!+E.fast) E.fast = "8"; E._profile = "";
       if (whd.whdCfg) Object.assign(E, whd.whdCfg.e); /* réglages de la base WHDLoad pour ce jeu */
+      /* Jeu qui demande plus de mémoire Fast que la carte trappe n'en donne : un jeu pour Amiga accéléré (OutRun Amiga
+         Edition : 68030 à 50 MHz au minimum). Fast Zorro III, et 68040 à vitesse maximale si aucune carte n'est choisie. */
+      E.z3 = String(await whdZ3For(whd, +E.fast));
+      if (+E.z3) {
+        const turbo = !E.accel || E.accel === "none";
+        if (turbo) Object.assign(E, { accel: "040", cpu: "max" });
+        toast(whd.name.replace(/\.(lha|lzh)$/i, "") + " demande plus de mémoire Fast : " + E.z3 + " Mo de Fast Zorro III ajoutés"
+          + (turbo ? ", avec un 68040 à vitesse maximale" : "") + ", pour ce jeu.");
+      }
     }
     /* CD32 : la console telle qu'elle est (2 Mo de Chip, 68EC020), ses propres ROM ; CDTV : de même, avec le cœur WinUAE 6 */
     const cdConsole = !instJob && (S.model === "cd32" || S.model === "cdtv");
@@ -363,7 +375,7 @@ async function powerOff() {
 }
 function onStarted() {
   starting = false; running = true; setPowerUi("on");
-  $("#statMode").textContent = (E._cd ? (E._cd === "cdtv" ? "CDTV, " : "CD32, ") : modelOf(E) !== "a1200" ? MODELS[modelOf(E)].qs + ", " : "") + (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "")
+  $("#statMode").textContent = (E._cd ? (E._cd === "cdtv" ? "CDTV, " : "CD32, ") : modelOf(E) !== "a1200" ? MODELS[modelOf(E)].qs + ", " : "") + (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "") + (+E.z3 ? " +" + E.z3 + " Mo Z3" : "")
     + (HAS_ACCEL.has(modelOf(E)) && !E._cd && ACCEL[E.accel] && ACCEL[E.accel].label ? ", " + ACCEL[E.accel].label : "")
     + (E.core === "winuae6" ? ", WinUAE 6" + (+E.rtg > 0 && HAS_ACCEL.has(modelOf(E)) && !E._cd && !E._whd ? ", RTG " + E.rtg + " Mo" : "") : "") + (E.compat === "max" ? ", cycle exact" : "") + (E._profile ? ", profil " + E._profile : "") + (E._whd ? ", WHDLoad" + (whdGame && whdGame.whdCfg ? " (réglages de la base)" : "") : "");
   showCaptureHint();

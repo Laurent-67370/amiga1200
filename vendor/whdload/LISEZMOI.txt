@@ -5,3 +5,7 @@ WHDLoad.VFS : licence BSD 2 clauses (© 2020 Teemu Suutari).
 
 La page en extrait C:DIC, C:RawDIC et C:Patcher pour faire, dans l'Amiga émulé, les installations
 WHDLoad de type RawDIC et Patcher. Site officiel : https://www.whdload.de/
+
+GenericKick.lha : « Generic WHDLoad KickEmu Starter » 1.8 par JOTD et Wepl, distribué tel quel (sources :
+https://github.com/wepl/winstalls). Il lance un programme Amiga ordinaire sous WHDLoad, avec la simulation
+de Kickstart 1.3 (GenericKick13) ou 3.1 (GenericKick31) ; la page s'en sert pour les exécutables importés seuls.

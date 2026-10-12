@@ -32,8 +32,9 @@ async function gzipBytes(u8) {
       try { if (!quiet) toast("Conversion de " + name + " (disquette IPF)…"); c = await ipfToScp(u8); }
       catch (e) { toast(name + " : " + (e && e.message ? e.message : e), true); return null; }
       const rec = await _ib(name.replace(/\.ipf$/i, ".scp.gz"), await gzipBytes(c.scp), target, mount, true);
-      if (rec && !quiet) toast(name + " convertie (" + c.tracks + " pistes" + (c.flakey ? ", bits faibles sur trois tours" : "")
-        + ") et rangée dans la Bibliothèque" + (mount ? ", insérée" : "") + ". Disquette protégée en écriture, comme avec WinUAE.");
+      /* l'import d'origine ne renvoie rien : message dans tous les cas, après celui de l'insertion */
+      setTimeout(() => toast(name + " convertie (" + c.tracks + " pistes" + (c.flakey ? ", bits faibles sur trois tours" : "")
+        + ") et rangée dans la Bibliothèque" + (mount ? ", insérée" : "") + ". Disquette protégée en écriture, comme avec WinUAE."), 400);
       return rec;
     }
     if (/\.scp$/i.test(name)) { if (!isGz(u8)) u8 = await gzipBytes(u8); name += ".gz"; }

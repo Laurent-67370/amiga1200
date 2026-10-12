@@ -221,6 +221,7 @@ async function powerOn() {
     /* Cœur : celui de la sauvegarde reprise, sinon celui des réglages */
     E.core = resume ? E.core || "puae" : S.core || "winuae6"; /* une sauvegarde sans cœur noté date de PUAE */
     if (instJob) E.core = "winuae6";
+    if (whdGame && whdGame.whdArgs) E.core = "winuae6"; /* programme lancé par GenericKick : options de WHDLoad, sur WinUAE 6 */
     if ((WINUAE_ONLY.has(model) || cdtv) && E.core !== "winuae6") { E.core = "winuae6"; toast(MODELS[cdtv ? "cdtv" : model].name + " : allumé avec le cœur WinUAE 6 (PUAE ne l'émule pas)."); }
     const amb = E.core === "winuae6";
     const romId = cd ? (cdtv ? (resume ? resume.ctx.rom : await romForModel("cdtv")) : cdRoms.id) : resume ? resume.ctx.rom : a500 ? await romFor500() : WINUAE_ONLY.has(model) ? await romForModel(model) : S.romId;

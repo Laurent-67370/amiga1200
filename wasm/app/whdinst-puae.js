@@ -340,7 +340,10 @@ async function whdInstall(rec) {
       try {
         const adf = adfWith(prog.slice(0, 30), [{ path: prog, data: u8 }, { path: "S/Startup-Sequence", data: new TextEncoder().encode(prog + "\n") }]);
         const rec = await _ib(prog + ".adf", adf, target === undefined || target === null ? "df0" : target, mount === undefined ? true : mount, true);
-        if (rec && !quiet) toast(name + " : programme Amiga mis sur une disquette de démarrage (" + prog + ".adf) qui le lance.");
+        const whd = await exeWhd(prog, u8).catch(e => { console.warn(e); return null; });
+        /* après le message d'insertion de l'accueil */
+        setTimeout(() => toast(name + " : programme Amiga mis sur une disquette de démarrage (" + prog + ".adf) qui le lance"
+          + (whd ? ", et en jeu WHDLoad (" + whd + ", avec GenericKick) à lancer depuis sa vignette." : ". Avec un vrai Kickstart 1.3 ou 3.1 dans la Bibliothèque, il deviendrait aussi un jeu WHDLoad (GenericKick).")), 400);
         return rec;
       } catch (e) { toast(name + " : " + (e.message || e), true); return null; }
     }
@@ -445,3 +448,24 @@ window.__a1200.instDIC = async id => {
   const rec = await DB.get(id), info = rec && whdInstallInfo(new Uint8Array(await rec.blob.arrayBuffer()), "test");
   if (info) instStart(instMake(rec, info, "DIC"));
 };
+
+
+/* ---- Exécutable seul, version WHDLoad : GenericKick (JOTD, Wepl) le lance avec la simulation de Kickstart de
+   WHDLoad — depuis le disque, avec la touche pour quitter. GenericKick13 demande le Kickstart 1.3 de l'A500,
+   GenericKick31 celui de l'A1200 (3.1) ; le programme va dans le dossier data, et WHDLoad reçoit
+   DATA=data CUSTOM=<programme>. ---- */
+let gkEnts = null;
+async function exeWhd(prog, u8) {
+  const kicks = await whdKickstarts();
+  const k13 = kicks.some(k => /^kick34005/i.test(k.file)), k31 = kicks.some(k => /^kick40068/i.test(k.file));
+  if (!k13 && !k31) return null;
+  if (!gkEnts) { const r = await fetch("whd/GenericKick.lha"); if (!r.ok) throw new Error("GenericKick introuvable"); gkEnts = readLha(new Uint8Array(await r.arrayBuffer())); }
+  const slave = "GenericKick/GenericKick" + (k13 ? "13" : "31") + ".Slave";
+  const out = lhaWrite([...gkEnts.filter(e => !e.dir && e.data && !/put\.files\.here$/i.test(e.path)), { path: "GenericKick/data/" + prog, data: u8, date: new Date() }]);
+  const name = prog + " (WHDLoad).lha";
+  const rec = await importWhd(name, out);
+  if (!rec) return null;
+  Object.assign(rec, { slave, whdArgs: `DATA=data CUSTOM="${prog}"`, inst: { done: true } });
+  await DB.put(rec);
+  return name;
+}

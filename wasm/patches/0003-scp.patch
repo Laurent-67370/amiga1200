@@ -47,3 +47,21 @@ index 0000000..08b40c4
 +    int *tracklength);
 +
 +#endif /* UAE_SCP_H */
+diff --git a/sources/src/scp.c b/sources/src/scp.c
+index c7d7e2e..0ec44d4 100644
+--- a/sources/src/scp.c
++++ b/sources/src/scp.c
+@@ -19,6 +19,13 @@
+ 
+ #include <stdint.h>
+ 
++#ifndef min
++#define min(a, b) ((a) < (b) ? (a) : (b))
++#endif
++#ifndef max
++#define max(a, b) ((a) > (b) ? (a) : (b))
++#endif
++
+ #define MAX_REVS 5
+ 
+ enum pll_mode {

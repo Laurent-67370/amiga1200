@@ -89,6 +89,7 @@ function abBuild() {
       <button class="ab-btn" data-ab="quit" title="Quitter l'interface pour la présentation classique de la page">${abSvg("quit")} Quitter</button>
       <button class="ab-btn" data-ab="reload" title="Rallumer l'Amiga avec les réglages affichés">${abSvg("reload")} Recharger</button>
       <span class="ab-sp"></span>
+      <button class="ab-btn" data-ab="install" hidden title="Installer l'émulateur comme une application, utilisable hors ligne">${abSvg("download")} Installer</button>
       <button class="ab-btn ab-primary" data-ab="start">${abSvg("play")} <span>Démarrer</span></button>
       <button class="ab-btn" data-ab="help">${abSvg("help")} Aide</button>
     </div>
@@ -102,6 +103,7 @@ function abBuild() {
     <dt>Cœur par défaut</dt><dd>WinUAE 6, par le cœur libretro d'Amiberry 8.3 (GPL v3), compilé en WebAssembly</dd>
     <dt>Autre cœur</dt><dd>PUAE (base WinUAE 5, libretro)</dd>
     <dt>Kickstart libre</dt><dd>AROS (AROS Public License)</dd>
+    <dt>Hors ligne</dt><dd id="abOffline"></dd>
     <dt>Interface</dt><dd>inspirée de celle d'Amiberry ; police Amiga Topaz de Patrick Lauke (CC BY 3.0)</dd>
   </dl>`;
   const sound = document.createElement("div"); sound.id = "abSound";
@@ -116,6 +118,7 @@ function abBuild() {
   g.querySelector(".ab-search").oninput = () => abNav();
   g.querySelector(".ab-bar").onclick = e => { const b = e.target.closest("[data-ab]"); if (b) abAction(b.dataset.ab); };
   abNav();
+  pwaRefresh();
 }
 function abVisible(p) {
   if (!p) return false;
@@ -223,6 +226,7 @@ function abClose() {
 }
 async function abAction(a) {
   if (a === "help") return abShow("about");
+  if (a === "install") return pwaInstall();
   if (a === "quit") return abClose();
   if (a === "start") { if (running) return abClose(); return powerOn(); }
   if (a === "reset") { if (running) { $("#btnReset").click(); abClose(); } return; }

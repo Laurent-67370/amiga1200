@@ -221,7 +221,7 @@ rep('<link rel="icon" href="data:,">', '''<link rel="icon" href="icon-192.png" t
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Amiga 1200">
+<meta name="apple-mobile-web-app-title" content="Amiga">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">''')
 rep('''    <button class="gad" id="btnHelp" aria-label="Aide">?</button>''',
     '''    <button class="gad" id="btnInstall" hidden title="Installer l'émulateur comme une application, utilisable hors ligne">
@@ -230,26 +230,55 @@ rep('''    <button class="gad" id="btnHelp" aria-label="Aide">?</button>''',
     <button class="gad" id="btnHelp" aria-label="Aide">?</button>''')
 rep('''      <h3>Sauvegardes d'état</h3>''', '''      <h3>Installer l'application</h3>
       <p>L'émulateur s'installe comme une application et fonctionne ensuite <b>sans connexion</b>, avec votre Bibliothèque et vos réglages.
-      <b>Android, ordinateur (Chrome, Edge)</b> : bouton <b>Installer</b> de la barre d'outils, ou menu du navigateur → « Installer l'application ».
+      <b>Android, ordinateur (Chrome, Edge)</b> : bouton <b>Installer</b> en bas de l'interface (ou dans la barre d'outils), ou menu du navigateur → « Installer l'application ». L'application se lance depuis son icône, en plein écran sur téléphone ; sur ordinateur, elle ouvre aussi les fichiers .adf, .hdf, .lha et .uae (clic droit → Ouvrir avec).
       <b>iPhone, iPad</b> : dans Safari, bouton Partager → « Sur l'écran d'accueil ». Les mises à jour arrivent seules, au lancement suivant une connexion.</p>
       <h3>Sauvegardes d'état</h3>''')
-rep("/* Profil par disque */", '''/* Application installable : bouton Installer (Chrome, Edge, Android) et état de la copie hors ligne */
-(function pwa() {
-  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
-  let deferred = null; const b = $("#btnInstall");
-  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferred = e; if (!standalone) b.hidden = false; });
-  window.addEventListener("appinstalled", () => { b.hidden = true; deferred = null; toast("Amiga 1200 est installé : il fonctionne aussi hors ligne."); });
-  b.onclick = async () => { if (!deferred) return; deferred.prompt(); try { await deferred.userChoice; } catch (x) {} deferred = null; b.hidden = true; };
-  if (!("serviceWorker" in navigator) || !window.caches) return;
-  /* Premier passage : prévenir quand tout est copié pour le hors ligne */
+rep("/* Profil par disque */", '''/* Application installable : bouton Installer (Chrome, Edge, Android ; explication pour iPhone et iPad), fichiers
+   ouverts avec l'application installée, et état de la copie hors ligne */
+const pwa = {
+  deferred: null,
+  standalone: matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone === true,
+  ios: /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1),
+  offline: null
+};
+function pwaRefresh() {
+  const can = !pwa.standalone && (!!pwa.deferred || pwa.ios);
+  $$('#btnInstall, [data-ab="install"]').forEach(b => b.hidden = !can);
+  const st = $("#abOffline");
+  if (st) st.textContent = (pwa.standalone ? "application installée" : "dans le navigateur") + " ; copie hors ligne "
+    + (pwa.offline === true ? "prête" : pwa.offline === false ? "en cours…" : "indisponible dans ce navigateur");
+}
+async function pwaInstall() {
+  if (pwa.deferred) { const d = pwa.deferred; pwa.deferred = null; d.prompt(); try { await d.userChoice; } catch (x) {} pwaRefresh(); }
+  else if (pwa.ios) toast("Sur iPhone et iPad : dans Safari, touchez le bouton Partager, puis « Sur l'écran d'accueil ».");
+}
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); pwa.deferred = e; pwaRefresh(); });
+window.addEventListener("appinstalled", () => { pwa.deferred = null; pwaRefresh(); toast("L'émulateur est installé : il se lance depuis son icône et fonctionne aussi hors ligne."); });
+$("#btnInstall").onclick = pwaInstall;
+/* Fichiers ouverts avec l'application installée (ordinateur : clic droit → Ouvrir avec) : rangés dans la Bibliothèque */
+if ("launchQueue" in window) launchQueue.setConsumer(async p => {
+  if (!p.files || !p.files.length) return;
+  const files = await Promise.all(p.files.map(h => h.getFile()));
+  importBatch = files;
+  for (const f of files) {
+    if (/\\.uae$/i.test(f.name)) await cfgImport(await f.text(), f.name);
+    else await importFile(f, null);
+  }
+});
+(function pwaOffline() {
+  if (!("serviceWorker" in navigator) || !window.caches) return pwaRefresh();
+  pwa.offline = false; pwaRefresh();
+  /* Copie hors ligne : prête quand la page, les deux cœurs et AROS sont dans le cache de la version en service */
+  const KEY_FILES = ["./", "amiberry.wasm", "amiberry.js", "puae.wasm", "aros-rom.bin.gz"];
   navigator.serviceWorker.ready.then(async () => {
-    let said = false; try { said = localStorage.getItem("a1200.offline") === "1"; } catch (x) {}
-    if (said) return;
-    for (let i = 0; i < 60; i++) {
+    let said = false; try { said = localStorage.getItem("a1200.offline2") === "1"; } catch (x) {}
+    for (let i = 0; i < 90; i++) {
       for (const k of await caches.keys()) {
-        if (k.startsWith("a1200-") && await (await caches.open(k)).match("puae.wasm")) {
-          try { localStorage.setItem("a1200.offline", "1"); } catch (x) {}
-          if (!running) toast("L'émulateur est prêt à fonctionner hors ligne.");
+        if (!k.startsWith("a1200-")) continue;
+        const c = await caches.open(k);
+        if ((await Promise.all(KEY_FILES.map(f => c.match(f, { ignoreSearch: true })))).every(Boolean)) {
+          pwa.offline = true; pwaRefresh();
+          if (!said) { try { localStorage.setItem("a1200.offline2", "1"); } catch (x) {} if (!running) toast("L'émulateur est prêt à fonctionner hors ligne."); }
           return;
         }
       }

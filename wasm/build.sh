@@ -70,6 +70,9 @@ if [ -f "$AMB/amiberry.js" ]; then
   # Bruits des lecteurs de disquettes d'Amiberry
   mkdir -p "$OUT/site/sons" && cp "$ROOT"/wasm-amiberry/src/data/floppy_sounds/*.wav "$OUT/site/sons/"
 else echo "cœur WinUAE 6 absent (wasm-amiberry/build.sh non lancé)"; fi
+# Convertisseur de disquettes IPF (module séparé, compilé avant par wasm-ipf/build.sh)
+if [ -f "$ROOT/wasm-ipf/out/ipf.js" ]; then cp "$ROOT/wasm-ipf/out/ipf.js" "$ROOT/wasm-ipf/out/ipf.wasm" "$OUT/site/"
+else echo "convertisseur IPF absent (wasm-ipf/build.sh non lancé)"; fi
 python3 "$ROOT/wasm/app/make-page.py" "$OUT/site/index.html"
 # Kickstart de secours : AROS d'août 2026, compressé (décompressé par la page)
 gzip -9 -n -c "$ROOT/vendor/aros/aros-20260820-rom.bin" > "$OUT/site/aros-rom.bin.gz"

@@ -5,7 +5,7 @@ name: Construire et publier le site
 # Les publications sont faites avec GITHUB_TOKEN : elles ne relancent pas ce workflow.
 on:
   push:
-    paths: ["wasm/**", "wasm-amiberry/**", "vendor/**", "src/**", "build.py", ".github/workflows/puae-wasm.yml"]
+    paths: ["wasm/**", "wasm-amiberry/**", "wasm-ipf/**", "vendor/**", "src/**", "build.py", ".github/workflows/puae-wasm.yml"]
   workflow_dispatch:
 
 concurrency:
@@ -46,6 +46,9 @@ jobs:
             exit 1
           fi
           tail -4 amb.log
+
+      - name: Compiler le convertisseur de disquettes IPF
+        run: wasm-ipf/build.sh
 
       - name: Compiler le cœur
         run: |
@@ -101,7 +104,7 @@ jobs:
           SITE=../site-main
           if [ "$GITHUB_REF_NAME" = "main" ]; then
             # Version principale à la racine
-            for f in index.html essai.html puae.js puae.wasm amiberry.js amiberry.wasm puae-frontend.js adf.js hdf.js lha.js ffs.js coi.js coi-sw.js aros-rom.bin.gz aros-ext.bin.gz \
+            for f in index.html essai.html puae.js puae.wasm amiberry.js amiberry.wasm ipf.js ipf.wasm puae-frontend.js adf.js hdf.js lha.js ffs.js coi.js coi-sw.js aros-rom.bin.gz aros-ext.bin.gz \
                      manifest.webmanifest icon-192.png icon-512.png icon-maskable-512.png apple-touch-icon.png; do
               cp "wasm/dist/site/$f" "$SITE/$f"
             done

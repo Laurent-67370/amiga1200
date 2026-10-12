@@ -1,0 +1,67 @@
+diff --git a/Makefile.common b/Makefile.common
+index a1e5c23..7f6cda6 100644
+--- a/Makefile.common
++++ b/Makefile.common
+@@ -88,6 +88,7 @@ SOURCES_C += \
+ 	$(EMU)/events.c \
+ 	$(EMU)/expansion.c \
+ 	$(EMU)/fdi2raw.c\
++	$(EMU)/scp.c \
+ 	$(EMU)/filesys.c \
+ 	$(EMU)/filesys_unix.c \
+ 	$(EMU)/flashrom.c \
+diff --git a/retrodep/sysconfig.h b/retrodep/sysconfig.h
+index 160ae04..37abc53 100644
+--- a/retrodep/sysconfig.h
++++ b/retrodep/sysconfig.h
+@@ -54,7 +54,7 @@
+ //#define UAEGFX_INTERNAL /* built-in libs:picasso96/uaegfx.card */
+ //#define BSDSOCKET /* bsdsocket.library emulation */
+ #define CAPS /* CAPS-image support */
+-//#define SCP /* SuperCardPro */
++#define SCP /* SuperCardPro */
+ #define FDI2RAW /* FDI 1.0 and 2.x image support */
+ //#define PROWIZARD /* Pro-Wizard module ripper */
+ #define ARCADIA /* Arcadia arcade system */
+diff --git a/sources/src/include/scp.h b/sources/src/include/scp.h
+new file mode 100644
+index 0000000..08b40c4
+--- /dev/null
++++ b/sources/src/include/scp.h
+@@ -0,0 +1,18 @@
++#ifndef UAE_SCP_H
++#define UAE_SCP_H
++
++#include "uae/types.h"
++
++struct zfile;
++
++int scp_open(struct zfile *zf, int drv, int *num_tracks);
++void scp_close(int drv);
++int scp_loadtrack(
++    uae_u16 *mfmbuf, uae_u16 *tracktiming, int drv,
++    int track, int *tracklength, int *multirev,
++    int *gapoffset, int *nextrev, bool setrev);
++void scp_loadrevolution(
++    uae_u16 *mfmbuf, int drv, uae_u16 *tracktiming,
++    int *tracklength);
++
++#endif /* UAE_SCP_H */
+diff --git a/sources/src/scp.c b/sources/src/scp.c
+index c7d7e2e..0ec44d4 100644
+--- a/sources/src/scp.c
++++ b/sources/src/scp.c
+@@ -19,6 +19,13 @@
+ 
+ #include <stdint.h>
+ 
++#ifndef min
++#define min(a, b) ((a) < (b) ? (a) : (b))
++#endif
++#ifndef max
++#define max(a, b) ((a) > (b) ? (a) : (b))
++#endif
++
+ #define MAX_REVS 5
+ 
+ enum pll_mode {

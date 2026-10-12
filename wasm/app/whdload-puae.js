@@ -16,6 +16,28 @@ function whdSlaveIn(u8) {
   try { const e = readLha(u8, true).find(x => !x.dir && /\.slave$/i.test(x.path)); return e ? e.path : null; }
   catch (e) { return null; }
 }
+/* Mémoire que demande le .slave (en-tête WHDLoad) : ws_BaseMemSize (Chip) et ws_ExpMem (Fast ; négatif = facultative) */
+function whdSlaveMem(u8, slave) {
+  try {
+    const e = readLha(u8).find(x => !x.dir && x.path === slave), d = e && e.data;
+    if (!d) return null;
+    const v = new DataView(d.buffer, d.byteOffset, d.byteLength);
+    for (let i = 4; i + 36 <= d.length && i < 4096; i += 2) {
+      if (String.fromCharCode(...d.subarray(i, i + 8)) !== "WHDLOADS") continue;
+      const s = i - 4; /* moveq #-1,d0 / rts, puis « WHDLOADS » */
+      return { chip: v.getUint32(s + 16), exp: v.getUint16(s + 12) >= 5 ? v.getInt32(s + 32) : 0 };
+    }
+  } catch (e) {}
+  return null;
+}
+/* Mémoire Fast Zorro III (Mo) à ajouter quand celle de la carte trappe ne suffit pas à ExpMem : WHDLoad s'arrêterait
+   sur « Can't allocate ExpMem ». La marge laisse de la place à WHDLoad et au préchargement des fichiers du jeu. */
+async function whdZ3For(rec, fastMb) {
+  const mem = whdSlaveMem(new Uint8Array(await rec.blob.arrayBuffer()), rec.slave);
+  const need = mem ? Math.ceil(Math.abs(mem.exp) / 1048576) : 0;
+  if (!need || need + 1 <= fastMb) return 0;
+  return [16, 32, 64, 128, 256].find(z => z >= need + 8) || 256;
+}
 async function importWhd(name, u8) {
   const all = await DB.all(), crc = crc32u8(u8);
   const same = all.find(r => r.kind === "whd" && r.crc === crc && r.size === u8.length);

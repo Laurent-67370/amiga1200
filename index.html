@@ -758,6 +758,16 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
         <label><input type="radio" name="fast" value="8"> + 8 Mo Fast</label>
       </div>
       <p class="hint">L'extension mémoire ajoute aussi l'horloge sauvegardée, comme une carte trappe.</p>
+      <h3>Mémoire Fast Zorro III</h3>
+      <div class="opt" data-setting="z3">
+        <label><input type="radio" name="z3" value="0"> Aucune</label>
+        <label><input type="radio" name="z3" value="16"> 16 Mo</label>
+        <label><input type="radio" name="z3" value="32"> 32 Mo</label>
+        <label><input type="radio" name="z3" value="64"> 64 Mo</label>
+        <label><input type="radio" name="z3" value="128"> 128 Mo</label>
+        <label><input type="radio" name="z3" value="256"> 256 Mo</label>
+      </div>
+      <p class="hint">En plus de la mémoire ci-dessus, pour l'A1200, l'A3000 et l'A4000 (pas pour l'A500, l'A600 ni les consoles CD). Sans carte accélératrice, le processeur de l'A1200 passe en 68020 complet (32 bits), nécessaire pour l'adresser. Un jeu WHDLoad qui demande plus de mémoire que prévu en reçoit automatiquement (OutRun Amiga Edition : 32 Mo, avec un 68040).</p>
 
       <h3>Compatibilité</h3>
       <div class="opt" data-setting="compat">
@@ -1084,7 +1094,7 @@ function newId() { return Date.now().toString(36) + Math.random().toString(36).s
    Réglages persistants
    ========================================================= */
 const DEFAULTS = { fast: "0", cpu: "orig", region: "pal", res: "hires", joy: "none", floppy: "orig",
-  crt: true, sharp: false, autosave: true, center: true, kbd: "azerty", kbdOpen: false, core: "winuae6", rtg: "0", midi: "off", midiOut: "", midiIn: "", compat: "normal", accel: "none", model: "a1200", romId500: "auto", floppySound: false, autoskip: true, romId: "aros", keyId: null, df0: null, df1: null, dh0: null, dh1: null, dh2: null, dh3: null, muted: false };
+  crt: true, sharp: false, autosave: true, center: true, kbd: "azerty", kbdOpen: false, core: "winuae6", rtg: "0", z3: "0", midi: "off", midiOut: "", midiIn: "", compat: "normal", accel: "none", model: "a1200", romId500: "auto", floppySound: false, autoskip: true, romId: "aros", keyId: null, df0: null, df1: null, dh0: null, dh1: null, dh2: null, dh3: null, muted: false };
 let S = Object.assign({}, DEFAULTS);
 try { Object.assign(S, JSON.parse(localStorage.getItem("a1200.settings") || "{}")); } catch (e) {}
 function saveSettings() { try { localStorage.setItem("a1200.settings", JSON.stringify(S)); } catch (e) {} }
@@ -1198,7 +1208,7 @@ function coreOptions() {
   return {
     puae_model: MODELS[modelOf(E)].core,
     puae_fastmem_size: String(+E.fast || 0),
-    puae_z3mem_size: +E.z3 > 0 ? String(+E.z3) : "auto", /* le cœur passe alors le processeur en 32 bits */
+    puae_z3mem_size: +E.z3 > 0 && HAS_ACCEL.has(modelOf(E)) ? String(+E.z3) : "auto", /* le cœur passe alors le processeur en 32 bits */
     puae_cpu_throttle: E.cpu === "max" ? "4000.0" : "0.0",
     puae_cpu_compatibility: E.compat === "max" ? "exact" : "normal",
     puae_video_standard: E.region === "ntsc" ? "NTSC" : "PAL",
@@ -1302,8 +1312,9 @@ async function powerOn() {
       if (whd.whdCfg) Object.assign(E, whd.whdCfg.e); /* réglages de la base WHDLoad pour ce jeu */
       /* Jeu qui demande plus de mémoire Fast que la carte trappe n'en donne : un jeu pour Amiga accéléré (OutRun Amiga
          Edition : 68030 à 50 MHz au minimum). Fast Zorro III, et 68040 à vitesse maximale si aucune carte n'est choisie. */
-      E.z3 = String(await whdZ3For(whd, +E.fast));
-      if (+E.z3) {
+      const z3 = await whdZ3For(whd, +E.fast + (+E.z3 || 0));
+      if (z3 > (+E.z3 || 0)) {
+        E.z3 = String(z3);
         const turbo = !E.accel || E.accel === "none";
         if (turbo) Object.assign(E, { accel: "040", cpu: "max" });
         toast(whd.name.replace(/\.(lha|lzh)$/i, "") + " demande plus de mémoire Fast : " + E.z3 + " Mo de Fast Zorro III ajoutés"
@@ -1316,7 +1327,7 @@ async function powerOn() {
     if (instJob && !resume) Object.assign(E, { model: "a1200", rtg: "0", accel: "none", fast: +E.fast ? E.fast : "8", _profile: "" });
     const cd = cdGame || (!resume && !whdGame && cdConsole) ? cdGame || "sans CD" : null; /* console CD, avec ou sans CD */
     const cdtv = !!cd && (resume ? E.model === "cdtv" : S.model === "cdtv");
-    if (cd && !resume) Object.assign(E, { model: cdtv ? "cdtv" : "a1200", fast: "0", accel: "none", rtg: "0", _profile: "" });
+    if (cd && !resume) Object.assign(E, { model: cdtv ? "cdtv" : "a1200", fast: "0", accel: "none", rtg: "0", z3: "0", _profile: "" });
     const cdRoms = cd && !cdtv ? await cd32Roms() : null;
     if (cd && !cdtv && !cdRoms) throw new Error("ROM de la CD32 absentes de la Bibliothèque");
     const cdtvExt = cdtv ? await cdtvExtRom() : null;
@@ -1467,7 +1478,7 @@ async function powerOff() {
 }
 function onStarted() {
   starting = false; running = true; setPowerUi("on");
-  $("#statMode").textContent = (E._cd ? (E._cd === "cdtv" ? "CDTV, " : "CD32, ") : modelOf(E) !== "a1200" ? MODELS[modelOf(E)].qs + ", " : "") + (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "") + (+E.z3 ? " +" + E.z3 + " Mo Z3" : "")
+  $("#statMode").textContent = (E._cd ? (E._cd === "cdtv" ? "CDTV, " : "CD32, ") : modelOf(E) !== "a1200" ? MODELS[modelOf(E)].qs + ", " : "") + (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "") + (+E.z3 && HAS_ACCEL.has(modelOf(E)) && !E._cd ? " +" + E.z3 + " Mo Z3" : "")
     + (HAS_ACCEL.has(modelOf(E)) && !E._cd && ACCEL[E.accel] && ACCEL[E.accel].label ? ", " + ACCEL[E.accel].label : "")
     + (E.core === "winuae6" ? ", WinUAE 6" + (+E.rtg > 0 && HAS_ACCEL.has(modelOf(E)) && !E._cd && !E._whd ? ", RTG " + E.rtg + " Mo" : "") : "") + (E.compat === "max" ? ", cycle exact" : "") + (E._profile ? ", profil " + E._profile : "") + (E._whd ? ", WHDLoad" + (whdGame && whdGame.whdCfg ? " (réglages de la base)" : "") : "");
   showCaptureHint();
@@ -1957,14 +1968,14 @@ async function refreshIdleRom() {
 }
 
 function syncSettingsForm() {
-  for (const k of ["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel", "model", "core", "rtg"]) {
+  for (const k of ["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel", "model", "core", "rtg", "z3"]) {
     $$('#winSettings input[name="' + k + '"]').forEach(i => i.checked = i.value === S[k]);
   }
   $("#optCenter").checked = S.center; $("#optSkip").checked = S.autoskip;
   $("#optCrt").checked = S.crt; $("#optSharp").checked = S.sharp; $("#optAutosave").checked = S.autosave; $("#optFloppySound").checked = !!S.floppySound;
   $("#restartHint").textContent = running ? "L'Amiga est allumé : ces réglages s'appliqueront au prochain allumage." : "Les réglages s'appliquent au prochain allumage.";
 }
-for (const k of ["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel", "model", "core", "rtg"]) {
+for (const k of ["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel", "model", "core", "rtg", "z3"]) {
   $$('#winSettings input[name="' + k + '"]').forEach(i => i.addEventListener("change", () => { S[k] = i.value; saveSettings(); if (k === "kbd" && S.kbdOpen) buildKeyboard(); }));
 }
 $("#optCenter").onchange = e => { S.center = e.target.checked; saveSettings(); };
@@ -2285,9 +2296,9 @@ function stateCtx() {
   for (const t of ["df0", "df1", ...HD_TAGS]) c[t] = mounted[t] ? mounted[t].id : null;
   return c;
 }
-const STATE_SETTINGS = ["compat", "cpu", "fast", "region", "joy", "floppy", "accel", "model", "core", "rtg", "chipset", "blitter", "collision", "chipmem", "slowmem"];
+const STATE_SETTINGS = ["compat", "cpu", "fast", "region", "joy", "floppy", "accel", "model", "core", "rtg", "z3", "chipset", "blitter", "collision", "chipmem", "slowmem"];
 /* Valeur d'un réglage absent des sauvegardes anciennes */
-const STATE_DEFAULTS = { accel: "none", model: "a1200", core: "puae", rtg: "0", chipset: "auto", blitter: "auto", collision: "playfields", chipmem: "auto", slowmem: "auto" };
+const STATE_DEFAULTS = { accel: "none", model: "a1200", core: "puae", rtg: "0", z3: "0", chipset: "auto", blitter: "auto", collision: "playfields", chipmem: "auto", slowmem: "auto" };
 
 async function statesFor(key) {
   return (await DB.all()).filter(r => r.kind === "state" && r.game === key).sort((a, b) => a.slot - b.slot);
@@ -4675,7 +4686,7 @@ function ctlLive() {
 }
 
 /* ---- Configurations nommées ---- */
-const CFG_KEYS = ["model", "core", "fast", "cpu", "compat", "region", "accel", "rtg", "floppy", "floppySound", "res", "center", "autoskip",
+const CFG_KEYS = ["model", "core", "fast", "cpu", "compat", "region", "accel", "rtg", "z3", "floppy", "floppySound", "res", "center", "autoskip",
   "crt", "sharp", "joy", "midi", ...CHIP_KEYS, "ctl", "romId", "romId500"];
 let CFGS = [];
 try { CFGS = JSON.parse(localStorage.getItem("a1200.configs") || "[]"); } catch (e) {}
@@ -4734,7 +4745,9 @@ async function cfgParseUae(text, fname) {
     const NATIVE = { a500: ["ocs", "ecs_agnus"], a600: ["ecs"], a1200: ["aga"], a3000: ["ecs"], a4000: ["aga"], cd32: ["aga"], cdtv: ["ecs_agnus"] };
     s.chipset = cs && ["ocs", "ecs_agnus", "ecs", "aga"].includes(cs) && !NATIVE[s.model].includes(cs) ? cs : "auto";
     if (HAS_ACCEL.has(s.model)) s.accel = cpu >= 60 ? "060" : cpu >= 40 ? "040" : cpu >= 30 && s.model === "a1200" ? "030" : "none";
-    const fastMb = (parseInt(kv.fastmem_size, 10) || 0) + (parseInt(kv.z3mem_size, 10) || 0) + (parseInt(kv.mbresmem_size, 10) || 0);
+    const fastMb = (parseInt(kv.fastmem_size, 10) || 0) + (parseInt(kv.mbresmem_size, 10) || 0);
+    const z3 = parseInt(kv.z3mem_size, 10) || 0;
+    if (HAS_ACCEL.has(s.model)) s.z3 = String(z3 ? [16, 32, 64, 128, 256].find(v => v >= z3) || 256 : 0);
     const vals = $$('#winSettings input[name="fast"]').map(i => +i.value).sort((a, b) => a - b);
     s.fast = String(fastMb ? (vals.filter(v => v && v <= fastMb).pop() || vals.find(v => v) || 0) : 0);
     const chip = parseInt(kv.chipmem_size, 10);

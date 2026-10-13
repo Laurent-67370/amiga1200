@@ -80,7 +80,7 @@ async function modelRomLabel(model, all) {
 { const _l = launchCd;
   launchCd = async rec => {
     if (S.model === "cdtv" && !running && !starting && !(await cdtvExtRom())) {
-      toast("Le CDTV a besoin de sa ROM d'extension (256 Ko) et d'un Kickstart 1.3 : importez-les (Réglages → Kickstart), puis touchez à nouveau le CD.", true);
+      toast("Le CDTV a besoin de sa ROM d'extension (256 Ko) et d'un Kickstart 1.3 : importez-les (Configuration → Kickstart), puis touchez à nouveau le CD.", true);
       return;
     }
     return _l(rec);

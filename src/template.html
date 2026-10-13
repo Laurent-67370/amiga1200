@@ -479,7 +479,7 @@ button{font:inherit}
         <h3>Lecteurs de disquettes</h3>
         <div class="opt"><label><input type="radio" name="p_floppy" value="orig"> Vitesse d'origine</label><label><input type="radio" name="p_floppy" value="turbo"> Turbo</label></div>
       </div>
-      <p class="hint">Le profil s'applique à l'allumage quand ce disque est dans DF0: ou branché sur DH0: ; il passe avant les Réglages généraux.</p>
+      <p class="hint">Le profil s'applique à l'allumage quand ce disque est dans DF0: ou branché sur DH0: ; il passe avant la configuration générale.</p>
     </div>
     <div class="actions"><button class="gad" data-close>Annuler</button><button class="gad primary" id="profSave">Enregistrer le profil</button></div>
   </div>
@@ -492,7 +492,7 @@ button{font:inherit}
     <div class="body">
       <h3>Démarrer comme un vrai A1200</h3>
       <ol class="help-list">
-        <li>Ouvrez <b>Réglages</b> et importez votre Kickstart 3.1 A1200 (40.068). Il est conservé dans ce navigateur. Sans Kickstart, l'émulateur démarre sur AROS, une réimplémentation libre.</li>
+        <li>Ouvrez la <b>Configuration</b> (panneau ROM) et importez votre Kickstart 3.1 A1200 (40.068). Il est conservé dans ce navigateur. Sans Kickstart, l'émulateur démarre sur AROS, une réimplémentation libre.</li>
         <li>Glissez la disquette <b>Workbench</b> (.adf) sur la page ou sur la fente du lecteur, à droite du boîtier.</li>
         <li>Cliquez sur <b>Allumer</b>. Pour changer de disquette en cours de route, utilisez <b>Insérer…</b> sous DF0:.</li>
       </ol>
@@ -508,7 +508,7 @@ button{font:inherit}
       <h3>Écran tactile</h3>
       <p>L'écran se comporte comme un pavé tactile : glissez un doigt pour déplacer la souris, touchez pour cliquer, touchez deux fois et gardez le doigt posé pour glisser une fenêtre ou une icône. Pour les menus, posez deux doigts (bouton droit), glissez jusqu'à l'option et relevez.</p>
       <h3>Compatibilité et vitesse</h3>
-      <p>Le mode <b>Rapide</b> convient à la plupart des logiciels. Si un jeu ou une démo affiche des défauts, essayez <b>Compatibilité maximale</b> dans Réglages, ou mieux, dans le <b>Profil</b> de sa disquette : le réglage ne servira qu'à lui. Quand l'ordinateur ne suit pas, l'émulateur saute des images pour garder le son et la vitesse de jeu justes ; le compteur sous l'écran indique alors « 1 image sur 2 ».</p>
+      <p>Le mode <b>Rapide</b> convient à la plupart des logiciels. Si un jeu ou une démo affiche des défauts, essayez <b>Compatibilité maximale</b> dans la Configuration, ou mieux, dans le <b>Profil</b> de sa disquette : le réglage ne servira qu'à lui. Quand l'ordinateur ne suit pas, l'émulateur saute des images pour garder le son et la vitesse de jeu justes ; le compteur sous l'écran indique alors « 1 image sur 2 ».</p>
       <h3>Enregistrement des disques</h3>
       <p>Quand l'Amiga écrit sur une disquette ou le disque dur, la copie de la Bibliothèque est mise à jour quelques secondes après la fin de l'écriture, ainsi qu'à l'extinction et quand vous quittez l'onglet. L'heure du dernier enregistrement s'affiche sur le lecteur.</p>
       <h3>Formats acceptés</h3>
@@ -1483,7 +1483,7 @@ $("#profSave").onclick = async () => {
     for (const k of PROFILE_KEYS) { const i = $('input[name="p_' + k + '"]:checked'); if (i) rec.profile[k] = i.value; }
   } else delete rec.profile;
   await DB.put(rec); closeWin();
-  toast(rec.profile ? "Profil enregistré pour " + rec.name + (running ? " : il s'appliquera au prochain allumage." : ".") : "Profil retiré : " + rec.name + " utilise les Réglages généraux.");
+  toast(rec.profile ? "Profil enregistré pour " + rec.name + (running ? " : il s'appliquera au prochain allumage." : ".") : "Profil retiré : " + rec.name + " utilise la configuration générale.");
   if ($("#winLib").classList.contains("open")) renderLib();
 };
 

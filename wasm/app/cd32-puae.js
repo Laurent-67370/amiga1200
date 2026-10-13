@@ -145,7 +145,7 @@ $("#lOpen").onclick = () => {
 async function launchCd(rec) {
   if (running || starting) return;
   if (!(await cd32Roms())) {
-    toast("La CD32 a besoin de ses ROM : le Kickstart CD32 40.060 et sa ROM d'extension (ou la ROM CD32 complète d'1 Mo, Amiga Forever compris). Importez-les dans Réglages → Kickstart, puis touchez à nouveau le CD.", true);
+    toast("La CD32 a besoin de ses ROM : le Kickstart CD32 40.060 et sa ROM d'extension (ou la ROM CD32 complète d'1 Mo, Amiga Forever compris). Importez-les dans Configuration → Kickstart, puis touchez à nouveau le CD.", true);
     return;
   }
   for (const t of ["df0", "df1"]) if (mounted[t]) await ejectMedia(t, true);

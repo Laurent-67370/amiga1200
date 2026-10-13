@@ -106,7 +106,7 @@ function coreOptions() {
   return {
     puae_model: MODELS[modelOf(E)].core,
     puae_fastmem_size: String(+E.fast || 0),
-    puae_z3mem_size: +E.z3 > 0 ? String(+E.z3) : "auto", /* le cœur passe alors le processeur en 32 bits */
+    puae_z3mem_size: +E.z3 > 0 && HAS_ACCEL.has(modelOf(E)) ? String(+E.z3) : "auto", /* le cœur passe alors le processeur en 32 bits */
     puae_cpu_throttle: E.cpu === "max" ? "4000.0" : "0.0",
     puae_cpu_compatibility: E.compat === "max" ? "exact" : "normal",
     puae_video_standard: E.region === "ntsc" ? "NTSC" : "PAL",
@@ -210,8 +210,9 @@ async function powerOn() {
       if (whd.whdCfg) Object.assign(E, whd.whdCfg.e); /* réglages de la base WHDLoad pour ce jeu */
       /* Jeu qui demande plus de mémoire Fast que la carte trappe n'en donne : un jeu pour Amiga accéléré (OutRun Amiga
          Edition : 68030 à 50 MHz au minimum). Fast Zorro III, et 68040 à vitesse maximale si aucune carte n'est choisie. */
-      E.z3 = String(await whdZ3For(whd, +E.fast));
-      if (+E.z3) {
+      const z3 = await whdZ3For(whd, +E.fast + (+E.z3 || 0));
+      if (z3 > (+E.z3 || 0)) {
+        E.z3 = String(z3);
         const turbo = !E.accel || E.accel === "none";
         if (turbo) Object.assign(E, { accel: "040", cpu: "max" });
         toast(whd.name.replace(/\.(lha|lzh)$/i, "") + " demande plus de mémoire Fast : " + E.z3 + " Mo de Fast Zorro III ajoutés"
@@ -224,7 +225,7 @@ async function powerOn() {
     if (instJob && !resume) Object.assign(E, { model: "a1200", rtg: "0", accel: "none", fast: +E.fast ? E.fast : "8", _profile: "" });
     const cd = cdGame || (!resume && !whdGame && cdConsole) ? cdGame || "sans CD" : null; /* console CD, avec ou sans CD */
     const cdtv = !!cd && (resume ? E.model === "cdtv" : S.model === "cdtv");
-    if (cd && !resume) Object.assign(E, { model: cdtv ? "cdtv" : "a1200", fast: "0", accel: "none", rtg: "0", _profile: "" });
+    if (cd && !resume) Object.assign(E, { model: cdtv ? "cdtv" : "a1200", fast: "0", accel: "none", rtg: "0", z3: "0", _profile: "" });
     const cdRoms = cd && !cdtv ? await cd32Roms() : null;
     if (cd && !cdtv && !cdRoms) throw new Error("ROM de la CD32 absentes de la Bibliothèque");
     const cdtvExt = cdtv ? await cdtvExtRom() : null;
@@ -375,7 +376,7 @@ async function powerOff() {
 }
 function onStarted() {
   starting = false; running = true; setPowerUi("on");
-  $("#statMode").textContent = (E._cd ? (E._cd === "cdtv" ? "CDTV, " : "CD32, ") : modelOf(E) !== "a1200" ? MODELS[modelOf(E)].qs + ", " : "") + (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "") + (+E.z3 ? " +" + E.z3 + " Mo Z3" : "")
+  $("#statMode").textContent = (E._cd ? (E._cd === "cdtv" ? "CDTV, " : "CD32, ") : modelOf(E) !== "a1200" ? MODELS[modelOf(E)].qs + ", " : "") + (E.region === "ntsc" ? "NTSC" : "PAL") + (+E.fast ? " +" + E.fast + " Mo" : "") + (+E.z3 && HAS_ACCEL.has(modelOf(E)) && !E._cd ? " +" + E.z3 + " Mo Z3" : "")
     + (HAS_ACCEL.has(modelOf(E)) && !E._cd && ACCEL[E.accel] && ACCEL[E.accel].label ? ", " + ACCEL[E.accel].label : "")
     + (E.core === "winuae6" ? ", WinUAE 6" + (+E.rtg > 0 && HAS_ACCEL.has(modelOf(E)) && !E._cd && !E._whd ? ", RTG " + E.rtg + " Mo" : "") : "") + (E.compat === "max" ? ", cycle exact" : "") + (E._profile ? ", profil " + E._profile : "") + (E._whd ? ", WHDLoad" + (whdGame && whdGame.whdCfg ? " (réglages de la base)" : "") : "");
   showCaptureHint();

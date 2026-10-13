@@ -3,6 +3,7 @@
    Commandes tactiles : joystick virtuel et barre de touches en plein écran
    ========================================================= */
 let joyTouch = 0;                       /* directions et tir du joystick virtuel */
+let vjoyShow = null;                    /* afficher ou masquer le joystick virtuel (configuration automatique) */
 function sendJoy() { if (running && machine) machine.setJoy(0, joyKeys | joyTouch); }
 
 (function touchControls() {
@@ -75,8 +76,16 @@ function sendJoy() { if (running && machine) machine.setJoy(0, joyKeys | joyTouc
     $$("[data-vjoy]").forEach(b => b.setAttribute("aria-pressed", v ? "true" : "false"));
     if (!v) { joyTouch = 0; sendJoy(); }
   };
-  $$("[data-vjoy]").forEach(b => b.onclick = () => setVjoy(!S.vjoy));
+  /* Bouton Joystick : inverse ce qui est affiché ; pendant une partie, le choix est retenu pour ce jeu */
+  $$("[data-vjoy]").forEach(b => b.onclick = () => { const v = pad.hidden; setVjoy(v); if (typeof autoRememberTouch === "function") autoRememberTouch(v).catch(() => {}); });
   setVjoy(!!S.vjoy && isTouch);
+  /* Affichage choisi par la configuration automatique (le réglage enregistré ne change pas) */
+  vjoyShow = (v, temp) => {
+    if (!temp) { setVjoy(v); return; }
+    pad.hidden = !v;
+    $$("[data-vjoy]").forEach(b => b.setAttribute("aria-pressed", v ? "true" : "false"));
+    if (!v) { joyTouch = 0; sendJoy(); }
+  };
 
   /* ---- Barre plein écran : clavier, joystick, touches courantes ---- */
   $$("#fsBar [data-tap]").forEach(b => b.onclick = () => tap(b.dataset.tap.split("+")));

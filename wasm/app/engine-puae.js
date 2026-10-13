@@ -358,7 +358,6 @@ async function powerOn() {
       if (amb) machine.M._retro_set_controller_port_device(1, AMB_CD32PAD); else machine.M._retro_set_controller_port_device(0, CD32PAD);
     }
     if (cd && !cdtv) document.documentElement.dataset.cd32 = "1";
-    if (whd && whd.whdCfg && whd.whdCfg.mouse && isTouch) toast("Ce jeu se joue à la souris : un doigt la déplace, une touche clique.");
     machine.inputBlocked = false;
     E._rom = romId;
     onStarted();

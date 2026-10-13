@@ -792,6 +792,7 @@ page = page.replace('accept = ".adf,', 'accept = ".adf,.ipf,.scp,').replace('pic
 rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Disquettes protégées (IPF, SCP)</h3>
       <p>Les images <b>.ipf</b> de la Software Preservation Society, qui gardent les protections contre la copie des disquettes d'origine, sont converties à l'import en flux magnétique SCP : minutage des pistes et bits faibles compris (trois tours de disque). Les captures <b>.scp</b> (SuperCard Pro, Greaseweazle) s'importent aussi. Ces disquettes sont protégées en écriture. Conversion par la bibliothèque SPS Decoder Library 5.1 (© 2001-2014 István Fábián, KryoFlux Products &amp; Services Ltd), licence non commerciale, sources dans le dépôt (vendor/capsimg).</p>
       <h3>Copier des fichiers sur le disque dur</h3>''')
+rep("/* Profil par disque */", (APP / "autocfg-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 rep("/* Profil par disque */", (APP / "amberry-cfg-puae.js").read_text(encoding="utf-8") + "\n" + (APP / "amberry-gui-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)

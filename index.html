@@ -509,6 +509,40 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
   .ab-pane{padding:10px 6px}
   .ab-btn{min-width:0;flex:1 1 auto}
 }
+/* ---------- Navigation : barre de commandes en groupes ---------- */
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 0}
+.toolbar .tb-group{display:flex;flex-wrap:wrap;align-items:center;gap:5px;padding:0 8px}
+.toolbar .tb-group{border-left:1px solid rgba(0,0,0,.28);box-shadow:-1px 0 0 rgba(255,255,255,.35)}
+.toolbar .tb-group.tb-first{padding-left:0;border-left:0;box-shadow:none}
+.toolbar .tb-group:last-child{margin-left:auto;padding-right:0;border-left:0;box-shadow:none}
+.toolbar .tb-group[hidden]{display:none}
+.toolbar [hidden]{display:none!important}
+.toolbar .gad{font-size:13px;padding:5px 7px;gap:5px}
+@media (min-width:701px){
+  .toolbar .tb-icon{padding:5px 8px}
+  .toolbar .tb-icon .tb-lbl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+}
+/* Lecteurs supplémentaires */
+.drives .drive[hidden]{display:none}
+.drives .drives-more{grid-column:1/-1;justify-self:start}
+.drives .drives-more[hidden]{display:none}
+/* Interface : liste des sections (téléphone) */
+.ab-select{display:none}
+/* Le message ne cache pas la barre du bas de l'interface */
+body:has(#ambGui:not([hidden])) .toast{bottom:64px}
+@media (max-width:760px){
+  #ambGui .ab-select{display:block;margin:6px 4px 2px;padding:7px 8px;font:inherit;font-size:15px;background:#fff;color:#000;border:2px solid;border-color:#000 #fff #fff #000}
+  #ambGui .ab-side{display:none}
+  body:has(#ambGui:not([hidden])) .toast{bottom:118px}
+}
+/* Téléphone : barre de commandes en grille d'icônes légendées */
+@media (max-width:700px){
+  .toolbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:8px}
+  .toolbar .tb-group{display:contents}
+  .toolbar .gad{flex-direction:column;justify-content:center;gap:3px;min-height:54px;padding:5px 2px;font-size:11.5px;white-space:normal;text-align:center;line-height:1.15}
+  .toolbar .gad svg{width:19px;height:19px}
+  .toolbar .gad span{display:contents}
+}
 </style>
 </head>
 <body>
@@ -911,7 +945,7 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
         <h3>Lecteurs de disquettes</h3>
         <div class="opt"><label><input type="radio" name="p_floppy" value="orig"> Vitesse d'origine</label><label><input type="radio" name="p_floppy" value="turbo"> Turbo</label></div>
       </div>
-      <p class="hint">Le profil s'applique à l'allumage quand ce disque est dans DF0: ou branché sur DH0: ; il passe avant les Réglages généraux.</p>
+      <p class="hint">Le profil s'applique à l'allumage quand ce disque est dans DF0: ou branché sur DH0: ; il passe avant la configuration générale.</p>
     </div>
     <div class="actions"><button class="gad" data-close>Annuler</button><button class="gad primary" id="profSave">Enregistrer le profil</button></div>
   </div>
@@ -944,7 +978,7 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
     <div class="body">
       <h3>Démarrer comme un vrai A1200</h3>
       <ol class="help-list">
-        <li>Ouvrez <b>Réglages</b> et importez votre Kickstart 3.1 A1200 (40.068). Il est conservé dans ce navigateur. Sans Kickstart, l'émulateur démarre sur AROS, une réimplémentation libre.</li>
+        <li>Ouvrez la <b>Configuration</b> (panneau ROM) et importez votre Kickstart 3.1 A1200 (40.068). Il est conservé dans ce navigateur. Sans Kickstart, l'émulateur démarre sur AROS, une réimplémentation libre.</li>
         <li>Glissez la disquette <b>Workbench</b> (.adf) sur la page ou sur la fente du lecteur, à droite du boîtier.</li>
         <li>Cliquez sur <b>Allumer</b>. Pour changer de disquette en cours de route, utilisez <b>Insérer…</b> sous DF0:.</li>
       </ol>
@@ -977,13 +1011,13 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
       <h3>Réglages par jeu WHDLoad</h3>
       <p>Au lancement d'un jeu WHDLoad, l'émulateur consulte la base de réglages de l'émulateur Amiberry (plus de 11 000 jeux des collections WHDLoad, projet Amiberry-XML-Builder) : NTSC, processeur plus rapide, cycle exact, blitter immédiat, souris ou manette CD32 sont appliqués tout seuls. Le jeu est reconnu par le nom de son archive (gardez le nom d'origine), sinon par son empreinte. Ce que la base indique s'affiche sous la vignette du jeu. La base est téléchargée depuis GitHub au premier jeu, puis rafraîchie tous les 30 jours ou depuis les Réglages.</p>
       <h3>CD32</h3>
-      <p>Ouvrez l'image d'un CD de CD32 : un fichier <b>.iso</b>, ou un <b>.cue</b> choisi ou glissé <i>en même temps que ses pistes .bin</i> (CD audio compris). Le CD rejoint la Bibliothèque et sa vignette lance la console : 68EC020, AGA, 2 Mo, lecteur CD et manette CD32 à 7 boutons (une manette USB y correspond, avec ses gâchettes ; sur écran tactile, le bouton ▶ est Play). Importez d'abord les ROM de la console dans Réglages → Kickstart : le Kickstart CD32 40.060 et sa ROM d'extension, ou la ROM CD32 complète d'1 Mo ; elles ne remplacent pas le Kickstart de l'A1200.</p>
+      <p>Ouvrez l'image d'un CD de CD32 : un fichier <b>.iso</b>, ou un <b>.cue</b> choisi ou glissé <i>en même temps que ses pistes .bin</i> (CD audio compris). Le CD rejoint la Bibliothèque et sa vignette lance la console : 68EC020, AGA, 2 Mo, lecteur CD et manette CD32 à 7 boutons (une manette USB y correspond, avec ses gâchettes ; sur écran tactile, le bouton ▶ est Play). Importez d'abord les ROM de la console dans Configuration → Kickstart : le Kickstart CD32 40.060 et sa ROM d'extension, ou la ROM CD32 complète d'1 Mo ; elles ne remplacent pas le Kickstart de l'A1200.</p>
       <h3>Deux cœurs d'émulation</h3>
-      <p>Réglages → Cœur d'émulation : <b>WinUAE 6</b> (par défaut), compilé depuis le cœur libretro d'Amiberry, ou <b>PUAE</b> (base WinUAE 5, le cœur historique de cette page). WinUAE 6 est plus récent et plus fidèle, et à peine plus gourmand ; sur un téléphone ancien, PUAE garde un peu d'avance. Disquettes, disques durs, Kickstart, cartes accélératrices, WHDLoad, CD32 et sauvegardes d'état marchent avec les deux.</p>
+      <p>Configuration → Cœur d'émulation : <b>WinUAE 6</b> (par défaut), compilé depuis le cœur libretro d'Amiberry, ou <b>PUAE</b> (base WinUAE 5, le cœur historique de cette page). WinUAE 6 est plus récent et plus fidèle, et à peine plus gourmand ; sur un téléphone ancien, PUAE garde un peu d'avance. Disquettes, disques durs, Kickstart, cartes accélératrices, WHDLoad, CD32 et sauvegardes d'état marchent avec les deux.</p>
       <h3>Workbench en haute résolution (RTG)</h3>
-      <p>Avec WinUAE 6, Réglages → Carte graphique RTG ajoute la carte graphique virtuelle d'UAE (16 Mo sur le Zorro III) : des écrans de 640×480 à 1920×1080 en 16 millions de couleurs, bien plus rapides que les modes AGA. L'Amiga ne s'en sert que si son Workbench a les pilotes RTG : Picasso96 (gratuit, sur Aminet) ou P96 (inclus dans Amiga Forever) ; une fois installés, choisissez un mode « uaegfx » dans Prefs/ScreenMode. Les jeux, eux, gardent l'affichage AGA.</p>
+      <p>Avec WinUAE 6, Configuration → Carte graphique RTG ajoute la carte graphique virtuelle d'UAE (16 Mo sur le Zorro III) : des écrans de 640×480 à 1920×1080 en 16 millions de couleurs, bien plus rapides que les modes AGA. L'Amiga ne s'en sert que si son Workbench a les pilotes RTG : Picasso96 (gratuit, sur Aminet) ou P96 (inclus dans Amiga Forever) ; une fois installés, choisissez un mode « uaegfx » dans Prefs/ScreenMode. Les jeux, eux, gardent l'affichage AGA.</p>
       <h3>MIDI</h3>
-      <p>Avec WinUAE 6, Réglages → MIDI branche une interface MIDI virtuelle sur le port série de l'Amiga : ce qu'il envoie à 31 250 bauds part vers un instrument ou un logiciel MIDI de l'ordinateur (Web MIDI), et un clavier MIDI peut jouer sur l'Amiga. Dans le logiciel de musique, choisissez simplement le port série (serial.device) comme sortie MIDI.</p>
+      <p>Avec WinUAE 6, Configuration → MIDI branche une interface MIDI virtuelle sur le port série de l'Amiga : ce qu'il envoie à 31 250 bauds part vers un instrument ou un logiciel MIDI de l'ordinateur (Web MIDI), et un clavier MIDI peut jouer sur l'Amiga. Dans le logiciel de musique, choisissez simplement le port série (serial.device) comme sortie MIDI.</p>
       <h3>A600, A3000, A4000 et CDTV</h3>
       <p>Avec le cœur WinUAE 6, le choix du modèle (accueil ou Réglages) s'étend à l'<b>Amiga 600</b> (68000, ECS, IDE), à l'<b>Amiga 3000</b> (68030, ECS, 32 bits), à l'<b>Amiga 4000</b> (68030, AGA, 32 bits ; la carte accélératrice 68040/68060 et la carte RTG s'y ajoutent) et au <b>CDTV</b> (la console CD de 1991). Le Kickstart est pris tout seul dans la Bibliothèque : celui du modèle s'il y est (reconnu par son empreinte), sinon un voisin (3.1 de l'A4000 pour l'A3000…), sinon celui de l'A1200, sinon AROS. Le CDTV demande un Kickstart 1.3 et sa ROM d'extension de 256 Ko ; ses CD se lancent comme ceux de la CD32, d'une touche sur leur vignette.</p>
       <h3>Configurations, chipset et commandes</h3>
@@ -997,7 +1031,7 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
       <h3>Sauvegardes d'état</h3>
       <p>Le bouton <b>Sauvegardes</b> fige la machine entière dans l'un des 4 emplacements du jeu en cours (la disquette de DF0:, ou le disque dur). <b>Reprendre</b> la remet exactement dans cet état, avec les mêmes disques et réglages ; si besoin l'Amiga se rallume tout seul. Raccourcis : <span class="kbd">Ctrl</span>+<span class="kbd">Maj</span>+<span class="kbd">S</span> sauvegarde dans l'emplacement 1, <span class="kbd">Ctrl</span>+<span class="kbd">Maj</span>+<span class="kbd">R</span> le reprend.</p>
       <h3>Compatibilité et vitesse</h3>
-      <p>Le mode <b>Rapide</b> convient à la plupart des logiciels. Si un jeu ou une démo affiche des défauts, essayez <b>Compatibilité maximale</b> dans Réglages, ou mieux, dans le <b>Profil</b> de sa disquette : le réglage ne servira qu'à lui. Quand l'ordinateur ne suit pas, l'émulateur saute des images pour garder le son et la vitesse de jeu justes ; le compteur sous l'écran indique alors « 1 image sur 2 ».</p>
+      <p>Le mode <b>Rapide</b> convient à la plupart des logiciels. Si un jeu ou une démo affiche des défauts, essayez <b>Compatibilité maximale</b> dans la Configuration, ou mieux, dans le <b>Profil</b> de sa disquette : le réglage ne servira qu'à lui. Quand l'ordinateur ne suit pas, l'émulateur saute des images pour garder le son et la vitesse de jeu justes ; le compteur sous l'écran indique alors « 1 image sur 2 ».</p>
       <h3>Enregistrement des disques</h3>
       <p>Quand l'Amiga écrit sur une disquette ou le disque dur, la copie de la Bibliothèque est mise à jour quelques secondes après la fin de l'écriture, ainsi qu'à l'extinction et quand vous quittez l'onglet. L'heure du dernier enregistrement s'affiche sur le lecteur.</p>
       <h3>Formats acceptés</h3>
@@ -1344,7 +1378,7 @@ async function powerOn() {
     /* AROS ne tient pas dans le seul Mo de l'A600 : 4 Mo de Fast, comme une carte PCMCIA */
     if (model === "a600" && romId === "aros" && !+E.fast) { E.fast = "4"; toast("Amiga 600 avec AROS : 4 Mo de mémoire Fast ajoutés (AROS ne tient pas dans 1 Mo). Avec un vrai Kickstart 2.05 ou 3.1, l'A600 garde sa mémoire d'origine."); }
     if (cdtv && romId === "aros") throw new Error("le CDTV a besoin d'un vrai Kickstart (1.3 de préférence) dans la Bibliothèque");
-    if (a500 && romId === "aros" && !resume) toast("Mode Amiga 500 sans Kickstart 1.3 : AROS démarre, mais la plupart des jeux A500 ont besoin du vrai Kickstart (Réglages).", true);
+    if (a500 && romId === "aros" && !resume) toast("Mode Amiga 500 sans Kickstart 1.3 : AROS démarre, mais la plupart des jeux A500 ont besoin du vrai Kickstart (Configuration → ROM).", true);
     skip.reset();
     machine = await PuaeMachine.create({
       canvas: $("#amigaScreen"), factory: await coreFactory(E.core),
@@ -3624,7 +3658,7 @@ $("#lOpen").onclick = () => {
 async function launchCd(rec) {
   if (running || starting) return;
   if (!(await cd32Roms())) {
-    toast("La CD32 a besoin de ses ROM : le Kickstart CD32 40.060 et sa ROM d'extension (ou la ROM CD32 complète d'1 Mo, Amiga Forever compris). Importez-les dans Réglages → Kickstart, puis touchez à nouveau le CD.", true);
+    toast("La CD32 a besoin de ses ROM : le Kickstart CD32 40.060 et sa ROM d'extension (ou la ROM CD32 complète d'1 Mo, Amiga Forever compris). Importez-les dans Configuration → Kickstart, puis touchez à nouveau le CD.", true);
     return;
   }
   for (const t of ["df0", "df1"]) if (mounted[t]) await ejectMedia(t, true);
@@ -3902,7 +3936,7 @@ async function modelRomLabel(model, all) {
 { const _l = launchCd;
   launchCd = async rec => {
     if (S.model === "cdtv" && !running && !starting && !(await cdtvExtRom())) {
-      toast("Le CDTV a besoin de sa ROM d'extension (256 Ko) et d'un Kickstart 1.3 : importez-les (Réglages → Kickstart), puis touchez à nouveau le CD.", true);
+      toast("Le CDTV a besoin de sa ROM d'extension (256 Ko) et d'un Kickstart 1.3 : importez-les (Configuration → Kickstart), puis touchez à nouveau le CD.", true);
       return;
     }
     return _l(rec);
@@ -5279,6 +5313,151 @@ abWrapSettings();
 /* Au chargement : l'interface, sauf si l'Amiga se rallume tout seul (rallumage, reprise d'une sauvegarde) */
 if (!sessionStorage.getItem("a1200.autostart")) abOpen("play");
 
+/* =========================================================
+   Navigation : commandes rangées par usage, mêmes mots partout, raccourcis
+   =========================================================
+   Barre de commandes en quatre groupes (Machine, Jeux, Écran et son, Émulateur), libellés et infobulles qui
+   donnent les raccourcis ; lecteurs aux verbes cohérents (disquette : Insérer, Éjecter ; disque dur : Brancher,
+   Débrancher), disques DH1: à DH3: repliés tant qu'ils sont vides ; sur téléphone, barre en grille d'icônes et
+   sections de l'interface dans une liste déroulante. */
+(function uxToolbar() {
+  const bar = $(".toolbar"); if (!bar) return;
+  const label = (id, txt, title) => {
+    const b = $("#" + id); if (!b) return;
+    if (txt) {
+      const sp = b.querySelector("span");
+      const t = [...b.childNodes].reverse().find(n => n.nodeType === 3 && n.textContent.trim());
+      if (id === "btnHelp") b.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="6.5"/><path d="M6 6.2a2 2 0 1 1 2.6 1.9c-.4.2-.6.5-.6.9v.8"/><circle cx="8" cy="11.8" r=".4" fill="currentColor"/></svg>Aide';
+      else if (t) t.textContent = " " + txt; else if (sp) sp.textContent = txt;
+    }
+    if (title) b.title = title;
+  };
+  label("btnSettings", "Configuration", "Configuration de l'émulateur : modèle, mémoire, affichage, commandes… (F12)");
+  label("btnHelp", "Aide", "Aide et informations (F12, puis Aide)");
+  label("btnLib", null, "Bibliothèque : vos disquettes, disques durs, jeux WHDLoad, CD et Kickstart");
+  label("btnStates", null, "Sauvegardes d'état : enregistrer ou reprendre une partie (Ctrl+Maj+S / Ctrl+Maj+R)");
+  label("btnFull", null, "Plein écran (Échap pour sortir)");
+  label("btnShot", null, "Capture de l'écran de l'Amiga en image PNG");
+  label("btnMute", null, "Couper ou remettre le son");
+  label("btnPause", null, "Mettre l'émulation en pause");
+  /* Écran et son : icônes seules sur grand écran (le nom reste lu par les lecteurs d'écran et en infobulle) */
+  for (const id of ["btnFull", "btnShot", "btnMute"]) {
+    const b = $("#" + id); if (!b) continue;
+    let sp = b.querySelector("span");
+    if (!sp) { const t = [...b.childNodes].reverse().find(n => n.nodeType === 3 && n.textContent.trim()); if (!t) continue; sp = document.createElement("span"); sp.textContent = t.textContent.trim(); t.replaceWith(sp); }
+    sp.classList.add("tb-lbl"); b.classList.add("tb-icon");
+  }
+  const groups = [["Machine", ["btnPower", "btnReset", "btnPause"]], ["Jeux et fichiers", ["btnLib", "btnStates"]],
+    ["Écran et son", ["btnFull", "btnShot", "btnMute"]], ["Émulateur", ["btnSettings", "btnInstall", "btnHelp"]]];
+  const placed = new Set();
+  for (const [name, ids] of groups) {
+    const g = document.createElement("div");
+    g.className = "tb-group"; g.setAttribute("role", "group"); g.setAttribute("aria-label", name);
+    for (const id of ids) { const b = $("#" + id); if (b) { g.appendChild(b); placed.add(b); } }
+    bar.appendChild(g);
+  }
+  for (const b of [...bar.querySelectorAll(":scope > button")]) if (!placed.has(b)) bar.lastElementChild.appendChild(b);
+  bar.querySelectorAll(":scope > .sep").forEach(s => s.remove());
+  /* Groupe sans bouton visible (Amiga éteint : Machine) masqué, séparateurs seulement entre groupes affichés */
+  const tidy = () => {
+    let first = true;
+    for (const g of bar.querySelectorAll(".tb-group")) {
+      const vis = [...g.children].some(b => !b.hidden && getComputedStyle(b).display !== "none");
+      if (g.hidden === vis) g.hidden = !vis; /* sans changement, pas d'écriture : l'observateur ne se relance pas */
+      if (g.classList.contains("tb-first") !== (vis && first)) g.classList.toggle("tb-first", vis && first);
+      if (vis) first = false;
+    }
+  };
+  const mo = new MutationObserver(tidy);
+  mo.observe(bar, { subtree: true, attributes: true, attributeFilter: ["hidden"] });
+  mo.observe(document.body, { attributes: true, attributeFilter: ["class"] }); /* Amiga éteint ou allumé */
+  tidy();
+})();
+
+/* ---- Lecteurs : verbes cohérents, disques supplémentaires repliés ---- */
+let uxDrivesRefresh = () => {};
+(function uxDrives() {
+  for (const t of HD_TAGS) {
+    const c = $("#drive-" + t); if (!c) continue;
+    const set = (act, txt, title) => { const b = c.querySelector('[data-act="' + act + '"]'); if (b) { if (txt) b.textContent = txt; b.title = title; } };
+    set("insert", "Brancher…", "Brancher un disque dur de la Bibliothèque ou de l'ordinateur sur " + t.toUpperCase() + ":");
+    set("eject", "Débrancher", "Débrancher ce disque dur (il reste dans la Bibliothèque)");
+    set("blank", "Nouveau…", "Créer un disque dur vierge");
+    set("download", null, "Enregistrer une copie de ce disque dur sur l'ordinateur");
+    set("files", null, "Copier des fichiers de l'ordinateur sur ce disque dur, ou les récupérer");
+    set("profile", null, "Réglages propres à ce disque : modèle, processeur, mémoire…");
+  }
+  for (const t of ["df0", "df1"]) {
+    const c = $("#drive-" + t); if (!c) continue;
+    const set = (act, title) => { const b = c.querySelector('[data-act="' + act + '"]'); if (b) b.title = title; };
+    set("insert", "Insérer une disquette de la Bibliothèque ou de l'ordinateur dans " + t.toUpperCase() + ":");
+    set("eject", "Éjecter la disquette (elle reste dans la Bibliothèque)");
+    set("blank", "Insérer une disquette vierge formatée");
+    set("download", "Enregistrer une copie de cette disquette sur l'ordinateur");
+    set("profile", "Réglages propres à cette disquette : modèle, processeur, mémoire…");
+  }
+  const extra = HD_TAGS.slice(1).map(t => $("#drive-" + t)).filter(Boolean);
+  const box = $(".drives"); if (!box || !extra.length) return;
+  const tog = document.createElement("button");
+  tog.className = "gad small drives-more"; tog.type = "button";
+  tog.setAttribute("aria-expanded", "false");
+  box.appendChild(tog);
+  uxDrivesRefresh = () => {
+    const used = extra.filter(c => mounted[c.dataset.unit]).length;
+    const open = !!S.drivesMore || used > 0;
+    extra.forEach(c => c.hidden = !open);
+    tog.hidden = used > 0;
+    tog.setAttribute("aria-expanded", open ? "true" : "false");
+    tog.textContent = open ? "Masquer les disques DH1: à DH3:" : "Autres disques durs (DH1: à DH3:)…";
+  };
+  tog.onclick = () => { S.drivesMore = !S.drivesMore; saveSettings(); uxDrivesRefresh(); };
+  uxDrivesRefresh();
+})();
+{ const _sm = setMounted; setMounted = (tag, rec) => { _sm(tag, rec); uxDrivesRefresh(); }; }
+
+/* ---- Écran d'accueil : un seul « Ouvrir un fichier… » quand les trois étapes sont affichées ---- */
+{ const _r = typeof renderLauncher === "function" ? renderLauncher : null;
+  if (_r) renderLauncher = async (...a) => { const x = await _r(...a); const o = $("#lOpen"); if (o) o.hidden = !!$("#lMain .l-steps"); return x; }; }
+
+/* ---- Interface (téléphone) : sections dans une liste déroulante, au lieu d'un bandeau qui déborde ---- */
+{ let sel = null;
+  const fill = () => {
+    if (!sel || !ab.el) return;
+    sel.innerHTML = "";
+    let grp = null, og = null;
+    for (const p of AB_PANELS) {
+      if (!abVisible(p)) continue;
+      if (p.group !== grp) { grp = p.group; og = document.createElement("optgroup"); og.label = grp; sel.appendChild(og); }
+      const o = document.createElement("option"); o.value = p.id; o.textContent = p.label; o.selected = p.id === ab.panel; og.appendChild(o);
+    }
+  };
+  const make = () => {
+    if (sel || !ab.el) return;
+    sel = document.createElement("select");
+    sel.className = "ab-select"; sel.setAttribute("aria-label", "Section de la configuration");
+    sel.onchange = () => abShow(sel.value);
+    const side = ab.el.querySelector(".ab-side"); side.parentNode.insertBefore(sel, side);
+  };
+  const _show = abShow;
+  abShow = id => { _show(id); make(); fill(); };
+  if (ab.el) { make(); fill(); } /* l'interface est déjà ouverte au chargement */ }
+
+/* ---- Toucher : rappel court (le détail est dans l'Aide) ---- */
+{ const tip = $(".touch-tip"); if (tip) tip.textContent = "Écran tactile : un doigt déplace la souris, une touche clique, deux doigts ouvrent les menus. Le bouton Joystick affiche les commandes de jeu."; }
+
+/* ---- Aide : même nom partout, raccourcis réunis en tête ---- */
+{ const p = AB_PANELS.find(x => x.id === "about"); if (p) { p.label = "Aide et à propos"; if (ab.el) abNav(); }
+  const body = $("#winHelp .body");
+  if (body && !body.querySelector(".ux-keys")) {
+    const k = s => '<span class="kbd">' + s + "</span>";
+    const sec = document.createElement("div"); sec.className = "ux-keys";
+    sec.innerHTML = "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause. <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
+      + "<h3>Raccourcis clavier</h3><p>" + k("F12") + " ouvre ou ferme la Configuration (l'Amiga se met en pause). "
+      + k("Ctrl") + "+" + k("Maj") + "+" + k("S") + " sauvegarde la partie dans l'emplacement 1, " + k("Ctrl") + "+" + k("Maj") + "+" + k("R") + " la reprend. "
+      + k("Échap") + " rend la souris, ferme une fenêtre ou quitte le plein écran. Les infobulles des boutons rappellent ces raccourcis.</p>";
+    body.insertBefore(sec, body.firstChild);
+  } }
+
 /* Profil par disque */
 let profTarget = null;
 async function openProfile(tag) {
@@ -5301,7 +5480,7 @@ $("#profSave").onclick = async () => {
     for (const k of PROFILE_KEYS) { const i = $('input[name="p_' + k + '"]:checked'); if (i) rec.profile[k] = i.value; }
   } else delete rec.profile;
   await DB.put(rec); closeWin();
-  toast(rec.profile ? "Profil enregistré pour " + rec.name + (running ? " : il s'appliquera au prochain allumage." : ".") : "Profil retiré : " + rec.name + " utilise les Réglages généraux.");
+  toast(rec.profile ? "Profil enregistré pour " + rec.name + (running ? " : il s'appliquera au prochain allumage." : ".") : "Profil retiré : " + rec.name + " utilise la configuration générale.");
   if ($("#winLib").classList.contains("open")) renderLib();
 };
 

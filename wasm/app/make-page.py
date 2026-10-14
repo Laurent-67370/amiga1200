@@ -712,7 +712,7 @@ rep(".tube > #vkbd{position:absolute;", """.vjoy-fire .vf3{display:none;width:mi
 [data-cd32] .vjoy-fire .vf3{display:block}
 .tube > #vkbd{position:absolute;""")
 rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>CD32</h3>
-      <p>Ouvrez l'image d'un CD de CD32 : un fichier <b>.iso</b>, ou un <b>.cue</b> choisi ou glissé <i>en même temps que ses pistes .bin</i> (CD audio compris). Le CD rejoint la Bibliothèque et sa vignette lance la console : 68EC020, AGA, 2 Mo, lecteur CD et manette CD32 à 7 boutons (une manette USB y correspond, avec ses gâchettes ; sur écran tactile, le bouton ▶ est Play). Importez d'abord les ROM de la console dans Réglages → Kickstart : le Kickstart CD32 40.060 et sa ROM d'extension, ou la ROM CD32 complète d'1 Mo ; elles ne remplacent pas le Kickstart de l'A1200.</p>
+      <p>Ouvrez l'image d'un CD de CD32 : un fichier <b>.iso</b>, ou un <b>.cue</b> choisi ou glissé <i>en même temps que ses pistes .bin</i> (CD audio compris). Le CD rejoint la Bibliothèque et sa vignette lance la console : 68EC020, AGA, 2 Mo, lecteur CD et manette CD32 à 7 boutons (une manette USB y correspond, avec ses gâchettes ; sur écran tactile, le bouton ▶ est Play). Importez d'abord les ROM de la console dans Configuration → Kickstart : le Kickstart CD32 40.060 et sa ROM d'extension, ou la ROM CD32 complète d'1 Mo ; elles ne remplacent pas le Kickstart de l'A1200.</p>
       <h3>Copier des fichiers sur le disque dur</h3>''')
 rep("Les archives .lzx doivent être extraites avant.", "Images de CD de CD32 : .iso, ou .cue avec ses pistes .bin. Les archives .lzx doivent être extraites avant.")
 
@@ -744,9 +744,9 @@ lst = '["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel
 assert page.count(lst) == 2
 page = page.replace(lst, '["fast", "cpu", "region", "res", "joy", "floppy", "kbd", "compat", "accel", "model", "core", "rtg", "z3"]')
 rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Deux cœurs d'émulation</h3>
-      <p>Réglages → Cœur d'émulation : <b>WinUAE 6</b> (par défaut), compilé depuis le cœur libretro d'Amiberry, ou <b>PUAE</b> (base WinUAE 5, le cœur historique de cette page). WinUAE 6 est plus récent et plus fidèle, et à peine plus gourmand ; sur un téléphone ancien, PUAE garde un peu d'avance. Disquettes, disques durs, Kickstart, cartes accélératrices, WHDLoad, CD32 et sauvegardes d'état marchent avec les deux.</p>
+      <p>Configuration → Cœur d'émulation : <b>WinUAE 6</b> (par défaut), compilé depuis le cœur libretro d'Amiberry, ou <b>PUAE</b> (base WinUAE 5, le cœur historique de cette page). WinUAE 6 est plus récent et plus fidèle, et à peine plus gourmand ; sur un téléphone ancien, PUAE garde un peu d'avance. Disquettes, disques durs, Kickstart, cartes accélératrices, WHDLoad, CD32 et sauvegardes d'état marchent avec les deux.</p>
       <h3>Workbench en haute résolution (RTG)</h3>
-      <p>Avec WinUAE 6, Réglages → Carte graphique RTG ajoute la carte graphique virtuelle d'UAE (16 Mo sur le Zorro III) : des écrans de 640×480 à 1920×1080 en 16 millions de couleurs, bien plus rapides que les modes AGA. L'Amiga ne s'en sert que si son Workbench a les pilotes RTG : Picasso96 (gratuit, sur Aminet) ou P96 (inclus dans Amiga Forever) ; une fois installés, choisissez un mode « uaegfx » dans Prefs/ScreenMode. Les jeux, eux, gardent l'affichage AGA.</p>
+      <p>Avec WinUAE 6, Configuration → Carte graphique RTG ajoute la carte graphique virtuelle d'UAE (16 Mo sur le Zorro III) : des écrans de 640×480 à 1920×1080 en 16 millions de couleurs, bien plus rapides que les modes AGA. L'Amiga ne s'en sert que si son Workbench a les pilotes RTG : Picasso96 (gratuit, sur Aminet) ou P96 (inclus dans Amiga Forever) ; une fois installés, choisissez un mode « uaegfx » dans Prefs/ScreenMode. Les jeux, eux, gardent l'affichage AGA.</p>
       <h3>Copier des fichiers sur le disque dur</h3>''')
 
 # MIDI par le navigateur (Web MIDI)
@@ -761,7 +761,7 @@ rep('''      <h3>Kickstart</h3>
 rep(".footnote{margin-top:18px", ".midi-ports{flex-direction:column;align-items:flex-start;gap:6px}\n.midi-ports[hidden]{display:none}\n.midi-ports select{margin-left:6px;max-width:260px}\n.footnote{margin-top:18px")
 rep("/* Profil par disque */", (APP / "midi-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>MIDI</h3>
-      <p>Avec WinUAE 6, Réglages → MIDI branche une interface MIDI virtuelle sur le port série de l'Amiga : ce qu'il envoie à 31 250 bauds part vers un instrument ou un logiciel MIDI de l'ordinateur (Web MIDI), et un clavier MIDI peut jouer sur l'Amiga. Dans le logiciel de musique, choisissez simplement le port série (serial.device) comme sortie MIDI.</p>
+      <p>Avec WinUAE 6, Configuration → MIDI branche une interface MIDI virtuelle sur le port série de l'Amiga : ce qu'il envoie à 31 250 bauds part vers un instrument ou un logiciel MIDI de l'ordinateur (Web MIDI), et un clavier MIDI peut jouer sur l'Amiga. Dans le logiciel de musique, choisissez simplement le port série (serial.device) comme sortie MIDI.</p>
       <h3>Copier des fichiers sur le disque dur</h3>''')
 
 # Autres modèles (A600, A3000, A4000, CDTV) avec WinUAE 6
@@ -794,6 +794,9 @@ rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Dis
       <h3>Copier des fichiers sur le disque dur</h3>''')
 rep("/* Profil par disque */", (APP / "autocfg-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 rep("/* Profil par disque */", (APP / "amberry-cfg-puae.js").read_text(encoding="utf-8") + "\n" + (APP / "amberry-gui-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+# Navigation : commandes en groupes, lecteurs cohérents, interface sur téléphone (après l'interface Amiberry)
+rep("/* Profil par disque */", (APP / "ux-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+rep("</style>", (APP / "ux-puae.css").read_text(encoding="utf-8") + "</style>")
 
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)
 assert not leftovers, f"restes de SAE : {sorted(set(leftovers))[:10]}"

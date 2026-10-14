@@ -3,14 +3,15 @@
    ========================================================= */
 let machine = null;
 let running = false, paused = false, starting = false;
-const mounted = { df0: null, df1: null, dh0: null, dh1: null, dh2: null, dh3: null }; /* {id, name} des médias en place */
+const mounted = { df0: null, df1: null, df2: null, df3: null, dh0: null, dh1: null, dh2: null, dh3: null }; /* {id, name} des médias en place */
 /* Disques durs : DH0: et DH1: sur le contrôleur IDE de l'A1200 (maître, esclave). Ni le Kickstart 3.1 ni AROS ne voient
    d'autres unités IDE : DH2: et DH3: passent par le pilote de disque d'UAE (uaehf.device), lisible par tout Kickstart */
 const HD_TAGS = ["dh0", "dh1", "dh2", "dh3"];
+const FD_TAGS = ["df0", "df1", "df2", "df3"]; /* lecteurs de disquettes : interne et trois externes, comme sur l'Amiga */
 const isHd = tag => /^dh/.test(tag);
 /* Où chaque média vit dans le système de fichiers du cœur pendant la session */
-const fsPath = { df0: null, df1: null, dh0: null, dh1: null, dh2: null, dh3: null };
-const DRIVE_NUM = { df0: 0, df1: 1 };
+const fsPath = { df0: null, df1: null, df2: null, df3: null, dh0: null, dh1: null, dh2: null, dh3: null };
+const DRIVE_NUM = { df0: 0, df1: 1, df2: 2, df3: 3 };
 
 /* Empreintes connues des Kickstart A1200 (CRC32 du fichier) */
 const KNOWN_ROMS = {
@@ -198,7 +199,7 @@ async function powerOn() {
     /* Reprise d'une sauvegarde : mêmes disques, même Kickstart, mêmes réglages qu'au moment de la sauvegarde */
     const resume = pendingResume; pendingResume = null;
     if (resume) {
-      for (const t of ["df0", "df1", ...HD_TAGS]) setMounted(t, resume.ctx[t] ? await DB.get(resume.ctx[t]) : null);
+      for (const t of [...FD_TAGS, ...HD_TAGS]) setMounted(t, resume.ctx[t] ? await DB.get(resume.ctx[t]) : null);
       whdGame = resume.ctx.whd ? await DB.get(resume.ctx.whd) : null;
       cdGame = resume.ctx.cd ? await DB.get(resume.ctx.cd) : null;
       E = Object.assign({}, S, { accel: "none", model: "a1200", core: "puae", rtg: "0" }, CHIP_DEFAULTS, resume.settings, { _profile: "" });
@@ -263,14 +264,17 @@ async function powerOn() {
     /* Pas de ROM de démarrage UAE : un vrai A1200 n'en a pas, et ses fils « pièges » passent par le fil principal
        de la page dans le navigateur — un blocage de la page (enregistrement d'un gros disque) faisait alors échouer
        les écritures IDE suivantes. */
-    const lines = [...(amb ? amberryLines(cd ? (cdtv ? "CDTV" : "CD32") : MODELS[model].qs, key) : []), "nr_floppies=2", "floppy1type=0", "boot_rom_uae=disabled", "uaeboard=disabled"];
+    /* Quatre lecteurs quand DF2: ou DF3: a une disquette (certains jeux n'aiment pas les lecteurs en trop : deux sinon) */
+    const nFloppies = !whd && !cd && (mounted.df2 || mounted.df3 || (resume && (resume.ctx.df2 || resume.ctx.df3))) ? 4 : 2;
+    E._floppies = nFloppies;
+    const lines = [...(amb ? amberryLines(cd ? (cdtv ? "CDTV" : "CD32") : MODELS[model].qs, key) : []), "nr_floppies=" + nFloppies, "floppy1type=0", ...(nFloppies > 2 ? ["floppy2type=0", "floppy3type=0"] : []), "boot_rom_uae=disabled", "uaeboard=disabled"];
     /* Une extension mémoire A1200 (carte trappe) porte une horloge sauvegardée par pile */
     if (+E.fast > 0) lines.push("rtc=MSM6242B");
     /* Carte accélératrice sans MMU, comme une Blizzard vue par AmigaOS (qui ne s'en sert pas) : le cœur active la MMU
        dès le 68030, et son émulation passe par setjmp/longjmp, très coûteux en WebAssembly (68040 : 22 ms par image) */
     if (HAS_ACCEL.has(model) && E.accel && E.accel !== "none") lines.push("mmu_model=0");
     if (arosExt) { machine.writeFile("/sys/aros-ext.bin", arosExt); lines.push("kickstart_ext_rom_file=/sys/aros-ext.bin"); }
-    for (const tag of ["df0", "df1"]) {
+    for (const tag of FD_TAGS) {
       fsPath[tag] = null;
       if (!mounted[tag] || whd || cd) continue;
       const r = await DB.get(mounted[tag].id);

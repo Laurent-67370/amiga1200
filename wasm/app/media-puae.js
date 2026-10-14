@@ -89,6 +89,12 @@ async function mountMedia(tag, rec) {
     else toast(rec.name + " branché sur " + tag.toUpperCase() + ":");
     return;
   }
+  /* DF2:, DF3: : le lecteur n'existe que si l'Amiga a été allumé avec (quatre lecteurs) */
+  if (running && DRIVE_NUM[tag] >= (E._floppies || 2)) {
+    setMounted(tag, rec);
+    toast(rec.name + " placée dans " + tag.toUpperCase() + ": ; ce lecteur sera branché au prochain allumage.");
+    return;
+  }
   if (running) {
     if (mounted[tag]) await ejectMedia(tag, true);
     const path = "/media/" + tag + "/" + safeName(rec.name);
@@ -117,14 +123,14 @@ async function ejectMedia(tag, silent) {
 }
 
 /* ---- Écritures de l'Amiga : on surveille la date de modification des fichiers du cœur ---- */
-const DRIVE_TAGS = ["df0", "df1", ...HD_TAGS];
+const DRIVE_TAGS = [...FD_TAGS, ...HD_TAGS];
 const perDrive = v => Object.fromEntries(DRIVE_TAGS.map(t => [t, v]));
 const dirty = perDrive(false);
 const dirtySince = perDrive(0);     /* première écriture non enregistrée */
 const seen = perDrive(0);           /* date du fichier lors du dernier enregistrement */
 const lastActivity = perDrive(0);   /* dernier allumage de la LED du lecteur */
 const savedAt = perDrive(null);
-const BASE_LABEL = { df0: "lecteur interne", df1: "lecteur externe", dh0: "IDE interne 2,5\"", dh1: "IDE, esclave", dh2: "disque UAE", dh3: "disque UAE" };
+const BASE_LABEL = { df0: "lecteur interne", df1: "lecteur externe", df2: "lecteur externe", df3: "lecteur externe", dh0: "IDE interne 2,5\"", dh1: "IDE, esclave", dh2: "disque UAE", dh3: "disque UAE" };
 function driveLabel(tag) {
   if (dirty[tag]) return "modifié, enregistrement…";
   if (savedAt[tag]) return "enregistré à " + savedAt[tag].toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });

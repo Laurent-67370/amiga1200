@@ -13,8 +13,9 @@
 }
 /* Lecteurs supplémentaires */
 .drives .drive[hidden]{display:none}
-.drives .drives-more{grid-column:1/-1;justify-self:start}
+.drives .drives-more-bar{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
 .drives .drives-more[hidden]{display:none}
+/* Ordre : disquettes, puis disques durs (les lecteurs supplémentaires restent à côté des leurs) */
 /* Interface : liste des sections (téléphone) */
 .ab-select{display:none}
 /* Le message ne cache pas la barre du bas de l'interface */

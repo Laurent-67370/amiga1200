@@ -12,10 +12,10 @@ let pendingResume = null; /* état à appliquer au prochain allumage */
 function gameKey(m = mounted) { return cdGame ? cdGame.id : whdGame ? whdGame.id : m.df0 ? m.df0.id : m.dh0 ? m.dh0.id : "aucun"; }
 function gameName(m = mounted) { return cdGame ? cdGame.name.replace(/\.(cue|iso)$/i, "") : whdGame ? whdGame.name.replace(/\.(lha|lzh)$/i, "") : m.df0 ? m.df0.name : m.dh0 ? m.dh0.name : "Sans disque"; }
 function stateCtx() {
-  if (whdGame) return { df0: null, df1: null, dh0: null, whd: whdGame.id, rom: E._rom || S.romId };
-  if (cdGame) return { df0: null, df1: null, dh0: null, cd: cdGame.id, rom: E._rom || S.romId };
+  if (whdGame) return { df0: null, df1: null, df2: null, df3: null, dh0: null, whd: whdGame.id, rom: E._rom || S.romId };
+  if (cdGame) return { df0: null, df1: null, df2: null, df3: null, dh0: null, cd: cdGame.id, rom: E._rom || S.romId };
   const c = { rom: E._rom || S.romId };
-  for (const t of ["df0", "df1", ...HD_TAGS]) c[t] = mounted[t] ? mounted[t].id : null;
+  for (const t of [...FD_TAGS, ...HD_TAGS]) c[t] = mounted[t] ? mounted[t].id : null;
   return c;
 }
 const STATE_SETTINGS = ["compat", "cpu", "fast", "region", "joy", "floppy", "accel", "model", "core", "rtg", "z3", "chipset", "blitter", "collision", "chipmem", "slowmem"];
@@ -55,12 +55,14 @@ async function saveStateSlot(slot) {
 function sameMachine(rec) {
   if (!running) return false;
   const c = stateCtx();
+  const nfd = x => x.df2 || x.df3 ? 4 : 2; /* nombre de lecteurs de disquettes à l'allumage */
+  if (!rec.ctx.whd && !rec.ctx.cd && nfd(rec.ctx) !== (E._floppies || 2)) return false;
   if (HD_TAGS.some(t => (c[t] || null) !== (rec.ctx[t] || null)) || c.rom !== rec.ctx.rom || (c.whd || null) !== (rec.ctx.whd || null) || (c.cd || null) !== (rec.ctx.cd || null)) return false;
   return STATE_SETTINGS.filter(k => k !== "joy").every(k => String(E[k] ?? STATE_DEFAULTS[k]) === String(rec.settings[k] ?? STATE_DEFAULTS[k]));
 }
 async function resumeState(id) {
   const rec = await DB.get(id); if (!rec) return;
-  for (const t of ["df0", "df1", ...HD_TAGS, "whd", "cd"]) {
+  for (const t of [...FD_TAGS, ...HD_TAGS, "whd", "cd"]) {
     if (rec.ctx[t] && !(await DB.get(rec.ctx[t]))) { toast("Un disque de cette sauvegarde a été supprimé de la Bibliothèque.", true); return; }
   }
   closeWin();
@@ -72,7 +74,7 @@ async function resumeState(id) {
 }
 /* Remet les disquettes de la sauvegarde là où le cœur les attend, puis charge l'état */
 async function applyState(rec, cold) {
-  for (const tag of rec.ctx.whd || rec.ctx.cd ? [] : ["df0", "df1"]) {
+  for (const tag of rec.ctx.whd || rec.ctx.cd ? [] : FD_TAGS) {
     const want = rec.ctx[tag] || null, have = mounted[tag] && mounted[tag].id;
     if (want === have) continue;
     if (want) await mountMedia(tag, await DB.get(want));

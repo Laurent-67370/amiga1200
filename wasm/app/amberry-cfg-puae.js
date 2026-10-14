@@ -326,7 +326,7 @@ async function cfgParseUae(text, fname) {
   const all = await DB.all(), base = p => (p || "").split(/[\\/]/).pop().toLowerCase();
   const find = (p, kinds) => { const b = base(p); return b ? all.find(r => kinds.includes(r.kind) && r.name.toLowerCase() === b) : null; };
   const mounts = [];
-  for (const n of [0, 1]) {
+  for (const n of [0, 1, 2, 3]) {
     const p = kv["floppy" + n]; if (!p) continue;
     const r = find(p, ["adf"]);
     if (r) mounts.push(["df" + n, r]); else notes.push("disquette DF" + n + ": " + base(p) + " absente de la Bibliothèque");
@@ -398,7 +398,7 @@ async function cfgImport(text, fname) {
   if (p.mounts.length && !running && !starting) {
     /* Les lecteurs du fichier remplacent ceux en place (disquettes d'un côté, disques durs de l'autre) */
     const fl = p.mounts.some(m => /^df/.test(m[0])), hd = p.mounts.some(m => isHd(m[0]));
-    for (const t of ["df0", "df1", ...HD_TAGS]) if (mounted[t] && (isHd(t) ? hd : fl)) setMounted(t, null);
+    for (const t of [...FD_TAGS, ...HD_TAGS]) if (mounted[t] && (isHd(t) ? hd : fl)) setMounted(t, null);
     for (const [t, r] of p.mounts) setMounted(t, r);
   } else if (p.mounts.length) p.notes.push("disques non insérés : l'Amiga est allumé");
   renderCfgs(c.name);

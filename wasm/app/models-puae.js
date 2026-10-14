@@ -99,7 +99,7 @@ $("#btnSettings").addEventListener("click", () => setTimeout(renderModelRom));
 /* Lecteurs : ce qu'est chaque unité sur le modèle choisi (ou allumé) */
 function baseDriveLabel(tag) {
   const m = running || starting ? (E._cd || modelOf(E)) : S.model;
-  if (m === "cd32" || m === "cdtv") return tag === "df0" || tag === "df1" ? "pas de lecteur sur la console" : "non branché sur la console";
+  if (m === "cd32" || m === "cdtv") return /^df/.test(tag) ? "pas de lecteur sur la console" : "non branché sur la console";
   if (isHd(tag) && m === "a500") return "non branché (l'A500 n'a pas d'IDE)";
   if (isHd(tag) && m === "a3000") return "disque UAE (SCSI)";
   if (tag === "dh0") return m === "a4000" ? "IDE interne 3,5\"" : "IDE interne 2,5\"";

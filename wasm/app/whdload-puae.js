@@ -66,7 +66,7 @@ async function launchWhd(rec) {
     toast("WHDLoad a besoin d'un vrai Kickstart : AROS ne lui suffit pas. Importez votre ROM Kickstart 3.1 de l'A1200 (bouton « Importer le mien… » de l'accueil), puis touchez à nouveau le jeu.", true);
     return;
   }
-  for (const t of ["df0", "df1"]) if (mounted[t]) await ejectMedia(t, true);
+  for (const t of FD_TAGS) if (mounted[t]) await ejectMedia(t, true);
   whdGame = rec;
   rec.used = Date.now(); await DB.put(rec);
   powerOn();

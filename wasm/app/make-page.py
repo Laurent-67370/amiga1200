@@ -620,17 +620,25 @@ rep('''      <h3>Écran tactile</h3>''', '''      <p>Dans <b>Réglages</b>, le j
       <h3>Écran tactile</h3>''')
 
 # Quatre disques durs : DH0: et DH1: (IDE maître et esclave), DH2: et DH3: (pilote de disque d'UAE)
-rep('df0: null, df1: null, dh0: null, muted: false', 'df0: null, df1: null, dh0: null, dh1: null, dh2: null, dh3: null, muted: false')
+rep('df0: null, df1: null, dh0: null, muted: false', 'df0: null, df1: null, df2: null, df3: null, dh0: null, dh1: null, dh2: null, dh3: null, muted: false')
 rep('n.textContent = rec ? rec.name : (tag === "dh0" ? "Aucun disque dur" : "Aucune disquette");',
     'n.textContent = rec ? rec.name : (/^dh/.test(tag) ? "Aucun disque dur" : "Aucune disquette");')
 rep('if (act === "insert") pickFile(tag === "dh0" ? ".hdf,.hdz,.zip,.gz"', 'if (act === "insert") pickFile(/^dh/.test(tag) ? ".hdf,.hdz,.zip,.gz"')
 rep('if (tag === "dh0") { if (running) { toast("Éteignez l\'Amiga pour brancher un nouveau disque dur.", true); return; } showWin("winHd"); }',
     'if (/^dh/.test(tag)) { if (running) { toast("Éteignez l\'Amiga pour brancher un nouveau disque dur.", true); return; } hdTarget = tag; showWin("winHd"); }')
 rep('''    for (const t of ["df0", "df1", "dh0"]) {
-      if (S[t])''', '''    for (const t of ["df0", "df1", ...HD_TAGS]) {
+      if (S[t])''', '''    for (const t of [...FD_TAGS, ...HD_TAGS]) {
       if (S[t])''')
 rep('''        btn("DH0:", async () => { if (running) { toast("Éteignez l'Amiga pour changer de disque dur.", true); return; } await mountMedia("dh0", r); renderLib(); }, inUse);''',
     '''        for (const t of HD_TAGS) btn(t.toUpperCase() + ":", async () => { if (running) { toast("Éteignez l'Amiga pour changer de disque dur.", true); return; } await mountMedia(t, r); renderLib(); }, inUse === t);''')
+# Lecteurs DF2: et DF3: (externes), sur le modèle de DF1:
+rep('''        btn("DF1:", async () => { await mountMedia("df1", r); renderLib(); }, inUse);''',
+    '''        for (const t of ["df1", "df2", "df3"]) btn(t.toUpperCase() + ":", async () => { await mountMedia(t, r); renderLib(); }, inUse);''')
+_i = page.find('    <div class="drive wb" id="drive-df1" data-unit="df1">')
+_j = page.find('\n    </div>\n', _i) + len('\n    </div>\n')
+assert _i >= 0 and _j > _i
+_fd = page[_i:_j]
+page = page[:_j] + "".join(_fd.replace('class="drive wb"', 'class="drive wb fd-extra"').replace("df1", "df%d" % _n).replace("DF1:", "DF%d:" % _n) for _n in (2, 3)) + page[_j:]
 # Panneaux DH1: à DH3:, sur le modèle de DH0:
 _i = page.find('    <div class="drive wb" id="drive-dh0" data-unit="dh0">')
 _j = page.find('\n    </div>\n', _i) + len('\n    </div>\n')

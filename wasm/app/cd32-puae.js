@@ -148,7 +148,7 @@ async function launchCd(rec) {
     toast("La CD32 a besoin de ses ROM : le Kickstart CD32 40.060 et sa ROM d'extension (ou la ROM CD32 complète d'1 Mo, Amiga Forever compris). Importez-les dans Configuration → Kickstart, puis touchez à nouveau le CD.", true);
     return;
   }
-  for (const t of ["df0", "df1"]) if (mounted[t]) await ejectMedia(t, true);
+  for (const t of FD_TAGS) if (mounted[t]) await ejectMedia(t, true);
   whdGame = null; cdGame = rec;
   rec.used = Date.now(); await DB.put(rec);
   powerOn();

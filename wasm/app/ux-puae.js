@@ -3,7 +3,7 @@
    =========================================================
    Barre de commandes en quatre groupes (Machine, Jeux, Écran et son, Émulateur), libellés et infobulles qui
    donnent les raccourcis ; lecteurs aux verbes cohérents (disquette : Insérer, Éjecter ; disque dur : Brancher,
-   Débrancher), disques DH1: à DH3: repliés tant qu'ils sont vides ; sur téléphone, barre en grille d'icônes et
+   Débrancher), lecteurs DF2:, DF3: et disques DH1: à DH3: repliés tant qu'ils sont vides ; sur téléphone, barre en grille d'icônes et
    sections de l'interface dans une liste déroulante. */
 (function uxToolbar() {
   const bar = $(".toolbar"); if (!bar) return;
@@ -72,7 +72,7 @@ let uxDrivesRefresh = () => {};
     set("files", null, "Copier des fichiers de l'ordinateur sur ce disque dur, ou les récupérer");
     set("profile", null, "Réglages propres à ce disque : modèle, processeur, mémoire…");
   }
-  for (const t of ["df0", "df1"]) {
+  for (const t of FD_TAGS) {
     const c = $("#drive-" + t); if (!c) continue;
     const set = (act, title) => { const b = c.querySelector('[data-act="' + act + '"]'); if (b) b.title = title; };
     set("insert", "Insérer une disquette de la Bibliothèque ou de l'ordinateur dans " + t.toUpperCase() + ":");
@@ -81,21 +81,28 @@ let uxDrivesRefresh = () => {};
     set("download", "Enregistrer une copie de cette disquette sur l'ordinateur");
     set("profile", "Réglages propres à cette disquette : modèle, processeur, mémoire…");
   }
-  const extra = HD_TAGS.slice(1).map(t => $("#drive-" + t)).filter(Boolean);
-  const box = $(".drives"); if (!box || !extra.length) return;
-  const tog = document.createElement("button");
-  tog.className = "gad small drives-more"; tog.type = "button";
-  tog.setAttribute("aria-expanded", "false");
-  box.appendChild(tog);
+  /* Lecteurs supplémentaires repliés tant qu'ils sont vides : DF2: et DF3:, DH1: à DH3: */
+  const box = $(".drives"); if (!box) return;
+  const bar = document.createElement("div"); bar.className = "drives-more-bar"; box.appendChild(bar);
+  const sets = [
+    { key: "floppiesMore", cards: ["df2", "df3"], more: "Lecteurs de disquettes DF2: et DF3:…", less: "Masquer DF2: et DF3:" },
+    { key: "drivesMore", cards: HD_TAGS.slice(1), more: "Autres disques durs (DH1: à DH3:)…", less: "Masquer les disques DH1: à DH3:" }
+  ].map(x => {
+    x.els = x.cards.map(t => $("#drive-" + t)).filter(Boolean);
+    x.tog = document.createElement("button"); x.tog.className = "gad small drives-more"; x.tog.type = "button";
+    x.tog.onclick = () => { S[x.key] = !S[x.key]; saveSettings(); uxDrivesRefresh(); };
+    bar.appendChild(x.tog);
+    return x;
+  }).filter(x => x.els.length);
   uxDrivesRefresh = () => {
-    const used = extra.filter(c => mounted[c.dataset.unit]).length;
-    const open = !!S.drivesMore || used > 0;
-    extra.forEach(c => c.hidden = !open);
-    tog.hidden = used > 0;
-    tog.setAttribute("aria-expanded", open ? "true" : "false");
-    tog.textContent = open ? "Masquer les disques DH1: à DH3:" : "Autres disques durs (DH1: à DH3:)…";
+    for (const x of sets) {
+      const used = x.els.filter(c => mounted[c.dataset.unit]).length, open = !!S[x.key] || used > 0;
+      x.els.forEach(c => c.hidden = !open);
+      x.tog.hidden = used > 0;
+      x.tog.setAttribute("aria-expanded", open ? "true" : "false");
+      x.tog.textContent = open ? x.less : x.more;
+    }
   };
-  tog.onclick = () => { S.drivesMore = !S.drivesMore; saveSettings(); uxDrivesRefresh(); };
   uxDrivesRefresh();
 })();
 { const _sm = setMounted; setMounted = (tag, rec) => { _sm(tag, rec); uxDrivesRefresh(); }; }
@@ -137,8 +144,49 @@ let uxDrivesRefresh = () => {};
     const k = s => '<span class="kbd">' + s + "</span>";
     const sec = document.createElement("div"); sec.className = "ux-keys";
     sec.innerHTML = "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause. <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
+      + "<h3>Quatre lecteurs de disquettes</h3><p>DF0: (interne) et trois lecteurs externes, DF1: à DF3: (DF2: et DF3: se déplient sous les lecteurs). Pour un jeu sur plusieurs disquettes, choisissez-les ou glissez-les <b>ensemble</b> (Insérer…, Ouvrir un fichier…, ou une archive .zip) : Disk 1 va dans DF0:, Disk 2 dans DF1:, etc., dans l'ordre des noms. DF2: et DF3: existent dès qu'une disquette y est placée à l'allumage ; sinon l'Amiga n'a que deux lecteurs, ce que certains jeux préfèrent. Les jeux qui savent lire plusieurs lecteurs ne demandent alors plus de changer de disquette.</p>"
       + "<h3>Raccourcis clavier</h3><p>" + k("F12") + " ouvre ou ferme la Configuration (l'Amiga se met en pause). "
       + k("Ctrl") + "+" + k("Maj") + "+" + k("S") + " sauvegarde la partie dans l'emplacement 1, " + k("Ctrl") + "+" + k("Maj") + "+" + k("R") + " la reprend. "
       + k("Échap") + " rend la souris, ferme une fenêtre ou quitte le plein écran. Les infobulles des boutons rappellent ces raccourcis.</p>";
     body.insertBefore(sec, body.firstChild);
   } }
+
+/* ---- Plusieurs disquettes d'un coup : choisies ou glissées ensemble, une par lecteur (DF0: à DF3:) ---- */
+const isFloppyFile = f => /\.(adf|adz|dms|ipf|scp)(\.gz)?$/i.test(f.name);
+async function insertFloppySet(files, start) {
+  const fl = files.filter(isFloppyFile).sort((a, b) => a.name.localeCompare(b.name, "fr", { numeric: true }));
+  const order = FD_TAGS.slice(Math.max(0, FD_TAGS.indexOf(start || "df0")));
+  const used = [];
+  for (const [i, f] of fl.entries()) { const t = order[i] || null; await importFile(f, t); if (t) used.push(t); }
+  for (const f of files.filter(f => !isFloppyFile(f))) await importFile(f);
+  setTimeout(() => toast(used.length + " disquettes insérées : " + fl.slice(0, used.length).map((f, i) => used[i].toUpperCase() + ": " + f.name.replace(/\.(adf|adz|dms|ipf|scp)(\.gz)?$/i, "")).join(", ")
+    + (fl.length > used.length ? " ; les autres sont dans la Bibliothèque." : ".")
+    + (running && used.some(t => DRIVE_NUM[t] >= (E._floppies || 2)) ? " DF2: et DF3: seront branchés au prochain allumage." : "")), 300);
+}
+function pickFloppies(start) {
+  const inp = $("#filePick"); inp.value = ""; inp.multiple = true; inp.accept = ".adf,.dms,.adz,.zip,.gz,.ipf,.scp";
+  inp.onchange = () => { const fs = [...inp.files]; if (fs.filter(isFloppyFile).length > 1) insertFloppySet(fs, start); else if (fs[0]) importFile(fs[0], start); };
+  inp.click();
+}
+/* Insérer… d'un lecteur : plusieurs fichiers possibles, à partir de ce lecteur */
+document.addEventListener("click", e => {
+  const b = e.target.closest('.drive [data-act="insert"]'); if (!b) return;
+  const tag = b.closest(".drive").dataset.unit; if (!/^df/.test(tag)) return;
+  e.preventDefault(); e.stopPropagation(); pickFloppies(tag);
+}, true);
+/* Ouvrir un fichier… : plusieurs disquettes vont dans les lecteurs, le reste dans la Bibliothèque */
+{ const o = $("#lOpen");
+  if (o) o.onclick = () => {
+    const inp = $("#filePick"); inp.value = ""; inp.multiple = true; inp.accept = ".adf,.adz,.dms,.zip,.gz,.lha,.lzh,.hdf,.rom,.bin,.key,.tar,.ipf,.scp,.iso,.cue";
+    inp.onchange = async () => { const fs = [...inp.files]; if (fs.filter(isFloppyFile).length > 1) insertFloppySet(fs, "df0"); else for (const f of fs) await importFile(f); };
+    inp.click();
+  }; }
+/* Glisser plusieurs disquettes sur la page ou sur un lecteur */
+window.addEventListener("drop", e => {
+  const files = [...((e.dataTransfer && e.dataTransfer.files) || [])];
+  if (files.filter(isFloppyFile).length < 2) return;
+  const tgt = typeof dropTarget === "string" && /^df/.test(dropTarget) ? dropTarget : "df0";
+  e.preventDefault(); e.stopPropagation();
+  dragDepth = 0; $("#dropzone").classList.remove("on"); $$(".drive, #slot").forEach(x => x.classList.remove("drop"));
+  insertFloppySet(files, tgt);
+}, true);

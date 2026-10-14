@@ -33,3 +33,8 @@ body:has(#ambGui:not([hidden])) .toast{bottom:64px}
   .toolbar .gad svg{width:19px;height:19px}
   .toolbar .gad span{display:contents}
 }
+/* Configuration : le panneau Lecteurs de disquettes montre les quatre lecteurs, celui des disques durs les quatre disques */
+#ambGui[data-panel="floppy"] .drives>#drive-df2,#ambGui[data-panel="floppy"] .drives>#drive-df3{display:flex!important}
+#ambGui[data-panel="hd"] .drives>.fd-extra{display:none!important}
+#ambGui[data-panel="hd"] .drives>.hd-extra{display:flex!important}
+#ambGui .drives .drives-more-bar{display:none}

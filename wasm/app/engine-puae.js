@@ -355,7 +355,7 @@ async function powerOn() {
       await midiAttach(machine);
       if (S.floppySound && !cd) await ambFloppySounds(machine).catch(e => console.warn("bruits des lecteurs indisponibles", e));
     }
-    await machine.start({ model: cd ? "CD32" : MODELS[model].core || "A1200OG", kickstart: kick, romKey: cd && !cdtv ? null : key, content, options });
+    await machine.start({ model: cd ? "CD32" : MODELS[model].core || "A1200OG", kickstart: kick, romKey: cd && !cdtv ? null : key, content, options, thread: S.thread !== "off" });
     machine.setMuted(!!S.muted);
     /* Jeu WHDLoad prévu pour la manette CD32 (7 boutons) : la manette du port joystick en devient une */
     if ((whd && whd.whdCfg && whd.whdCfg.cd32) || (cd && !cdtv)) {

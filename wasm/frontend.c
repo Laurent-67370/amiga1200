@@ -10,7 +10,10 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <time.h>
+#include <pthread.h>
+#include <unistd.h>
 #include <emscripten/emscripten.h>
+#include <emscripten/threading.h>
 #include "libretro.h"
 
 #define API EMSCRIPTEN_KEEPALIVE
@@ -41,15 +44,17 @@ API void fe_set_dirs(const char *sys, const char *save) {
 
 /* ---------- image ---------- */
 static int pix_fmt = RETRO_PIXEL_FORMAT_0RGB1555;
-static uint8_t *rgba; static size_t rgba_cap;
-static unsigned vid_w, vid_h;
+/* Deux images : le cœur écrit l'une pendant que la page affiche l'autre (l'émulation peut tourner dans son propre fil) */
+static uint8_t *vbuf[2]; static size_t vcap[2]; static unsigned vw[2], vh[2];
+static volatile int vfront;
 static unsigned long frame_count;
 
 static void video_cb(const void *data, unsigned w, unsigned h, size_t pitch) {
   if (!data) return; /* image identique à la précédente */
+  int b = vfront ^ 1;
   size_t need = (size_t)w * h * 4;
-  if (need > rgba_cap) { rgba = realloc(rgba, need); rgba_cap = need; }
-  vid_w = w; vid_h = h; frame_count++;
+  if (need > vcap[b]) { vbuf[b] = realloc(vbuf[b], need); vcap[b] = need; }
+  uint8_t *rgba = vbuf[b];
   uint8_t *o = rgba;
   if (pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888) {
     /* XRGB → RGBA en mots de 32 bits (WebAssembly est petit-boutiste : octets R, G, B, A en mémoire) */
@@ -67,40 +72,55 @@ static void video_cb(const void *data, unsigned w, unsigned h, size_t pitch) {
       }
     }
   }
+  vw[b] = w; vh[b] = h;
+  __atomic_store_n(&vfront, b, __ATOMIC_RELEASE);
+  __atomic_add_fetch(&frame_count, 1, __ATOMIC_RELEASE);
 }
-API uint8_t *fe_video_ptr(void) { return rgba; }
-API unsigned fe_video_w(void) { return vid_w; }
-API unsigned fe_video_h(void) { return vid_h; }
-API unsigned long fe_frame_count(void) { return frame_count; }
+API uint8_t *fe_video_ptr(void) { return vbuf[vfront]; }
+API unsigned fe_video_w(void) { return vw[vfront]; }
+API unsigned fe_video_h(void) { return vh[vfront]; }
+API unsigned long fe_frame_count(void) { return __atomic_load_n(&frame_count, __ATOMIC_ACQUIRE); }
 
 /* ---------- son : tampon circulaire stéréo 16 bits ---------- */
 #define AUD_FRAMES 32768
+/* Un seul écrivain (le cœur) et un seul lecteur (la page, ou l'AudioWorklet qui lit la mémoire partagée) :
+   chacun ne fait avancer que son propre index */
 static int16_t aud[AUD_FRAMES * 2];
 static unsigned aud_w, aud_r;
+static volatile int emu_warp = 1;
 static void aud_push(const int16_t *d, size_t frames) {
+  if (emu_warp > 1) return; /* turbo : le son est jeté */
+  unsigned w = __atomic_load_n(&aud_w, __ATOMIC_RELAXED);
   for (size_t i = 0; i < frames; i++) {
-    unsigned n = (aud_w + 1) % AUD_FRAMES;
-    if (n == aud_r) aud_r = (aud_r + 1) % AUD_FRAMES; /* plein : on jette le plus ancien */
-    aud[aud_w * 2] = d[i * 2]; aud[aud_w * 2 + 1] = d[i * 2 + 1]; aud_w = n;
+    unsigned n = (w + 1) % AUD_FRAMES;
+    if (n == __atomic_load_n(&aud_r, __ATOMIC_ACQUIRE)) break; /* plein : le lecteur ne suit plus, on jette le reste */
+    aud[w * 2] = d[i * 2]; aud[w * 2 + 1] = d[i * 2 + 1]; w = n;
   }
+  __atomic_store_n(&aud_w, w, __ATOMIC_RELEASE);
 }
 static void audio_cb(int16_t l, int16_t r) { int16_t s[2] = { l, r }; aud_push(s, 1); }
 static size_t audio_batch_cb(const int16_t *d, size_t frames) { aud_push(d, frames); return frames; }
 /* Copie jusqu'à max trames, en flottants entrelacés, dans dst ; renvoie le nombre de trames. */
 API unsigned fe_audio_read(float *dst, unsigned max) {
-  unsigned n = 0;
-  while (aud_r != aud_w && n < max) {
-    dst[n * 2] = aud[aud_r * 2] / 32768.0f; dst[n * 2 + 1] = aud[aud_r * 2 + 1] / 32768.0f;
-    aud_r = (aud_r + 1) % AUD_FRAMES; n++;
+  unsigned n = 0, r = __atomic_load_n(&aud_r, __ATOMIC_RELAXED), w = __atomic_load_n(&aud_w, __ATOMIC_ACQUIRE);
+  while (r != w && n < max) {
+    if (dst) { dst[n * 2] = aud[r * 2] / 32768.0f; dst[n * 2 + 1] = aud[r * 2 + 1] / 32768.0f; }
+    r = (r + 1) % AUD_FRAMES; n++;
   }
+  __atomic_store_n(&aud_r, r, __ATOMIC_RELEASE);
   return n;
 }
 API unsigned fe_audio_available(void) { return (aud_w + AUD_FRAMES - aud_r) % AUD_FRAMES; }
+/* Pour l'AudioWorklet : adresses du tampon et de ses deux index dans la mémoire partagée */
+API int16_t *fe_audio_buf(void) { return aud; }
+API unsigned *fe_audio_rptr(void) { return &aud_r; }
+API unsigned *fe_audio_wptr(void) { return &aud_w; }
+API unsigned fe_audio_frames(void) { return AUD_FRAMES; }
 
 /* ---------- entrées ---------- */
 static int mouse_acc_x, mouse_acc_y, mouse_x, mouse_y, mouse_btn;
 static unsigned joy[2];
-API void fe_mouse_move(int dx, int dy) { mouse_acc_x += dx; mouse_acc_y += dy; }
+API void fe_mouse_move(int dx, int dy) { __atomic_add_fetch(&mouse_acc_x, dx, __ATOMIC_RELAXED); __atomic_add_fetch(&mouse_acc_y, dy, __ATOMIC_RELAXED); }
 API void fe_mouse_buttons(int mask) { mouse_btn = mask; } /* 1 gauche, 2 droit, 4 milieu */
 API void fe_joy(int port, unsigned mask) { if (port >= 0 && port < 2) joy[port] = mask; } /* bits = RETRO_DEVICE_ID_JOYPAD_* */
 
@@ -114,7 +134,7 @@ API void fe_key(int down, unsigned retrok) { retro_keyboard_event(down != 0, ret
 #endif
 
 static void input_poll_cb(void) {
-  mouse_x = mouse_acc_x; mouse_y = mouse_acc_y; mouse_acc_x = mouse_acc_y = 0;
+  mouse_x = __atomic_exchange_n(&mouse_acc_x, 0, __ATOMIC_RELAXED); mouse_y = __atomic_exchange_n(&mouse_acc_y, 0, __ATOMIC_RELAXED);
 }
 static int16_t input_state_cb(unsigned port, unsigned device, unsigned index, unsigned id) {
   (void)index;
@@ -271,7 +291,9 @@ API int fe_start(const char *path) {
   return 1;
 }
 API void fe_run(void) { if (loaded) retro_run(); }
-API void fe_reset(void) { if (loaded) retro_reset(); }
+static volatile int emu_running_thread;
+static int emu_cmd(int code, const void *p, unsigned n);
+API void fe_reset(void) { if (!loaded) return; if (emu_running_thread) emu_cmd(2, NULL, 0); else retro_reset(); }
 API double fe_fps(void) { return av.timing.fps; }
 API double fe_sample_rate(void) { return av.timing.sample_rate; }
 
@@ -307,4 +329,97 @@ API void fe_flush(void) { fflush(NULL); }
 /* ---------- sauvegardes d'état ---------- */
 API unsigned fe_state_size(void) { return (unsigned)retro_serialize_size(); }
 API int fe_state_save(void *dst, unsigned size) { return retro_serialize(dst, size); }
-API int fe_state_load(const void *src, unsigned size) { return retro_unserialize(src, size); }
+static int state_load_now(const void *src, unsigned size) { return retro_unserialize(src, size); }
+/* Reprise d'état et réinitialisation : faites par le fil qui fait tourner le cœur (Amiberry y attend ses propres fils) */
+API int fe_state_load(const void *src, unsigned size) { return emu_running_thread ? emu_cmd(1, src, size) : state_load_now(src, size); }
+
+/* ---------- émulation dans son propre fil ----------
+ * Le fil démarre le cœur (retro_load_game : les coroutines d'Amiberry s'attachent à lui) puis enchaîne les images au
+ * rythme de l'Amiga, avec sa propre horloge : la page ne fait plus qu'afficher la dernière image et transmettre les
+ * commandes. Ce qui touche à l'état du cœur depuis la page (options, lecteurs, sauvegardes d'état…) passe par
+ * fe_lock()/fe_unlock(), pris entre deux images. Les accès aux fichiers du cœur sont relayés vers la page par
+ * Emscripten : la page attend le verrou en traitant ces relais, sans blocage mutuel. */
+#define KEYQ 256
+static unsigned keyq[KEYQ]; static unsigned keyq_w, keyq_r;
+static pthread_t emu_thr;
+static pthread_mutex_t emu_mtx = PTHREAD_MUTEX_INITIALIZER;
+static volatile int emu_state, emu_paused, emu_want, emu_stop;
+static char emu_path[1024];
+static volatile unsigned emu_frames; static volatile double emu_busy_us;
+
+/* Touche (bit 31 = enfoncée) : le cœur en reçoit une par image, dans l'ordre */
+API void fe_key_push(int down, unsigned retrok) {
+  unsigned w = __atomic_load_n(&keyq_w, __ATOMIC_RELAXED), n = (w + 1) % KEYQ;
+  if (n == __atomic_load_n(&keyq_r, __ATOMIC_ACQUIRE)) return;
+  keyq[w] = retrok | (down ? 0x80000000u : 0); __atomic_store_n(&keyq_w, n, __ATOMIC_RELEASE);
+}
+static void key_pop(void) {
+  unsigned r = __atomic_load_n(&keyq_r, __ATOMIC_RELAXED);
+  if (r == __atomic_load_n(&keyq_w, __ATOMIC_ACQUIRE)) return;
+  unsigned k = keyq[r]; __atomic_store_n(&keyq_r, (r + 1) % KEYQ, __ATOMIC_RELEASE);
+  fe_key((k & 0x80000000u) != 0, k & 0x7fffffffu);
+}
+static void emu_frame(void) {
+  double t0 = emscripten_get_now();
+  pthread_mutex_lock(&emu_mtx);
+  key_pop(); retro_run();
+  pthread_mutex_unlock(&emu_mtx);
+  emu_busy_us += (emscripten_get_now() - t0) * 1000.0;
+  __atomic_add_fetch(&emu_frames, 1, __ATOMIC_RELAXED);
+}
+/* Commande de la page exécutée par le fil de l'émulation entre deux images ; la page attend le résultat en traitant
+   les accès aux fichiers que le cœur lui relaie */
+static volatile int cmd_code, cmd_res; static const void *cmd_p; static unsigned cmd_n;
+static int emu_cmd(int code, const void *p, unsigned n) {
+  cmd_p = p; cmd_n = n; __atomic_store_n(&cmd_code, code, __ATOMIC_RELEASE);
+  while (__atomic_load_n(&cmd_code, __ATOMIC_ACQUIRE)) emscripten_main_thread_process_queued_calls();
+  return cmd_res;
+}
+static void cmd_run(void) {
+  int c = __atomic_load_n(&cmd_code, __ATOMIC_ACQUIRE); if (!c) return;
+  pthread_mutex_lock(&emu_mtx);
+  cmd_res = c == 1 ? state_load_now(cmd_p, cmd_n) : (retro_reset(), 1);
+  pthread_mutex_unlock(&emu_mtx);
+  __atomic_store_n(&cmd_code, 0, __ATOMIC_RELEASE);
+}
+static void *emu_main(void *arg) {
+  (void)arg;
+  pthread_mutex_lock(&emu_mtx);
+  int ok = fe_start(emu_path[0] ? emu_path : NULL);
+  pthread_mutex_unlock(&emu_mtx);
+  emu_state = ok ? 2 : -1;
+  if (!ok) return NULL;
+  emu_running_thread = 1;
+  double period = 1000.0 / (av.timing.fps > 0 ? av.timing.fps : 50.0), next = emscripten_get_now();
+  while (!emu_stop) {
+    cmd_run();
+    if (emu_want) { usleep(500); continue; }            /* la page attend le verrou : on lui laisse la place */
+    if (emu_paused) { usleep(4000); next = emscripten_get_now(); continue; }
+    double now = emscripten_get_now();
+    if (emu_warp > 1) {                                   /* turbo : sans attendre l'horloge */
+      emu_frame(); next = emscripten_get_now(); continue;
+    }
+    if (now < next) { double d = next - now; usleep(d > 2.0 ? (useconds_t)((d - 1.0) * 1000) : 200); continue; }
+    if (now - next > 250) next = now;                     /* gros retard (onglet en arrière-plan) : on ne rattrape pas tout */
+    emu_frame();
+    next += period;
+  }
+  return NULL;
+}
+/* Démarre le fil ; fe_thread_state() : 1 en démarrage, 2 en marche, -1 refus du cœur, 0 fil impossible */
+API int fe_thread_start(const char *path) {
+  snprintf(emu_path, sizeof emu_path, "%s", path ? path : "");
+  emu_state = 1;
+  pthread_attr_t a; pthread_attr_init(&a); pthread_attr_setstacksize(&a, 8u << 20);
+  if (pthread_create(&emu_thr, &a, emu_main, NULL)) { emu_state = 0; return 0; }
+  return 1;
+}
+API int fe_thread_state(void) { return emu_state; }
+API void fe_thread_pause(int p) { emu_paused = p != 0; }
+API void fe_thread_warp(int w) { emu_warp = w > 1 ? w : 1; }
+API void fe_thread_stop(void) { emu_stop = 1; }
+/* Images calculées et temps passé (µs) depuis le dernier appel */
+API unsigned fe_thread_frames(void) { return __atomic_exchange_n(&emu_frames, 0, __ATOMIC_RELAXED); }
+API double fe_thread_busy(void) { double b = emu_busy_us; emu_busy_us = 0; return b; }
+API void fe_lock(void) { emu_want = 1; pthread_mutex_lock(&emu_mtx); }
+API void fe_unlock(void) { pthread_mutex_unlock(&emu_mtx); emu_want = 0; }

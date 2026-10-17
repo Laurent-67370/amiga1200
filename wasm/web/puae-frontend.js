@@ -37,8 +37,11 @@ const PAD_DEF = { 0: 0, 1: 8, 2: 1, 3: 9, 4: 10, 5: 11, 8: 2, 9: 3, 12: 4, 13: 5
    lots sont jetés. */
 const WORKLET = `
 class Ring extends AudioWorkletProcessor {
-  constructor() {
+  constructor(opt) {
     super();
+    /* Lecture directe : le tampon circulaire du cœur, dans la mémoire partagée (émulation dans son propre fil) */
+    const d = opt && opt.processorOptions;
+    if (d && d.sab) { this.h16 = new Int16Array(d.sab, d.buf, d.frames * 2); this.ix = new Uint32Array(d.sab); this.ri = d.rptr >> 2; this.wi = d.wptr >> 2; this.N = d.frames; this.dpos = 0; }
     this.q = []; this.pos = 0; this.tot = 0;           /* lots en attente, position (fractionnaire) dans le premier, total */
     this.min = sampleRate * 0.05; this.max = sampleRate * 0.15; this.target = this.min;
     this.started = false; this.under = 0; this.calm = 0; this.tick = 0;
@@ -48,6 +51,7 @@ class Ring extends AudioWorkletProcessor {
     };
   }
   process(_, outputs) {
+    if (this.h16) return this.direct(outputs);
     const L = outputs[0][0], R = outputs[0][1] || outputs[0][0], n = L.length;
     if (!this.started) {
       if (this.tot - this.pos >= this.target) this.started = true;
@@ -73,6 +77,38 @@ class Ring extends AudioWorkletProcessor {
     this.calm += n;
     if (this.calm > sampleRate * 20 && this.target > this.min) { this.target = Math.max(this.min, this.target - sampleRate * 0.01); this.calm = 0; }
     if ((this.tick += n) >= sampleRate / 2) { this.tick = 0; this.port.postMessage({ queue: (this.tot - this.pos) / sampleRate * 1000, target: this.target / sampleRate * 1000, under: this.under }); }
+    return true;
+  }
+  direct(outputs) {
+    const L = outputs[0][0], R = outputs[0][1] || outputs[0][0], n = L.length, N = this.N, h = this.h16;
+    let r = Atomics.load(this.ix, this.ri);
+    const w = Atomics.load(this.ix, this.wi);
+    let avail = (w - r + N) % N - this.dpos;
+    if (avail > Math.max(this.target * 2, this.target + sampleRate * 0.06)) { /* trop d'avance (à-coup) : on saute au plus récent */
+      r = (w - Math.round(this.target) + N) % N; this.dpos = 0; avail = this.target;
+    }
+    if (!this.started) {
+      if (avail >= this.target) this.started = true;
+      else { L.fill(0); R.fill(0); return true; }
+    }
+    const err = (avail - this.target) / this.target;
+    const lim = Math.abs(err) > 0.5 ? 0.01 : 0.005;
+    const rate = 1 + Math.max(-lim, Math.min(lim, err * 0.01));
+    let pos = this.dpos;
+    for (let i = 0; i < n; i++) {
+      if (avail - pos < 2) {
+        L.fill(0, i); R.fill(0, i); this.started = false; this.under++; this.calm = 0;
+        this.target = Math.min(this.max, this.target + sampleRate * 0.01); break;
+      }
+      const k = Math.floor(pos), f = pos - k, a = ((r + k) % N) * 2, b = ((r + k + 1) % N) * 2;
+      L[i] = (h[a] + (h[b] - h[a]) * f) / 32768; R[i] = (h[a + 1] + (h[b + 1] - h[a + 1]) * f) / 32768;
+      pos += rate;
+    }
+    const adv = Math.floor(pos); this.dpos = pos - adv;
+    Atomics.store(this.ix, this.ri, (r + adv) % N);
+    this.calm += n;
+    if (this.calm > sampleRate * 20 && this.target > this.min) { this.target = Math.max(this.min, this.target - sampleRate * 0.01); this.calm = 0; }
+    if ((this.tick += n) >= sampleRate / 2) { this.tick = 0; this.port.postMessage({ queue: (avail - pos) / sampleRate * 1000, target: this.target / sampleRate * 1000, under: this.under }); }
     return true;
   }
 }
@@ -154,8 +190,17 @@ export class PuaeMachine {
     for (const [k, v] of Object.entries(cfg.options || {})) this.setOption(k, v);
     let path = cfg.content || "";
     if (!path && cfg.df0) { path = "/disks/" + cfg.df0.name.replace(/[\/\\]/g, "_"); this.writeFile(path, cfg.df0.bytes); }
-    const ok = this._call("fe_start", path);
-    if (!ok) throw new Error("le cœur a refusé de démarrer (Kickstart ou disquette illisible ?)");
+    /* L'émulation dans son propre fil quand c'est possible : l'interface ne peut plus la freiner */
+    this.threaded = false;
+    if (cfg.thread !== false && M._fe_thread_start && this._call("fe_thread_start", path)) {
+      let st; while ((st = M._fe_thread_state()) === 1) await new Promise(r => setTimeout(r, 10));
+      if (st === -1) throw new Error("le cœur a refusé de démarrer (Kickstart ou disquette illisible ?)");
+      this.threaded = st === 2;
+    }
+    if (!this.threaded) {
+      const ok = this._call("fe_start", path);
+      if (!ok) throw new Error("le cœur a refusé de démarrer (Kickstart ou disquette illisible ?)");
+    } else this._lockCore();
     this.fps = M._fe_fps() || 50;
     this.rate = M._fe_sample_rate() || 44100;
     await this._startAudio();
@@ -167,6 +212,14 @@ export class PuaeMachine {
        et l'image n'attend pas le rafraîchissement suivant. Onglet masqué (plus de rafraîchissement), un minuteur prend
        le relais pour que le son et le jeu continuent. */
     this._lastRaf = 0;
+    if (this.threaded) {
+      /* Le fil de l'émulation suit sa propre horloge ; ici : afficher la dernière image, lire les manettes, les statistiques */
+      this._lastFc = 0;
+      this._timer = setInterval(() => { const now = performance.now(); if (document.hidden || now - this._lastRaf > 60) this._tick(now); }, 8);
+      const frame = () => { if (!this.running) return; requestAnimationFrame(frame); this._lastRaf = performance.now(); this._tick(this._lastRaf); };
+      requestAnimationFrame(frame);
+      return;
+    }
     this._timer = setInterval(() => { const now = performance.now(); if (document.hidden || now - this._lastRaf > 60) this._step(now); }, 4);
     const frame = () => {
       if (!this.running) return;
@@ -176,6 +229,34 @@ export class PuaeMachine {
       if (this._newFrame) { this._newFrame = false; this._draw(); }
     };
     requestAnimationFrame(frame);
+  }
+
+  /* Ce qui touche à l'état du cœur passe par son verrou, pris entre deux images du fil de l'émulation */
+  _lockCore() {
+    const M = this.M, lock = M._fe_lock, unlock = M._fe_unlock;
+    let depth = 0;
+    /* (reprise d'état et réinitialisation : exécutées par le fil de l'émulation lui-même, voir frontend.c) */
+    for (const n of ["_fe_set_option", "_fe_drive_insert", "_fe_drive_eject", "_fe_state_size", "_fe_state_save",
+      "_fe_flush", "_fe_disk_insert", "_fe_disk_eject", "_fe_disk_count", "_retro_set_controller_port_device", "_fe_midi_enable",
+      "_amb_set_framerate", "_amb_set_floppy_sound", "_amb_set_floppy_speed"]) {
+      const f = M[n]; if (typeof f !== "function") continue;
+      M[n] = (...a) => { if (depth++ === 0) lock(); try { return f(...a); } finally { if (--depth === 0) unlock(); } };
+    }
+  }
+  _tick(now) {
+    if (!this.running) return;
+    const M = this.M;
+    this._pollGamepads();
+    if (!this._audioDirect) this._pumpAudio();
+    else if (this.ac && this.ac.state === "suspended" && !this.paused) this.ac.resume();
+    const fc = M._fe_frame_count();
+    if (fc !== this._lastFc) { this._lastFc = fc; if (!document.hidden) this._draw(); if (this.onFrame) this.onFrame(this.leds()); }
+    if (now - this._statT >= 1000) {
+      const frames = M._fe_thread_frames(), busy = M._fe_thread_busy(), step = 1 / this.fps;
+      const load = frames ? busy / (frames * step * 1e6) * 100 : 0;
+      this.onStats({ fps: frames * 1000 / (now - this._statT), load, leds: this.leds(), warp: this.warp > 1, thread: true });
+      this._statT = now;
+    }
   }
 
   /* ---------- boucle : on rattrape le temps réel au rythme exact de l'Amiga ---------- */
@@ -222,6 +303,7 @@ export class PuaeMachine {
   /** Arrête la machine : boucle, son, écouteurs. Le module ne se relance pas : recharger la page pour rallumer. */
   stop() {
     this.running = false;
+    if (this.threaded) this.M._fe_thread_stop();
     clearInterval(this._timer);
     if (this.ac) { try { this.ac.close(); } catch (e) {} this.ac = null; }
     window.removeEventListener("keydown", this._onKey);
@@ -298,7 +380,11 @@ export class PuaeMachine {
       this.ac = new AudioContext({ sampleRate: this.rate, latencyHint: "interactive" });
       const url = URL.createObjectURL(new Blob([WORKLET], { type: "application/javascript" }));
       await this.ac.audioWorklet.addModule(url);
-      this.node = new AudioWorkletNode(this.ac, "ring", { outputChannelCount: [2] });
+      /* Émulation dans son propre fil : le son est lu par le worklet directement dans la mémoire du cœur */
+      const sab = this.threaded && this.M.HEAPU8.buffer instanceof SharedArrayBuffer ? this.M.HEAPU8.buffer : null;
+      this._audioDirect = !!sab;
+      this.node = new AudioWorkletNode(this.ac, "ring", { outputChannelCount: [2], processorOptions: sab
+        ? { sab, buf: this.M._fe_audio_buf(), rptr: this.M._fe_audio_rptr(), wptr: this.M._fe_audio_wptr(), frames: this.M._fe_audio_frames() } : {} });
       this.audioStats = null; this.node.port.onmessage = e => { this.audioStats = e.data; }; /* file, cible (ms), manques */
       this.gain = this.ac.createGain(); this.gain.gain.value = this.muted ? 0 : 1;
       this.node.connect(this.gain).connect(this.ac.destination);
@@ -317,6 +403,7 @@ export class PuaeMachine {
   /** Turbo : 1 = vitesse réelle, 4 ou 8 = autant de fois plus vite. Au retour, le son accumulé est jeté. */
   setWarp(w) {
     const was = this.warp > 1; this.warp = w > 1 ? w : 1;
+    if (this.threaded) { this.M._fe_thread_warp(this.warp); return; }
     if (was && this.warp === 1 && this.M) {
       if (this._audioPtr) while (this.M._fe_audio_read(this._audioPtr, 4096)) {}
       this._t = performance.now(); this._acc = 0;
@@ -331,7 +418,10 @@ export class PuaeMachine {
   key(code, down) {
     /* keyRemap : touches propres à un cœur (WinUAE 6 ne place pas Help ni les touches Amiga comme PUAE) */
     const k = this.keyRemap && code in this.keyRemap ? this.keyRemap[code] : RETROK[code];
-    if (k && this.running) { (this._keyQ || (this._keyQ = [])).push([down ? 1 : 0, k]); if (this._keyQ.length > 256) this._keyQ.shift(); }
+    if (k && this.running) {
+      if (this.threaded) this.M._fe_key_push(down ? 1 : 0, k); /* file d'attente côté cœur, une touche par image */
+      else { (this._keyQ || (this._keyQ = [])).push([down ? 1 : 0, k]); if (this._keyQ.length > 256) this._keyQ.shift(); }
+    }
     return !!k;
   }
   mouseMove(dx, dy) { if (this.running) this.M._fe_mouse_move(Math.round(dx), Math.round(dy)); }
@@ -409,7 +499,7 @@ export class PuaeMachine {
   }
   ejectDisk() { return !!this.M._fe_disk_eject(); }
   reset() { this.M._fe_reset(); }
-  pause(p) { this.paused = p; if (this.ac) p ? this.ac.suspend() : this.ac.resume(); }
+  pause(p) { this.paused = p; if (this.threaded) this.M._fe_thread_pause(p ? 1 : 0); if (this.ac) p ? this.ac.suspend() : this.ac.resume(); }
 
   saveState() {
     const n = this.M._fe_state_size(); if (!n) return null;

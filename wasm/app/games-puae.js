@@ -132,3 +132,6 @@ async function nextDiskRefresh() {
 }
 { const _sm = setMounted; setMounted = (t, r) => { _sm(t, r); if (t === "df0") nextDiskRefresh().catch(() => {}); }; }
 nextDiskRefresh().catch(() => {});
+
+/* Réglage : émulation dans son propre fil (par défaut) */
+{ const c = $("#optThread"); if (c) { c.checked = S.thread !== "off"; c.onchange = () => { S.thread = c.checked ? "on" : "off"; saveSettings(); toast("S'appliquera au prochain allumage."); }; } }

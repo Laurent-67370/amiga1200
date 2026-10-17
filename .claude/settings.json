@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx -y rea-agents@latest setup --client claude_code:*)",
+      "Bash(npx -y rea-agents@latest doctor --client claude_code:*)"
+    ]
+  }
+}

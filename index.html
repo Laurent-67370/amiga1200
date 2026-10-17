@@ -840,6 +840,8 @@ body.is-off #btnTurbo{display:none!important}
         <label><input type="radio" name="compat" value="max"> Cycle exact</label>
       </div>
       <p class="hint">Cycle exact : processeur et puces émulés au cycle près, comme WinUAE. Le plus fidèle pour les démos et jeux capricieux, mais plus gourmand.</p>
+      <div class="opt"><label><input type="checkbox" id="optThread"> Émulation dans un fil séparé (recommandé : l'interface ne peut plus la ralentir)</label></div>
+      <p class="hint">L'Amiga tourne à son rythme pendant que la page s'affiche, défile ou enregistre ; le son est lu directement là où l'émulation le produit. À décocher seulement si un appareil ancien pose problème. Prochain allumage.</p>
 
       <h3>Processeur</h3>
       <div class="opt" data-setting="cpu">
@@ -1523,7 +1525,7 @@ async function powerOn() {
       await midiAttach(machine);
       if (S.floppySound && !cd) await ambFloppySounds(machine).catch(e => console.warn("bruits des lecteurs indisponibles", e));
     }
-    await machine.start({ model: cd ? "CD32" : MODELS[model].core || "A1200OG", kickstart: kick, romKey: cd && !cdtv ? null : key, content, options });
+    await machine.start({ model: cd ? "CD32" : MODELS[model].core || "A1200OG", kickstart: kick, romKey: cd && !cdtv ? null : key, content, options, thread: S.thread !== "off" });
     machine.setMuted(!!S.muted);
     /* Jeu WHDLoad prévu pour la manette CD32 (7 boutons) : la manette du port joystick en devient une */
     if ((whd && whd.whdCfg && whd.whdCfg.cd32) || (cd && !cdtv)) {
@@ -5686,6 +5688,9 @@ async function nextDiskRefresh() {
 }
 { const _sm = setMounted; setMounted = (t, r) => { _sm(t, r); if (t === "df0") nextDiskRefresh().catch(() => {}); }; }
 nextDiskRefresh().catch(() => {});
+
+/* Réglage : émulation dans son propre fil (par défaut) */
+{ const c = $("#optThread"); if (c) { c.checked = S.thread !== "off"; c.onchange = () => { S.thread = c.checked ? "on" : "off"; saveSettings(); toast("S'appliquera au prochain allumage."); }; } }
 
 /* Profil par disque */
 let profTarget = null;

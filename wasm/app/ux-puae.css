@@ -38,3 +38,6 @@ body:has(#ambGui:not([hidden])) .toast{bottom:64px}
 #ambGui[data-panel="hd"] .drives>.fd-extra{display:none!important}
 #ambGui[data-panel="hd"] .drives>.hd-extra{display:flex!important}
 #ambGui .drives .drives-more-bar{display:none}
+/* Turbo : seulement Amiga allumé ; enfoncé quand il est actif */
+body.is-off #btnTurbo{display:none!important}
+#btnTurbo[aria-pressed="true"],.fsb[data-turbo][aria-pressed="true"]{background:#c84;color:#fff}

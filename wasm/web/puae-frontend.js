@@ -187,16 +187,30 @@ export class PuaeMachine {
     let n = 0;
     if (this._acc > 0.25) this._acc = step; /* onglet en arrière-plan : on ne rattrape pas tout */
     const r0 = performance.now();
+    if (this.warp > 1) {
+      /* Turbo : « warp » fois les images dues, dans la limite d'environ 15 ms par passage (la page reste réactive) ;
+         le son est jeté, il serait accéléré et haché */
+      const due = Math.max(1, Math.round(this._acc / step)) * this.warp; this._acc = 0;
+      const avg = this._warpAvg || 5; /* durée moyenne d'une image en turbo (ms) : on s'arrête avant de dépasser 15 ms */
+      while (n < due && (n === 0 || performance.now() - r0 + avg < 15)) {
+        if (this._keyQ && this._keyQ.length) { const [d, k] = this._keyQ.shift(); this.M._fe_key(d, k); }
+        this._pollGamepads(); this.M._fe_run(); n++; this._frames++; /* le tampon du son tourne, le plus ancien est écrasé */
+      }
+      const dt = performance.now() - r0;
+      this._busy = (this._busy || 0) + dt;
+      if (n) { this._warpAvg = 0.8 * avg + 0.2 * dt / n; this._newFrame = true; if (this.onFrame) this.onFrame(this.leds()); }
+    } else {
     while (this._acc >= step && n < 4) {
       if (this._keyQ && this._keyQ.length) { const [d, k] = this._keyQ.shift(); this.M._fe_key(d, k); }
       this._pollGamepads(); this.M._fe_run(); this._acc -= step; n++; this._frames++;
     }
     this._busy = (this._busy || 0) + performance.now() - r0;
     if (n) { this._newFrame = true; this._pumpAudio(); if (this.onFrame) this.onFrame(this.leds()); }
+    }
     if (now - this._statT >= 1000) {
       /* charge = part du temps réel passée à émuler : au-delà de 100 %, la machine ralentit */
       const load = this._frames ? this._busy / (this._frames * step * 1000) * 100 : 0;
-      this.onStats({ fps: this._frames * 1000 / (now - this._statT), load, leds: this.leds() });
+      this.onStats({ fps: this._frames * 1000 / (now - this._statT), load, leds: this.leds(), warp: this.warp > 1 });
       this._frames = 0; this._busy = 0; this._statT = now;
     }
   }
@@ -299,6 +313,14 @@ export class PuaeMachine {
     const f = new Float32Array(n * 2);
     f.set(this.M.HEAPF32.subarray(this._audioPtr >> 2, (this._audioPtr >> 2) + n * 2));
     this.node.port.postMessage(f, [f.buffer]);
+  }
+  /** Turbo : 1 = vitesse réelle, 4 ou 8 = autant de fois plus vite. Au retour, le son accumulé est jeté. */
+  setWarp(w) {
+    const was = this.warp > 1; this.warp = w > 1 ? w : 1;
+    if (was && this.warp === 1 && this.M) {
+      if (this._audioPtr) while (this.M._fe_audio_read(this._audioPtr, 4096)) {}
+      this._t = performance.now(); this._acc = 0;
+    }
   }
   setMuted(m) { this.muted = m; if (this.gain) this.gain.gain.value = m ? 0 : 1; }
 

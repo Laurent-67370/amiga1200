@@ -23,3 +23,11 @@ extern "C" EMSCRIPTEN_KEEPALIVE void amb_set_floppy_sound(int on)
 		changed_prefs.floppyslots[i].dfxclick = on ? 1 : 0;
 	set_config_changed();
 }
+
+/* Vitesse des lecteurs de disquettes, à chaud : 0 = turbo (le mode turbo de la page), 100 = vitesse d'origine */
+extern "C" EMSCRIPTEN_KEEPALIVE void amb_set_floppy_speed(int speed)
+{
+	if (changed_prefs.floppy_speed == speed) return;
+	changed_prefs.floppy_speed = speed;
+	set_config_changed();
+}

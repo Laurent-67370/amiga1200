@@ -804,6 +804,7 @@ rep("/* Profil par disque */", (APP / "autocfg-puae.js").read_text(encoding="utf
 rep("/* Profil par disque */", (APP / "amberry-cfg-puae.js").read_text(encoding="utf-8") + "\n" + (APP / "amberry-gui-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 # Navigation : commandes en groupes, lecteurs cohérents, interface sur téléphone (après l'interface Amiberry)
 rep("/* Profil par disque */", (APP / "ux-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+rep("/* Profil par disque */", (APP / "games-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 rep("</style>", (APP / "ux-puae.css").read_text(encoding="utf-8") + "</style>")
 
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)

@@ -292,7 +292,7 @@ async function powerOn() {
     else if (anyHd && whd) toast("Les disques durs ne sont pas branchés pendant un jeu WHDLoad.");
     else if (anyHd && a500) toast("Mode Amiga 500 : les disques durs ne sont pas branchés (l'A500 n'a pas de contrôleur IDE).");
     const partNames = new Set();
-    const lazyList = [];
+    const lazyList = [], lazySizes = [], lazyPatches = [];
     for (const [unit, tag] of HD_TAGS.entries()) {
       fsPath[tag] = null;
       if (!mounted[tag] || a500 || whd || cd) continue;
@@ -300,10 +300,16 @@ async function powerOn() {
         const f = lazyFiles[tag];
         if (!f) { setMounted(tag, null); continue; }
         if (!amb) { toast(f.name + " : un disque lu sur place ne se branche qu'avec le cœur WinUAE 6 (Configuration → Processeur et FPU).", true); continue; }
-        lazyList.push(f);
-        fsPath[tag] = "/lazy/" + (lazyList.length - 1) + "/" + safeName(f.name).replace(/(\.hdf)?$/i, ".hdf");
+        const disk = lazyList.length;
+        /* Début du disque (table de partitions) : partitions en double renommées, fin des partitions */
+        const head = new Uint8Array(await f.slice(0, 1048576).arrayBuffer()), orig = head.slice();
+        for (const x of uniquePartitionNames(head, partNames)) toast(f.name + " : partition " + x.from + ": montée comme " + x.to + ":");
+        for (let o = 0; o < head.length; o += 512) if (head.subarray(o, o + 512).some((v, i) => v !== orig[o + i])) lazyPatches.push([disk, o, head.slice(o, o + 512)]);
+        const end = rdbEnd(head), size = end > f.size && end - f.size <= 1024 * 1048576 ? end : f.size;
+        lazyList.push(f); lazySizes.push(size);
+        fsPath[tag] = "/lazy/" + disk + "/" + safeName(f.name).replace(/(\.hdf)?$/i, ".hdf");
         machine.writeFile(fsPath[tag], new Uint8Array(0)); /* le chemin existe ; les octets viennent du fichier */
-        const geo = ideGeometry(f.size);
+        const geo = ideGeometry(size);
         if (unit < 2 && model !== "a3000") lines.push(`hardfile2=rw,${tag.toUpperCase()}:${fsPath[tag]},0,0,0,512,0,,ide${unit}_mainboard,0${geo ? "," + geo : ""}`);
         else lines.push(`hardfile2=rw,${tag.toUpperCase()}:${fsPath[tag]},0,0,0,512,0,,uae${model === "a3000" ? unit : unit - 2}`);
         continue;
@@ -395,7 +401,14 @@ async function powerOn() {
       if (lazyWorker) lazyWorker.terminate();
       lazyWorker = new Worker("lazydisk-worker.js");
       machine.M._amb_lazy_reset();
-      lazyWorker.postMessage({ files: lazyList, memory: machine.M.HEAPU8.buffer, req: machine.M._amb_lazy_req(), buf: machine.M._amb_lazy_buf() });
+      const ready = new Promise(r => { lazyWorker.onmessage = r; });
+      lazyWorker.postMessage({ files: lazyList, sizes: lazySizes, memory: machine.M.HEAPU8.buffer, req: machine.M._amb_lazy_req(), buf: machine.M._amb_lazy_buf() });
+      await ready;
+      /* Partitions renommées : gardées en mémoire comme des écritures, le fichier n'est pas touché */
+      for (const [disk, off, data] of lazyPatches) {
+        const p = machine.M._malloc(512); machine.M.HEAPU8.set(data, p);
+        machine.M._amb_lazy_patch(disk, off, 0, p, 512); machine.M._free(p);
+      }
     }
     await machine.start({ model: cd ? "CD32" : MODELS[model].core || "A1200OG", kickstart: kick, romKey: cd && !cdtv ? null : key, content, options, thread: S.thread !== "off" });
     machine.setMuted(!!S.muted);

@@ -160,6 +160,16 @@ extern "C" FILE *__wrap_fopen(const char *path, const char *mode) {
   return h;
 }
 
+/* Modification posée par la page avant l'allumage (partition renommée…), gardée comme une écriture de l'Amiga */
+extern "C" EMSCRIPTEN_KEEPALIVE int amb_lazy_patch(int disk, uint32_t lo, uint32_t hi, const uint8_t *src, int len) {
+  if (disk < 0 || disk >= LZ_DISKS) return -1;
+  pthread_mutex_lock(&lz_mtx);
+  if (!lz_size[disk]) { int64_t s = lz_call(1, disk, 0, 0); lz_size[disk] = s > 0 ? s : 0; }
+  int put = lz_size[disk] ? lz_write(disk, (int64_t)(((uint64_t)hi << 32) | lo), src, len) : -1;
+  pthread_mutex_unlock(&lz_mtx);
+  return put;
+}
+
 /* Nouvel allumage : la réserve et les écritures de la séance précédente sont oubliées */
 extern "C" EMSCRIPTEN_KEEPALIVE void amb_lazy_reset(void) {
   pthread_mutex_lock(&lz_mtx);

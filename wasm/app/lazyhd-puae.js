@@ -9,7 +9,7 @@
 /* Ce que contient le disque, lu dans sa table de partitions (RDB) : pour comprendre d'un coup d'œil un disque qui ne monte pas */
 async function lazyDescribe(f) {
   try {
-    const u8 = new Uint8Array(await f.slice(0, 1048576).arrayBuffer()), dv = new DataView(u8.buffer);
+    const u8 = new Uint8Array(await f.slice(0, 2097152).arrayBuffer()), dv = new DataView(u8.buffer);
     const g32 = o => dv.getUint32(o, false), tag4 = v => String.fromCharCode(v >>> 24, (v >>> 16) & 255, (v >>> 8) & 255) + "\\" + (v & 255);
     let rdsk = -1;
     for (let b = 0; b < 16; b++) if (g32(b * 512) === 0x5244534b) { rdsk = b; break; }
@@ -18,11 +18,11 @@ async function lazyDescribe(f) {
     for (let blk = g32(rdsk * 512 + 28), guard = 0; blk !== 0xffffffff && guard < 32 && (blk + 1) * 512 <= u8.length; guard++) {
       const p = blk * 512; if (g32(p) !== 0x50415254) break;
       const name = new TextDecoder("latin1").decode(u8.subarray(p + 37, p + 37 + Math.min(u8[p + 36], 31)));
-      parts.push(name + ": " + tag4(g32(p + 128 + 64)));
+      parts.push(name + ": " + tag4(g32(p + 128 + 64)) + (g32(p + 20) & 2 ? " (sans montage auto)" : ""));
       blk = g32(p + 16);
     }
-    const fs = g32(rdsk * 512 + 32) !== 0xffffffff;
-    return "Partitions : " + (parts.join(", ") || "aucune") + (fs ? " (système de fichiers fourni sur le disque)." : ".");
+    const fs = rdbFileSystems(u8).map(x => tag4(x.dosType) + " v" + (u8.length && x.blocks[0] ? (x.blocks[0][36] << 8 | x.blocks[0][37]) + "." + (x.blocks[0][38] << 8 | x.blocks[0][39]) : "?"));
+    return "Partitions : " + (parts.join(", ") || "aucune") + " ; pilotes sur le disque : " + (fs.join(", ") || "aucun") + ".";
   } catch (e) { return ""; }
 }
 function pickLazyHd(tag) {
@@ -33,7 +33,7 @@ function pickLazyHd(tag) {
     for (const t of HD_TAGS) if (t !== tag && lazyFiles[t] && lazyFiles[t].name === f.name && lazyFiles[t].size === f.size) setMounted(t, null);
     lazyFiles[tag] = f;
     setMounted(tag, { id: "lazy:" + tag, name: f.name + " (sur place)" });
-    lazyDescribe(f).then(d => toast(f.name + " (" + fmtSize(f.size) + ") branché sur " + tag.toUpperCase() + ": et lu directement dans le fichier, sans copie. " + d
+    lazyDescribe(f).then(d => toast(f.name + " sur " + tag.toUpperCase() + ": — " + d + " (" + fmtSize(f.size) + ", lu directement dans le fichier, sans copie.)"
       + ((S.core || "winuae6") !== "winuae6" ? " Il faut le cœur WinUAE 6 (Configuration → Processeur et FPU)." : "")
       + " Les modifications faites par l'Amiga ne sont pas gardées à l'extinction."));
   };

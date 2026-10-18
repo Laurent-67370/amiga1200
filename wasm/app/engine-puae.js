@@ -11,6 +11,14 @@ const HD_TAGS = ["dh0", "dh1", "dh2", "dh3"];
    de l'eau par un fil annexe (lazydisk-worker.js) ; rien n'est copié dans le navigateur. Valables pour la séance. */
 const lazyFiles = {};
 let lazyWorker = null;
+/* Début d'un disque branché (2 Mo : sa table de partitions et ses pilotes), sans le charger en entier */
+async function hdHead(tag) {
+  const m = mounted[tag]; if (!m) return null;
+  if (String(m.id).startsWith("lazy:")) { const f = lazyFiles[tag]; return f ? new Uint8Array(await f.slice(0, 2097152).arrayBuffer()) : null; }
+  const r = await DB.get(m.id); if (!r) return null;
+  const c = r.chunks ? await DB.get(chunkId(r, 0)) : r, blob = c && c.blob;
+  return blob ? new Uint8Array(await blob.slice(0, 2097152).arrayBuffer()) : null;
+}
 const FD_TAGS = ["df0", "df1", "df2", "df3"]; /* lecteurs de disquettes : interne et trois externes, comme sur l'Amiga */
 const isHd = tag => /^dh/.test(tag);
 /* Où chaque média vit dans le système de fichiers du cœur pendant la session */
@@ -293,6 +301,11 @@ async function powerOn() {
     else if (anyHd && a500) toast("Mode Amiga 500 : les disques durs ne sont pas branchés (l'A500 n'a pas de contrôleur IDE).");
     const partNames = new Set();
     const lazyList = [], lazySizes = [], lazyPatches = [];
+    /* Pilotes de systèmes de fichiers (PFS3…) fournis par les disques branchés : prêtés à un disque sur place qui en
+       manque (les disques d'AGS n'ont le pilote PFS3 que sur Workbench.hdf, enregistré sous un autre type) */
+    const fsPool = [];
+    if (!(a500 || whd || cd) && amb && HD_TAGS.some(t => mounted[t] && String(mounted[t].id).startsWith("lazy:")))
+      for (const t of HD_TAGS) { const h = await hdHead(t).catch(() => null); if (h) for (const x of rdbFileSystems(h)) fsPool.push({ ...x, from: mounted[t].name }); }
     for (const [unit, tag] of HD_TAGS.entries()) {
       fsPath[tag] = null;
       if (!mounted[tag] || a500 || whd || cd) continue;
@@ -302,8 +315,29 @@ async function powerOn() {
         if (!amb) { toast(f.name + " : un disque lu sur place ne se branche qu'avec le cœur WinUAE 6 (Configuration → Processeur et FPU).", true); continue; }
         const disk = lazyList.length;
         /* Début du disque (table de partitions) : partitions en double renommées, fin des partitions */
-        const head = new Uint8Array(await f.slice(0, 1048576).arrayBuffer()), orig = head.slice();
+        const head = new Uint8Array(await f.slice(0, 2097152).arrayBuffer()), orig = head.slice();
         for (const x of uniquePartitionNames(head, partNames)) toast(f.name + " : partition " + x.from + ": montée comme " + x.to + ":");
+        /* Partition marquée « sans montage automatique » : montée quand même (en mémoire) */
+        { const dv = new DataView(head.buffer); let rd = -1;
+          for (let b = 0; b < 16; b++) if (dv.getUint32(b * 512) === 0x5244534b) { rd = b; break; }
+          for (let p = rd < 0 ? 0xffffffff : dv.getUint32(rd * 512 + 28), g = 0; p !== 0xffffffff && (p + 1) * 512 <= head.length && g < 64 && dv.getUint32(p * 512) === 0x50415254; g++) {
+            const o = p * 512;
+            if (dv.getUint32(o + 20) & 2) {
+              dv.setUint32(o + 20, dv.getUint32(o + 20) & ~2);
+              dv.setUint32(o + 8, 0); let sum = 0; const n = Math.min(dv.getUint32(o + 4), 128);
+              for (let i = 0; i < n; i++) sum = (sum + dv.getUint32(o + i * 4)) >>> 0;
+              dv.setUint32(o + 8, (-sum) >>> 0);
+              toast(f.name + " : partition marquée « sans montage automatique », montée quand même.");
+            }
+            p = dv.getUint32(o + 16);
+          } }
+        for (const t of rdbMissingFs(head)) {
+          const fam = t >>> 8, fs = fsPool.find(x => x.dosType === t) || fsPool.find(x => x.dosType >>> 8 === fam);
+          const name = String.fromCharCode(t >>> 24, (t >>> 16) & 255, (t >>> 8) & 255) + "\\" + (t & 255);
+          if (!fs) { toast(f.name + " : ses partitions " + name + " demandent un pilote absent de ce disque. Branchez aussi le disque qui le fournit (Workbench.hdf pour AGS).", true); continue; }
+          if (rdbAddFileSystem(head, fs, t)) toast(f.name + " : pilote " + name + " pris sur " + fs.from + " (en mémoire, le fichier n'est pas modifié).");
+          else toast(f.name + " : pas de place dans sa table de partitions pour le pilote " + name + ".", true);
+        }
         for (let o = 0; o < head.length; o += 512) if (head.subarray(o, o + 512).some((v, i) => v !== orig[o + i])) lazyPatches.push([disk, o, head.slice(o, o + 512)]);
         const end = rdbEnd(head), size = end > f.size && end - f.size <= 1024 * 1048576 ? end : f.size;
         lazyList.push(f); lazySizes.push(size);
@@ -401,7 +435,9 @@ async function powerOn() {
       if (lazyWorker) lazyWorker.terminate();
       lazyWorker = new Worker("lazydisk-worker.js");
       machine.M._amb_lazy_reset();
-      const ready = new Promise(r => { lazyWorker.onmessage = r; });
+      /* Signal « prêt » du lecteur, attendu 5 s au plus (une ancienne copie hors ligne du lecteur ne l'envoie pas) */
+      const ready = Promise.race([new Promise(r => { lazyWorker.onmessage = r; }), new Promise(r => setTimeout(r, 5000))]);
+      lazyWorker.onerror = e => console.warn("lecteur des disques sur place :", e.message || e);
       lazyWorker.postMessage({ files: lazyList, sizes: lazySizes, memory: machine.M.HEAPU8.buffer, req: machine.M._amb_lazy_req(), buf: machine.M._amb_lazy_buf() });
       await ready;
       /* Partitions renommées : gardées en mémoire comme des écritures, le fichier n'est pas touché */

@@ -369,7 +369,7 @@ rep(".idle p,.idle .rom-line{display:none}.idle h1{font-size:22px}}", """.idle p
 rep("/* Profil par disque */", (APP / "launcher-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 
 # Disques durs : images sans RDB complétées, jusqu'à 2 Go, rangés par morceaux
-rep('import { makeHardDisk } from "./hdf.js";', 'import { makeHardDisk, inspectHdf, rdbHeaderFor, rootCandidate, isRootBlock, uniquePartitionNames, rdbEnd, ideGeometry } from "./hdf.js";')
+rep('import { makeHardDisk } from "./hdf.js";', 'import { makeHardDisk, inspectHdf, rdbHeaderFor, rootCandidate, isRootBlock, uniquePartitionNames, rdbEnd, ideGeometry, rdbFileSystems, rdbMissingFs, rdbAddFileSystem } from "./hdf.js";')
 rep('''async function importFile(file, target) {
   let items;''', '''async function importFile(file, target) {
   /* Disque dur : lu directement depuis le fichier, sans le charger entier en mémoire */

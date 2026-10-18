@@ -1068,8 +1068,9 @@ async function unzip(u8) {
 async function expandFile(name, u8) {
   const n = name.toLowerCase();
   if (n.endsWith(".zip")) {
-    const items = [];
-    for (const e of await unzip(u8)) items.push(...await expandFile(e.name, e.data));
+    const items = [], entries = await unzip(u8);
+    if (!entries.length) throw new Error(name + " : archive vide, elle ne contient aucun fichier (" + u8.length + " octets). Recréez-la à partir de la disquette .adf.");
+    for (const e of entries) items.push(...await expandFile(e.name, e.data));
     return items;
   }
   if (/\.(gz|adz|hdz)$/.test(n)) {

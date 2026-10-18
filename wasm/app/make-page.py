@@ -805,6 +805,8 @@ rep("/* Profil par disque */", (APP / "amberry-cfg-puae.js").read_text(encoding=
 # Navigation : commandes en groupes, lecteurs cohérents, interface sur téléphone (après l'interface Amiberry)
 rep("/* Profil par disque */", (APP / "ux-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 rep("/* Profil par disque */", (APP / "games-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+# Disques durs lus sur place, sans import (WinUAE 6)
+rep("/* Profil par disque */", (APP / "lazyhd-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 rep("</style>", (APP / "ux-puae.css").read_text(encoding="utf-8") + "</style>")
 
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)

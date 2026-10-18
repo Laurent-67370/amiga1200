@@ -7,6 +7,10 @@ const mounted = { df0: null, df1: null, df2: null, df3: null, dh0: null, dh1: nu
 /* Disques durs : DH0: et DH1: sur le contrôleur IDE de l'A1200 (maître, esclave). Ni le Kickstart 3.1 ni AROS ne voient
    d'autres unités IDE : DH2: et DH3: passent par le pilote de disque d'UAE (uaehf.device), lisible par tout Kickstart */
 const HD_TAGS = ["dh0", "dh1", "dh2", "dh3"];
+/* Disques durs lus sur place (WinUAE 6) : le fichier choisi reste sur l'appareil, le cœur en lit les blocs au fil
+   de l'eau par un fil annexe (lazydisk-worker.js) ; rien n'est copié dans le navigateur. Valables pour la séance. */
+const lazyFiles = {};
+let lazyWorker = null;
 const FD_TAGS = ["df0", "df1", "df2", "df3"]; /* lecteurs de disquettes : interne et trois externes, comme sur l'Amiga */
 const isHd = tag => /^dh/.test(tag);
 /* Où chaque média vit dans le système de fichiers du cœur pendant la session */
@@ -288,9 +292,22 @@ async function powerOn() {
     else if (anyHd && whd) toast("Les disques durs ne sont pas branchés pendant un jeu WHDLoad.");
     else if (anyHd && a500) toast("Mode Amiga 500 : les disques durs ne sont pas branchés (l'A500 n'a pas de contrôleur IDE).");
     const partNames = new Set();
+    const lazyList = [];
     for (const [unit, tag] of HD_TAGS.entries()) {
       fsPath[tag] = null;
       if (!mounted[tag] || a500 || whd || cd) continue;
+      if (String(mounted[tag].id).startsWith("lazy:")) {
+        const f = lazyFiles[tag];
+        if (!f) { setMounted(tag, null); continue; }
+        if (!amb) { toast(f.name + " : un disque lu sur place ne se branche qu'avec le cœur WinUAE 6 (Configuration → Processeur et FPU).", true); continue; }
+        lazyList.push(f);
+        fsPath[tag] = "/lazy/" + (lazyList.length - 1) + "/" + safeName(f.name).replace(/(\.hdf)?$/i, ".hdf");
+        machine.writeFile(fsPath[tag], new Uint8Array(0)); /* le chemin existe ; les octets viennent du fichier */
+        const geo = ideGeometry(f.size);
+        if (unit < 2 && model !== "a3000") lines.push(`hardfile2=rw,${tag.toUpperCase()}:${fsPath[tag]},0,0,0,512,0,,ide${unit}_mainboard,0${geo ? "," + geo : ""}`);
+        else lines.push(`hardfile2=rw,${tag.toUpperCase()}:${fsPath[tag]},0,0,0,512,0,,uae${model === "a3000" ? unit : unit - 2}`);
+        continue;
+      }
       const r = await DB.get(mounted[tag].id);
       if (!r) { setMounted(tag, null); continue; }
       fsPath[tag] = "/media/" + tag + "/" + safeName(r.name);
@@ -373,6 +390,13 @@ async function powerOn() {
       await midiAttach(machine);
       if (S.floppySound && !cd) await ambFloppySounds(machine).catch(e => console.warn("bruits des lecteurs indisponibles", e));
     }
+    if (lazyList.length) {
+      /* Lecteur des disques sur place : prêt avant que le cœur n'ouvre leurs fichiers */
+      if (lazyWorker) lazyWorker.terminate();
+      lazyWorker = new Worker("lazydisk-worker.js");
+      machine.M._amb_lazy_reset();
+      lazyWorker.postMessage({ files: lazyList, memory: machine.M.HEAPU8.buffer, req: machine.M._amb_lazy_req(), buf: machine.M._amb_lazy_buf() });
+    }
     await machine.start({ model: cd ? "CD32" : MODELS[model].core || "A1200OG", kickstart: kick, romKey: cd && !cdtv ? null : key, content, options, thread: S.thread !== "off" });
     machine.setMuted(!!S.muted);
     /* Jeu WHDLoad prévu pour la manette CD32 (7 boutons) : la manette du port joystick en devient une */
@@ -406,6 +430,7 @@ function onStarted() {
   showCaptureHint();
 }
 function onStopped() {
+  if (lazyWorker) { lazyWorker.terminate(); lazyWorker = null; }
   running = false; starting = false; setPaused(false); setPowerUi("off");
   ["#ledDf", "#ledHd"].forEach(s => $(s).classList.remove("on"));
   $("#ledPower").classList.remove("on", "dim");

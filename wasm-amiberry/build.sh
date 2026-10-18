@@ -66,6 +66,8 @@ DEFS=(-DAMIBERRY -DLIBRETRO -DLIBRETRO_NO_JIT '-DOSDEP_GFX_PLATFORM_HEADER="libr
       '-DOSDEP_AMIBERRY_PLATFORM_HEADER="libretro/amiberry_platform_internal.h"' '-DOSDEP_INPUT_PLATFORM_HEADER="libretro/input_platform_internal.h"'
       '-DOSDEP_GUI_HANDLING_HEADER="libretro/gui_handling_platform.h"')
 em++ -O3 -pthread -fwasm-exceptions -sSUPPORT_LONGJMP=wasm -std=gnu++17 $INC "${DEFS[@]}" -c "$HERE/amb_glue.cpp" -o amb_glue.o
+# Disques durs lus sur place : fopen("/lazy/…") servi par lazy_disk.cpp (fopen détourné à l'édition des liens)
+em++ -O3 -pthread -fwasm-exceptions -std=gnu++17 -c "$HERE/lazy_disk.cpp" -o lazy_disk.o
 emcc -O3 -pthread -DFE_AMIBERRY -I"$SRC/libretro" -c "$ROOT/wasm/frontend.c" -o frontend.o
 EXPORTS='["_retro_run","_retro_set_controller_port_device","_retro_serialize_size","_retro_serialize","_retro_unserialize","_malloc","_free"]'
 em++ -pthread -fwasm-exceptions -sSUPPORT_LONGJMP=wasm -O3 -sPTHREAD_POOL_SIZE=12 \
@@ -73,7 +75,7 @@ em++ -pthread -fwasm-exceptions -sSUPPORT_LONGJMP=wasm -O3 -sPTHREAD_POOL_SIZE=1
   -sMODULARIZE=1 -sEXPORT_NAME=createAmiberry -sENVIRONMENT=web,worker -sFORCE_FILESYSTEM=1 \
   -sEXPORTED_FUNCTIONS="$EXPORTS" \
   -sEXPORTED_RUNTIME_METHODS='["FS","UTF8ToString","stringToNewUTF8","setValue","getValue","HEAPU8","HEAP16","HEAPU32","HEAPF32"]' \
-  frontend.o amb_glue.o libco_pthread.o z_*.o @objs.txt -o amiberry.js
+  -Wl,--wrap=fopen frontend.o amb_glue.o lazy_disk.o libco_pthread.o z_*.o @objs.txt -o amiberry.js
 
 # ROM AROS libres pour le banc d'essai
 mkdir -p sys

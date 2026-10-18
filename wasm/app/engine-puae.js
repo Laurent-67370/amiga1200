@@ -294,7 +294,23 @@ async function powerOn() {
       const r = await DB.get(mounted[tag].id);
       if (!r) { setMounted(tag, null); continue; }
       fsPath[tag] = "/media/" + tag + "/" + safeName(r.name);
-      const bytes = await recBytes(r);
+      let bytes = await recBytes(r);
+      /* Image plus courte que ses partitions : complétée par des zéros jusqu'à leur fin (sinon PFS3 refuse de démarrer :
+         il lit le dernier bloc de sa partition), et gardée ainsi dans la Bibliothèque */
+      const need = rdbEnd(bytes);
+      if (need > bytes.length && need - bytes.length <= 1024 * 1048576 && need <= HD_MAX) {
+        const big = new Uint8Array(need); big.set(bytes);
+        toast(r.name + " : ses partitions vont jusqu'à " + fmtSize(need) + " mais le fichier n'en fait que " + fmtSize(bytes.length) + ". Disque complété jusqu'à la fin de ses partitions.");
+        bytes = big;
+        try {
+          if (r.chunks) {
+            const from = Math.max(0, r.chunks - 1), n = Math.ceil(need / CHUNK);
+            for (let i = from; i < n; i++) await DB.put({ id: chunkId(r, i), kind: "chunk", owner: r.id, blob: new Blob([bytes.subarray(i * CHUNK, Math.min(need, (i + 1) * CHUNK))]) });
+            r.chunks = n;
+          } else r.blob = new Blob([bytes]);
+          r.size = need; r.updated = Date.now(); await DB.put(r);
+        } catch (e) { console.warn("disque complété en mémoire seulement", e); }
+      }
       /* Deux disques avec une partition du même nom (DH0: souvent) : celle du second est renommée (le nouveau nom reste sur le disque si l'Amiga réécrit son début) */
       for (const x of uniquePartitionNames(bytes, partNames)) toast(r.name + " : partition " + x.from + ": montée comme " + x.to + ":");
       machine.writeFile(fsPath[tag], bytes);

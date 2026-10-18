@@ -242,3 +242,25 @@ export function uniquePartitionNames(img, used) {
   }
   return renamed;
 }
+
+/**
+ * Fin (en octets) de la dernière partition déclarée par la table de partitions (RDB), ou 0 sans RDB.
+ * Une image plus courte que sa table (recopiée d'une carte plus petite, ou coupée) empêche PFS3 et d'autres
+ * systèmes de fichiers de démarrer : au montage, ils lisent le dernier bloc de leur partition.
+ * @param {Uint8Array} img  image du disque (au moins les blocs de la table)
+ */
+export function rdbEnd(img) {
+  const dv = new DataView(img.buffer, img.byteOffset, img.byteLength);
+  let rdsk = -1;
+  for (let b = 0; b < 16 && (b + 1) * BS <= img.length; b++) if (get32(dv, b * BS) === 0x5244534b) { rdsk = b; break; }
+  if (rdsk < 0) return 0;
+  let end = 0, blk = get32(dv, rdsk * BS + 28);
+  for (let guard = 0; blk !== 0xffffffff && guard < 64 && (blk + 1) * BS <= img.length; guard++) {
+    const p = blk * BS;
+    if (get32(dv, p) !== 0x50415254) break; /* PART */
+    const env = p + 128, size = get32(dv, env + 4) * 4 || BS, heads = get32(dv, env + 12), spt = get32(dv, env + 20), high = get32(dv, env + 40);
+    if (heads && spt && high < 0x1000000) end = Math.max(end, (high + 1) * heads * spt * size);
+    blk = get32(dv, p + 16);
+  }
+  return end;
+}

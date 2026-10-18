@@ -21,14 +21,16 @@ self.addEventListener("install", e => e.waitUntil((async () => {
   const c = await caches.open(CACHE);
   const files = FILES.filter((f, i, a) => a.indexOf(f) === i);
   const ok = await Promise.all(files.map(f => copy(c, f)));
-  const lost = files.filter((f, i) => !ok[i]);
+  let lost = files.filter((f, i) => !ok[i]);
   if (lost.length) {
-    /* Mise à jour incomplète : l'ancienne version reste en service (complète, hors ligne), nouvel essai au prochain
-       lancement. Premier passage : on s'installe quand même (l'isolation est indispensable), les fichiers manquants
-       se copient quand la page les demande. */
-    const older = (await caches.keys()).some(k => k.startsWith("a1200-") && k !== CACHE);
-    console.warn("copie hors ligne incomplète :", lost.join(", "));
-    if (older) { await caches.delete(CACHE); throw new Error("mise à jour reportée"); }
+    /* Copie incomplète, le plus souvent faute de place (gros disques durs dans la Bibliothèque) : l'ancienne copie
+       est effacée pour faire de la place, puis nouvel essai. La nouvelle version s'installe dans tous les cas (sinon
+       l'ancienne resterait en service indéfiniment) : les fichiers manquants viennent du réseau quand la page les
+       demande. */
+    for (const k of await caches.keys()) if (k.startsWith("a1200-") && k !== CACHE) await caches.delete(k);
+    const again = await Promise.all(lost.map(f => copy(c, f)));
+    lost = lost.filter((f, i) => !again[i]);
+    if (lost.length) console.warn("copie hors ligne incomplète :", lost.join(", "));
   }
   await self.skipWaiting();
 })()));
@@ -63,8 +65,11 @@ self.addEventListener("fetch", e => {
     try {
       const res = await fetch(r);
       /* Fichier du site absent de la copie (premier passage interrompu) : copié au passage */
+      /* La copie ne doit jamais faire échouer la réponse : stockage du navigateur plein (gros disques durs dans la
+         Bibliothèque), le fichier est servi quand même, simplement pas gardé pour le hors ligne */
       if (ours && res.ok && FILES.includes(url.pathname.slice(scope.pathname.length) || "./")) {
-        const c = await caches.open(CACHE); await c.put(url.pathname.slice(scope.pathname.length) || "./", res.clone());
+        const f = url.pathname.slice(scope.pathname.length) || "./", copy = res.clone();
+        e.waitUntil(caches.open(CACHE).then(c => c.put(f, copy)).catch(x => console.warn("copie hors ligne impossible :", f, x)));
       }
       return isolate(res);
     }

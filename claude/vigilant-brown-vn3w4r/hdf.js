@@ -264,3 +264,33 @@ export function rdbEnd(img) {
   }
   return end;
 }
+
+/* Géométrie CHS que l'IDE d'UAE annonce par défaut (getchsgeometry de hardfile.c) */
+function ideDefaultChs(bytes) {
+  const total = Math.floor(bytes / BS);
+  let spt = 63, head = 4, cyl = 0;
+  for (const s of [63, 127, 255]) {
+    const maxhead = s < 255 ? 16 : 255;
+    spt = s;
+    for (head = 4; head <= maxhead; head++) {
+      cyl = Math.floor(total / (head * spt));
+      if (bytes <= 512 * 1048576) { if (cyl <= 1023) break; }
+      else if (cyl < 16383 || (cyl < 32767 && head >= 5) || cyl <= 65535) break;
+      if (maxhead > 16) head = head * 2 - 1;
+    }
+    if (head <= 16) break;
+  }
+  if (head > 16) head--;
+  return [cyl, head, spt];
+}
+
+/**
+ * Géométrie à imposer au disque IDE quand celle d'UAE par défaut s'arrête avant la fin de l'image : le scsi.device du
+ * Kickstart ne lit pas au-delà de cylindres × têtes × secteurs, et une partition qui va jusqu'au dernier bloc devient
+ * illisible à sa fin (PFS3 : « Can't read block … »). Renvoie "cyl/têtes/secteurs" pour hardfile2, ou "" si inutile.
+ */
+export function ideGeometry(bytes) {
+  const blocks = Math.floor(bytes / BS), [c, h, s] = ideDefaultChs(bytes);
+  if (c * h * s >= blocks || blocks > 16383 * 16 * 63) return "";
+  return Math.ceil(blocks / (16 * 63)) + "/16/63";
+}

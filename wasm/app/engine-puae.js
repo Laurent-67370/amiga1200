@@ -317,7 +317,9 @@ async function powerOn() {
       hdDirty[tag].clear(); machine.trackWrites(fsPath[tag], (pos, len) => hdWrite(tag, pos, len)); /* pour ne réenregistrer que les morceaux modifiés */
       /* DH0:, DH1: : disque IDE brut sur le contrôleur de la carte mère (Gayle de l'A600/A1200, IDE de l'A4000), géométrie
          lue sur le disque ; l'A3000 (contrôleur SCSI) passe par le pilote de disque d'UAE */
-      if (unit < 2 && model !== "a3000") lines.push(`hardfile2=rw,${tag.toUpperCase()}:${fsPath[tag]},0,0,0,512,0,,ide${unit}_mainboard,0`);
+      /* Géométrie imposée si celle d'UAE par défaut s'arrête avant la fin de l'image (voir ideGeometry) */
+      const geo = ideGeometry(bytes.length);
+      if (unit < 2 && model !== "a3000") lines.push(`hardfile2=rw,${tag.toUpperCase()}:${fsPath[tag]},0,0,0,512,0,,ide${unit}_mainboard,0${geo ? "," + geo : ""}`);
       else lines.push(`hardfile2=rw,${tag.toUpperCase()}:${fsPath[tag]},0,0,0,512,0,,uae${model === "a3000" ? unit : unit - 2}`);
     }
     /* uaehf.device a besoin de la ROM de démarrage d'UAE : seulement si DH2: ou DH3: est branché (voir plus haut) */

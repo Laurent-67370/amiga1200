@@ -1556,7 +1556,10 @@ async function powerOn() {
     if (resume) await applyState(resume, true);
   } catch (e) {
     console.error(e); starting = false; setPowerUi("off");
-    toast("Démarrage impossible : " + (e && e.message ? e.message : e), true);
+    const msg = e && e.message ? e.message : String(e);
+    if (/fetching of the wasm|failed to fetch|networkerror/i.test(msg))
+      toast("Démarrage impossible : le cœur " + (E.core === "winuae6" ? "WinUAE 6" : "PUAE") + " n'a pas pu être téléchargé (connexion coupée, ou site en cours de mise à jour). Rechargez la page puis rallumez.", true);
+    else toast("Démarrage impossible : " + msg, true);
   }
 }
 async function powerOff() {

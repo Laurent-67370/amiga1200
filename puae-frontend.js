@@ -117,10 +117,17 @@ registerProcessor('ring', Ring);`;
 export class PuaeMachine {
   /** @param {object} opts { canvas, factory: createPuae, onLog?, onStats? } */
   static async create({ canvas, factory, onLog, onStats, onFrame }) {
-    const M = await factory({
-      print: t => onLog && onLog(t),
-      printErr: t => onLog && onLog(t),
-    });
+    /* Le module (.wasm, 15 à 28 Mo) peut ne pas arriver : réseau coupé un instant, site en cours de publication…
+       Deux nouveaux essais avant d'abandonner */
+    let M;
+    for (let i = 0; ; i++) {
+      try { M = await factory({ print: t => onLog && onLog(t), printErr: t => onLog && onLog(t) }); break; }
+      catch (e) {
+        if (i >= 2 || !/fetch|network|wasm streaming/i.test(String(e && e.message || e))) throw e;
+        onLog && onLog("module non reçu (" + (e && e.message || e) + "), nouvel essai");
+        await new Promise(r => setTimeout(r, 1500 * (i + 1)));
+      }
+    }
     const m = new PuaeMachine(M, canvas, onStats);
     m.onFrame = onFrame || null;
     return m;

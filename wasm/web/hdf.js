@@ -294,3 +294,86 @@ export function ideGeometry(bytes) {
   if (c * h * s >= blocks || blocks > 16383 * 16 * 63) return "";
   return Math.ceil(blocks / (16 * 63)) + "/16/63";
 }
+
+/* ---------- Systèmes de fichiers des tables de partitions (FSHD + LSEG) ---------- */
+const ID_RDSK = 0x5244534b, ID_PART = 0x50415254, ID_FSHD = 0x46534844, ID_LSEG = 0x4c534547;
+const ROM_DOSTYPES = v => (v >>> 8) === 0x444f53 && (v & 255) <= 7; /* DOS\0 … DOS\7 : dans le Kickstart */
+
+function rdskOf(dv, len) {
+  for (let b = 0; b < 16 && (b + 1) * BS <= len; b++) if (get32(dv, b * BS) === ID_RDSK) return b;
+  return -1;
+}
+
+/**
+ * Pilotes de systèmes de fichiers fournis par un disque dans sa table de partitions.
+ * @param {Uint8Array} img  début du disque (sa zone RDB)
+ * @returns {{dosType:number, blocks:Uint8Array[]}[]}  pour chacun : le bloc FSHD puis ses blocs LSEG (le code)
+ */
+export function rdbFileSystems(img) {
+  const dv = new DataView(img.buffer, img.byteOffset, img.byteLength), out = [];
+  const rdsk = rdskOf(dv, img.length); if (rdsk < 0) return out;
+  const inImg = b => b !== 0xffffffff && (b + 1) * BS <= img.length;
+  for (let f = get32(dv, rdsk * BS + 32), g = 0; inImg(f) && g < 16 && get32(dv, f * BS) === ID_FSHD; g++) {
+    const blocks = [img.slice(f * BS, f * BS + BS)];
+    let ok = true;
+    for (let l = get32(dv, f * BS + 72), n = 0; l !== 0xffffffff; n++) {
+      if (!inImg(l) || n > 4096 || get32(dv, l * BS) !== ID_LSEG) { ok = false; break; }
+      blocks.push(img.slice(l * BS, l * BS + BS)); l = get32(dv, l * BS + 16);
+    }
+    if (ok && blocks.length > 1) out.push({ dosType: get32(dv, f * BS + 32), blocks });
+    f = get32(dv, f * BS + 16);
+  }
+  return out;
+}
+
+/** Types de partitions du disque qui n'ont ni pilote dans sa table ni pilote dans le Kickstart */
+export function rdbMissingFs(img) {
+  const dv = new DataView(img.buffer, img.byteOffset, img.byteLength);
+  const rdsk = rdskOf(dv, img.length); if (rdsk < 0) return [];
+  const have = new Set(rdbFileSystems(img).map(f => f.dosType)), miss = new Set();
+  for (let p = get32(dv, rdsk * BS + 28), g = 0; p !== 0xffffffff && (p + 1) * BS <= img.length && g < 64 && get32(dv, p * BS) === ID_PART; g++) {
+    const t = get32(dv, p * BS + 128 + 64);
+    if (!have.has(t) && !ROM_DOSTYPES(t)) miss.add(t);
+    p = get32(dv, p * BS + 16);
+  }
+  return [...miss];
+}
+
+/**
+ * Ajoute à la table de partitions un pilote pris sur un autre disque, enregistré pour le type `dosType` :
+ * blocs libres de la zone RDB (avant la première partition), FSHD en tête de la liste des pilotes.
+ * Modifie `img` ; renvoie les numéros des blocs changés, ou null s'il n'y a pas la place.
+ */
+export function rdbAddFileSystem(img, fs, dosType) {
+  const dv = new DataView(img.buffer, img.byteOffset, img.byteLength);
+  const rdsk = rdskOf(dv, img.length); if (rdsk < 0) return null;
+  const R = rdsk * BS;
+  /* Fin de la zone libre : dernier bloc RDB annoncé, sans entamer la première partition */
+  let limit = Math.min(get32(dv, R + 132) + 1, Math.floor(img.length / BS));
+  for (let p = get32(dv, R + 28), g = 0; p !== 0xffffffff && (p + 1) * BS <= img.length && g < 64 && get32(dv, p * BS) === ID_PART; g++) {
+    const e = p * BS + 128, start = get32(dv, e + 36) * get32(dv, e + 12) * get32(dv, e + 20);
+    if (start) limit = Math.min(limit, start);
+    p = get32(dv, p * BS + 16);
+  }
+  const used = id => id === ID_RDSK || id === ID_PART || id === ID_FSHD || id === ID_LSEG || id === 0x42414442 || id === 0x44525649;
+  const free = [];
+  for (let b = rdsk + 1; b < limit && free.length < fs.blocks.length; b++) if (!used(get32(dv, b * BS))) free.push(b);
+  if (free.length < fs.blocks.length) return null;
+  const changed = [];
+  fs.blocks.forEach((src, i) => {
+    const b = free[i], o = b * BS;
+    img.set(src, o);
+    if (i === 0) {
+      put32(dv, o + 16, get32(dv, R + 32));             /* suivant : l'ancienne tête de liste */
+      put32(dv, o + 32, dosType);                        /* type de partition servi */
+      put32(dv, o + 72, free[1]);                        /* premier bloc de code */
+    } else put32(dv, o + 16, i + 1 < fs.blocks.length ? free[i + 1] : 0xffffffff);
+    rdbChecksum(dv, o, Math.min(get32(dv, o + 4), 128));
+    changed.push(b);
+  });
+  put32(dv, R + 32, free[0]);
+  put32(dv, R + 152, Math.max(get32(dv, R + 152), free[free.length - 1]));
+  rdbChecksum(dv, R, Math.min(get32(dv, R + 4), 128));
+  changed.push(rdsk);
+  return changed;
+}

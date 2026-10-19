@@ -264,7 +264,7 @@ body.is-off #btnPower,body.is-off #btnReset,body.is-off #btnPause,body.is-off #b
 .fs-exit{display:none;position:absolute;top:12px;right:12px;z-index:5;align-items:center;gap:8px;padding:9px 14px;font:inherit;font-size:14px;
   color:#fff;background:rgba(20,24,30,.78);border:1px solid rgba(255,255,255,.25);border-radius:6px;cursor:pointer;transition:opacity .3s}
 .fs-exit svg{width:16px;height:16px}
-.fs-bar{display:none;position:absolute;top:12px;left:12px;z-index:5;gap:6px;flex-wrap:wrap;max-width:calc(100% - 250px)}
+.fs-bar{display:none;position:absolute;top:12px;left:12px;z-index:5;gap:6px;flex-wrap:wrap;max-width:calc(100% - 250px);transition:opacity .3s}
 .tube:fullscreen .fs-bar,.tube:-webkit-full-screen .fs-bar{display:flex}
 .fsb{font:inherit;font-size:13px;color:#fff;background:rgba(20,24,30,.65);border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:8px 11px;cursor:pointer}
 .fsb[aria-pressed="true"]{background:var(--wb-blue)}
@@ -294,7 +294,10 @@ body:not(.is-touch) .vj-opts{display:none}
 [data-cd32] .vjoy-fire .vf3{display:block}
 .tube > #vkbd{position:absolute;left:0;right:0;bottom:0;z-index:7;margin:0;opacity:.94}
 .tube:fullscreen .fs-exit,.tube:-webkit-full-screen .fs-exit{display:flex}
-.fs-exit.hide{opacity:0;pointer-events:none}
+.fs-exit.hide,.fs-bar.hide{opacity:0;pointer-events:none}
+/* Téléphone en paysage : l'écran de l'Amiga tient en entier dans la hauteur, sans défiler */
+@media (orientation:landscape) and (max-height:560px){.monitor{padding:6px 10px 4px}.bezel{padding:6px}
+  .tube:not(:fullscreen){max-width:calc((100svh - 26px) * 4 / 3);margin:0 auto}}
 .tube:-webkit-full-screen{border-radius:0;background:#000}
 
 @media (max-width:760px){
@@ -763,7 +766,7 @@ body.is-off #btnTurbo{display:none!important}
     Kickstart de secours : AROS, version d'août 2026 (AROS Public License). Les ROM Kickstart et disquettes Workbench d'origine ne sont pas fournies : importez les vôtres.
     Vos fichiers restent dans ce navigateur (stockage local) et ne sont envoyés nulle part.
     <br><a href="sae/">Ancienne version (cœur SAE)</a>, conservée pour comparer : elle partage la même Bibliothèque.
-    <br><b>Version du site : 20/10/2026 00:08 (a7728aa)</b> (heure de Paris).
+    <br><b>Version du site : 20/10/2026 00:15 (0369a76)</b> (heure de Paris).
   </p>
 </main>
 
@@ -2440,9 +2443,13 @@ $("#btnFull").onclick = () => {
   /* iPhone : pas de plein écran pour une page (seulement pour les vidéos) ; l'application installée l'est déjà */
   if (!t.requestFullscreen && !t.webkitRequestFullscreen) $("#btnFull").hidden = true;
   const exit = () => { if (isFs()) (document.exitFullscreen || document.webkitExitFullscreen).call(document); };
-  const show = () => { if (!isFs()) return; b.classList.remove("hide"); clearTimeout(timer); timer = setTimeout(() => b.classList.add("hide"), 3000); };
+  /* La barre de touches du plein écran (fsBar) se cache avec le bouton : elle couvrait le haut de l'image de l'Amiga */
+  const hideAll = on => { b.classList.toggle("hide", on); const bar = $("#fsBar"); if (bar) bar.classList.toggle("hide", on); };
+  const show = () => { if (!isFs()) return; hideAll(false); clearTimeout(timer); timer = setTimeout(() => hideAll(true), 4000); };
   const onChange = () => {
-    if (!isFs()) { b.classList.add("hide"); return; }
+    if (!isFs()) { hideAll(true); try { screen.orientation.unlock(); } catch (e) {} return; }
+    /* Téléphone : l'image de l'Amiga est en largeur, le plein écran passe en paysage (Android ; ignoré ailleurs) */
+    if (isTouch && screen.orientation && screen.orientation.lock) screen.orientation.lock("landscape").catch(() => {});
     show();
     toast(isTouch ? "Pour quitter le plein écran : touchez l'écran puis le bouton en haut à droite, ou faites le geste retour."
                   : "Pour quitter le plein écran : Échap (deux fois si la souris est capturée), ou le bouton en haut à droite.");
@@ -5659,7 +5666,7 @@ let uxDrivesRefresh = () => {};
   if (body && !body.querySelector(".ux-keys")) {
     const k = s => '<span class="kbd">' + s + "</span>";
     const sec = document.createElement("div"); sec.className = "ux-keys";
-    sec.innerHTML = '<p class="hint" id="siteVersion">Version du site : 20/10/2026 00:08 (a7728aa) (heure de Paris). Après une mise à jour, rechargez la page : ce numéro doit changer.</p>' + "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause, <b>Turbo</b> (chargements accélérés, sans le son). <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
+    sec.innerHTML = '<p class="hint" id="siteVersion">Version du site : 20/10/2026 00:15 (0369a76) (heure de Paris). Après une mise à jour, rechargez la page : ce numéro doit changer.</p>' + "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause, <b>Turbo</b> (chargements accélérés, sans le son). <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
       + "<h3>Quatre lecteurs de disquettes</h3><p>DF0: (interne) et trois lecteurs externes, DF1: à DF3: (DF2: et DF3: se déplient sous les lecteurs). Pour un jeu sur plusieurs disquettes, choisissez-les ou glissez-les <b>ensemble</b> (Insérer…, Ouvrir un fichier…, ou une archive .zip) : Disk 1 va dans DF0:, Disk 2 dans DF1:, etc., dans l'ordre des noms. DF2: et DF3: existent dès qu'une disquette y est placée à l'allumage ; sinon l'Amiga n'a que deux lecteurs, ce que certains jeux préfèrent. Les jeux qui savent lire plusieurs lecteurs ne demandent alors plus de changer de disquette. Les disquettes d'un même jeu (« Disk 1 », « Disk 2 »…) n'ont qu'une vignette à l'accueil, qui démarre sur la première ; pendant la partie, le bouton <b>Disquette suivante</b> (sous l'écran, et dans la barre du plein écran) met la suivante dans DF0:.</p>"
       + "<h3>Raccourcis clavier</h3><p>" + k("F12") + " ouvre ou ferme la Configuration (l'Amiga se met en pause). "
       + k("Ctrl") + "+" + k("Maj") + "+" + k("S") + " sauvegarde la partie dans l'emplacement 1, " + k("Ctrl") + "+" + k("Maj") + "+" + k("R") + " la reprend. " + k("Ctrl") + "+" + k("Maj") + "+" + k("→") + " active ou arrête le Turbo. "

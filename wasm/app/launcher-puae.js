@@ -65,7 +65,9 @@ async function renderLauncher() {
   kTxt.textContent = other || isCdtv ? await modelRomLabel(S.model, all) : romRec ? (romRec.label || romRec.name) : "AROS (Kickstart libre)";
   kick.append(seg, lEl("span", "l-kick-lbl", "Kickstart"), kTxt);
   const kBtn = lEl("button", "gad small"); kBtn.textContent = other || isCdtv ? "Importer…" : romRec ? "Changer" : is500 ? "Importer le 1.3…" : "Importer le mien…";
-  kBtn.onclick = romRec && !other && !isCdtv ? () => $("#btnSettings").click() : () => pickFiles(".rom,.bin,.key", files => { (async () => { for (const f of files) await importFile(f); })(); });
+  /* « Changer » : le panneau ROM de la configuration (déjà ouverte ou non) */
+  if (romRec && !other && !isCdtv) kBtn.title = "Choisir un autre Kickstart (panneau ROM). Le modèle d'Amiga se change dans la liste à gauche.";
+  kBtn.onclick = romRec && !other && !isCdtv ? () => { if (typeof abOpen === "function") abOpen("rom"); else $("#btnSettings").click(); } : () => pickFiles(".rom,.bin,.key", files => { (async () => { for (const f of files) await importFile(f); })(); });
   kick.appendChild(kBtn);
   }
 

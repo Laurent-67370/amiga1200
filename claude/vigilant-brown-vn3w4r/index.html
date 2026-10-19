@@ -287,7 +287,7 @@ body:not(.is-touch) .vj-opts{display:none}
 .vj-range input{flex:1;max-width:260px}
 .vj-range output{min-width:3.5em;font-variant-numeric:tabular-nums}
 .hd-extra [data-act="profile"]{display:none}
-.lazyx-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 0}.lazyx-row span{overflow-wrap:anywhere}
+.lazyx-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 0}.lazyx-row span{overflow-wrap:anywhere}.lazyx-shared{display:flex;gap:6px;align-items:flex-start;font-size:.92em}
 /* Sur téléphone, un disque dur supplémentaire libre se réduit à son titre et à ses deux boutons utiles */
 @media (max-width:760px){.hd-extra:has(.media.empty) .media,.hd-extra:has(.media.empty) button:disabled{display:none}.hd-extra:has(.media.empty){gap:6px;padding:8px 12px}}
 .vjoy-fire .vf3{display:none;width:min(12vmin,50px);background:rgba(90,90,90,.5);font-size:18px}
@@ -763,7 +763,7 @@ body.is-off #btnTurbo{display:none!important}
     Kickstart de secours : AROS, version d'août 2026 (AROS Public License). Les ROM Kickstart et disquettes Workbench d'origine ne sont pas fournies : importez les vôtres.
     Vos fichiers restent dans ce navigateur (stockage local) et ne sont envoyés nulle part.
     <br><a href="sae/">Ancienne version (cœur SAE)</a>, conservée pour comparer : elle partage la même Bibliothèque.
-    <br><b>Version du site : 19/10/2026 23:57 (a648685)</b> (heure de Paris).
+    <br><b>Version du site : 20/10/2026 00:08 (a7728aa)</b> (heure de Paris).
   </p>
 </main>
 
@@ -1383,6 +1383,11 @@ async function powerOn() {
   if (running || starting) return;
   /* Le cœur ne se rallume pas dans la même page : on recharge et on rallume aussitôt. */
   if (machine) {
+    /* Disques sur place : le rechargement fait perdre l'accès à leurs fichiers ; pas d'allumage sans eux, la page
+       dit lesquels rebrancher */
+    const lazyNames = [...HD_TAGS.filter(t => mounted[t] && String(mounted[t].id).startsWith("lazy:") && lazyFiles[t]).map(t => t.toUpperCase() + ": " + lazyFiles[t].name),
+      ...lazyExtra.map((f, i) => "DH" + (4 + i) + ": " + f.name)];
+    if (lazyNames.length) { sessionStorage.setItem("a1200.lazyagain", lazyNames.join(", ")); location.reload(); return; }
     sessionStorage.setItem("a1200.autostart", "1");
     if (whdGame) sessionStorage.setItem("a1200.whd", whdGame.id);
     if (instJob) sessionStorage.setItem("a1200.inst", instJob.recId);
@@ -1588,8 +1593,11 @@ async function powerOn() {
     let lazyMore = 0;
     if (!(a500 || whd || cd)) for (const [i, f] of lazyExtra.slice(0, LAZY_EXTRA_MAX).entries())
       if (await lazyAttach(f, "DH" + (4 + i), () => "uae" + ((model === "a3000" ? 4 : 2) + lazyMore))) lazyMore++;
-    /* uaehf.device a besoin de la ROM de démarrage d'UAE : seulement si DH2:, DH3: ou un autre disque UAE est branché (voir plus haut) */
-    if (fsPath.dh2 || fsPath.dh3 || lazyMore || (model === "a3000" && HD_TAGS.some(t => fsPath[t]))) lines.splice(0, lines.length, ...lines.filter(l => !/^(boot_rom_uae|uaeboard)=/.test(l)));
+    /* Volume SHARED: (AGS), avec les disques sur place : jamais un disque de démarrage */
+    const shared = lazyList.length > 0 && S.shared !== "off";
+    if (shared) { await sharedPrepare(machine); lines.push("filesystem2=rw,DH12:SHARED:/save/SHARED,-128"); } else sharedOn = false;
+    /* uaehf.device a besoin de la ROM de démarrage d'UAE : seulement si DH2:, DH3:, un autre disque UAE ou SHARED: est branché (voir plus haut) */
+    if (fsPath.dh2 || fsPath.dh3 || lazyMore || shared || (model === "a3000" && HD_TAGS.some(t => fsPath[t]))) lines.splice(0, lines.length, ...lines.filter(l => !/^(boot_rom_uae|uaeboard)=/.test(l)));
     let content = "/cfg/a1200.uae", options = coreOptions();
     if (amb) options = { amiberry_crop_overscan: S.center ? "enabled" : "disabled", amiberry_statusline: "disabled", amiberry_midi_output: S.midi === "on" ? "libretro" : "disabled",
       amiberry_joyport_order: "21" }; /* manette 0 au port joystick, manette 1 au port souris quand il reçoit un joystick (2 joueurs) */
@@ -5651,7 +5659,7 @@ let uxDrivesRefresh = () => {};
   if (body && !body.querySelector(".ux-keys")) {
     const k = s => '<span class="kbd">' + s + "</span>";
     const sec = document.createElement("div"); sec.className = "ux-keys";
-    sec.innerHTML = '<p class="hint" id="siteVersion">Version du site : 19/10/2026 23:57 (a648685) (heure de Paris). Après une mise à jour, rechargez la page : ce numéro doit changer.</p>' + "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause, <b>Turbo</b> (chargements accélérés, sans le son). <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
+    sec.innerHTML = '<p class="hint" id="siteVersion">Version du site : 20/10/2026 00:08 (a7728aa) (heure de Paris). Après une mise à jour, rechargez la page : ce numéro doit changer.</p>' + "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause, <b>Turbo</b> (chargements accélérés, sans le son). <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
       + "<h3>Quatre lecteurs de disquettes</h3><p>DF0: (interne) et trois lecteurs externes, DF1: à DF3: (DF2: et DF3: se déplient sous les lecteurs). Pour un jeu sur plusieurs disquettes, choisissez-les ou glissez-les <b>ensemble</b> (Insérer…, Ouvrir un fichier…, ou une archive .zip) : Disk 1 va dans DF0:, Disk 2 dans DF1:, etc., dans l'ordre des noms. DF2: et DF3: existent dès qu'une disquette y est placée à l'allumage ; sinon l'Amiga n'a que deux lecteurs, ce que certains jeux préfèrent. Les jeux qui savent lire plusieurs lecteurs ne demandent alors plus de changer de disquette. Les disquettes d'un même jeu (« Disk 1 », « Disk 2 »…) n'ont qu'une vignette à l'accueil, qui démarre sur la première ; pendant la partie, le bouton <b>Disquette suivante</b> (sous l'écran, et dans la barre du plein écran) met la suivante dans DF0:.</p>"
       + "<h3>Raccourcis clavier</h3><p>" + k("F12") + " ouvre ou ferme la Configuration (l'Amiga se met en pause). "
       + k("Ctrl") + "+" + k("Maj") + "+" + k("S") + " sauvegarde la partie dans l'emplacement 1, " + k("Ctrl") + "+" + k("Maj") + "+" + k("R") + " la reprend. " + k("Ctrl") + "+" + k("Maj") + "+" + k("→") + " active ou arrête le Turbo. "
@@ -5924,8 +5932,12 @@ function pickLazyExtra() {
     card.innerHTML = '<div class="drive-head"><b>DH4: et suivants</b><small>disques UAE, sur place</small></div>'
       + '<div class="media empty" id="name-lazyx">Aucun autre disque</div>'
       + '<div class="acts"><button class="gad small" type="button" data-act="lazyadd" title="Brancher d\'autres gros disques .hdf sans les importer (WinUAE 6, pour cette séance)">Sur place…</button>'
-      + '<button class="gad small" type="button" data-act="lazyclear" disabled>Tout retirer</button></div>';
+      + '<button class="gad small" type="button" data-act="lazyclear" disabled>Tout retirer</button></div>'
+      + '<label class="lazyx-shared"><input type="checkbox" id="optShared"> Volume SHARED: intégré (sauvegardes des jeux d\'AGS, gardées d\'une séance à l\'autre)</label>';
     dh3.after(card);
+    const opt = card.querySelector("#optShared");
+    opt.checked = S.shared !== "off";
+    opt.addEventListener("change", () => { S.shared = opt.checked ? "on" : "off"; saveSettings(); });
     card.addEventListener("click", e => {
       const b = e.target.closest("button"); if (!b) return;
       e.preventDefault(); e.stopPropagation();
@@ -5936,6 +5948,42 @@ function pickLazyExtra() {
       renderLazyExtra();
     });
   } }
+/* Volume SHARED: intégré, pour AGS : ses disques y rangent les sauvegardes des jeux (SHARED:SaveGames), dans un
+   dossier du PC sous WinUAE. Ici, un dossier du cœur gardé dans la Bibliothèque d'une séance à l'autre, monté avec
+   les disques sur place. */
+const SHARED_ID = "shared";
+let sharedOn = false, sharedSig = "";
+async function sharedPrepare(m) {
+  const rec = await DB.get(SHARED_ID);
+  m.M.FS.mkdirTree("/save/SHARED/SaveGames");
+  for (const d of (rec && rec.dirs) || []) m.M.FS.mkdirTree("/save/SHARED/" + d);
+  for (const f of (rec && rec.files) || []) m.writeFile("/save/SHARED/" + f.path, new Uint8Array(await f.blob.arrayBuffer()));
+  sharedSig = rec ? rec.sig : ""; sharedOn = true;
+}
+async function saveShared() {
+  if (!machine || !sharedOn) return;
+  machine.flush();
+  const FS = machine.M.FS, files = [], dirs = [];
+  const walk = (dir, rel) => {
+    let names = []; try { names = FS.readdir(dir); } catch (e) { return; }
+    for (const n of names) {
+      if (n === "." || n === "..") continue;
+      const p = dir + "/" + n, st = FS.stat(p), r = rel ? rel + "/" + n : n;
+      if (FS.isDir(st.mode)) { dirs.push(r); walk(p, r); } else files.push({ path: r, full: p, size: st.size, mtime: +st.mtime });
+    }
+  };
+  walk("/save/SHARED", "");
+  const sig = [...dirs, ...files.map(f => f.path + ":" + f.size + ":" + f.mtime)].sort().join("|");
+  if (sig === sharedSig) return;
+  const saved = files.map(f => ({ path: f.path, blob: new Blob([FS.readFile(f.full)]) }));
+  await DB.put({ id: SHARED_ID, kind: "shared", name: "SHARED", dirs, files: saved, sig, size: saved.reduce((a, f) => a + f.blob.size, 0), added: Date.now() });
+  sharedSig = sig;
+}
+setInterval(() => { if (running && sharedOn) saveShared(); }, 5000);
+window.addEventListener("pagehide", () => { if (running && sharedOn) saveShared(); });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && running && sharedOn) saveShared(); });
+{ const _off = powerOff; powerOff = async () => { if (running && sharedOn) await saveShared().catch(e => console.warn("SHARED non enregistré", e)); await _off(); sharedOn = false; }; }
+
 /* Un autre disque mis à la place, ou retiré : le fichier sur place est oublié */
 { const _sm = setMounted;
   setMounted = (t, r) => {
@@ -5948,6 +5996,11 @@ function pickLazyExtra() {
   }; }
 /* Rechargement de la page : l'accès au fichier est perdu, l'unité redevient vide */
 for (const t of HD_TAGS) if (mounted[t] && String(mounted[t].id).startsWith("lazy:") && !lazyFiles[t]) setMounted(t, null);
+{ const again = sessionStorage.getItem("a1200.lazyagain");
+  if (again) {
+    sessionStorage.removeItem("a1200.lazyagain");
+    setTimeout(() => toast("Pour rallumer, la page s'est rechargée, et le navigateur ne redonne pas l'accès aux fichiers lus sur place. Rebranchez-les avec « Sur place… » (" + again + "), puis Démarrer. Pour redémarrer sans les perdre, utilisez plutôt Réinitialiser.", true), 800);
+  } }
 
 /* Profil par disque */
 let profTarget = null;

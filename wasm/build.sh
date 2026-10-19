@@ -76,6 +76,10 @@ else echo "cœur WinUAE 6 absent (wasm-amiberry/build.sh non lancé)"; fi
 if [ -f "$ROOT/wasm-ipf/out/ipf.js" ]; then cp "$ROOT/wasm-ipf/out/ipf.js" "$ROOT/wasm-ipf/out/ipf.wasm" "$OUT/site/"
 else echo "convertisseur IPF absent (wasm-ipf/build.sh non lancé)"; fi
 python3 "$ROOT/wasm/app/make-page.py" "$OUT/site/index.html"
+# Version affichée (Aide et à propos) : date de la dernière modification, heure de Paris, et son numéro
+BUILD=$(cd "$ROOT" && TZ=Europe/Paris git log -1 --date=format-local:'%d/%m/%Y %H:%M' --format='%cd (%h)' 2>/dev/null || echo "locale")
+sed -i "s|__BUILD__|$BUILD|g" "$OUT/site/index.html"
+echo "version affichée : $BUILD"
 # Kickstart de secours : AROS d'août 2026, compressé (décompressé par la page)
 gzip -9 -n -c "$ROOT/vendor/aros/aros-20260820-rom.bin" > "$OUT/site/aros-rom.bin.gz"
 gzip -9 -n -c "$ROOT/vendor/aros/aros-20260820-ext.bin" > "$OUT/site/aros-ext.bin.gz"

@@ -50,6 +50,17 @@ const WINUAE_ONLY = new Set(["a600", "a3000", "a4000", "cdtv"]); /* préréglage
 const HAS_ACCEL = new Set(["a1200", "a3000", "a4000"]);          /* carte accélératrice et carte RTG possibles */
 const modelOf = s => s && MODELS[s.model] && s.model !== "cdtv" ? s.model : "a1200";
 /* Kickstart pour l'A500 : celui choisi, sinon un 1.x ou 2.0x de la Bibliothèque (le plus ancien d'abord) */
+/* Kickstart 2.04 ou plus récent de la Bibliothèque (3.1 de l'A1200 de préférence) : WHDLoad et son démarrage en ont besoin */
+async function romForWhd(all) {
+  all = all || await DB.all();
+  const ok = [];
+  for (const r of all.filter(x => x.kind === "rom" && !x.cd32)) {
+    if (r.kickVer === undefined) { try { r.kickVer = kickVersion(new Uint8Array(await r.blob.slice(0, 16).arrayBuffer())); await DB.put(r); } catch (e) { r.kickVer = null; } }
+    if (r.kickVer && r.kickVer[0] >= 37) ok.push(r);
+  }
+  ok.sort((a, b) => (b.kickVer[0] === 40) - (a.kickVer[0] === 40) || b.kickVer[0] - a.kickVer[0]);
+  return ok.length ? ok[0] : null;
+}
 async function romFor500(all) {
   all = all || await DB.all();
   if (S.romId500 && S.romId500 !== "auto") { if (S.romId500 === "aros" || all.some(r => r.id === S.romId500)) return S.romId500; }
@@ -250,7 +261,18 @@ async function powerOn() {
     if (whdGame && whdGame.whdArgs) E.core = "winuae6"; /* programme lancé par GenericKick : options de WHDLoad, sur WinUAE 6 */
     if ((WINUAE_ONLY.has(model) || cdtv) && E.core !== "winuae6") { E.core = "winuae6"; toast(MODELS[cdtv ? "cdtv" : model].name + " : allumé avec le cœur WinUAE 6 (PUAE ne l'émule pas)."); }
     const amb = E.core === "winuae6";
-    const romId = cd ? (cdtv ? (resume ? resume.ctx.rom : await romForModel("cdtv")) : cdRoms.id) : resume ? resume.ctx.rom : a500 ? await romFor500() : WINUAE_ONLY.has(model) ? await romForModel(model) : S.romId;
+    let romId = cd ? (cdtv ? (resume ? resume.ctx.rom : await romForModel("cdtv")) : cdRoms.id) : resume ? resume.ctx.rom : a500 ? await romFor500() : WINUAE_ONLY.has(model) ? await romForModel(model) : S.romId;
+    /* Jeu WHDLoad ou installation : il faut un Kickstart 2.04 ou plus récent (le script de démarrage et WHDLoad
+       l'utilisent ; le jeu, lui, retrouve son 1.3 par les Kickstart de WHDLoad) */
+    if ((whd || instJob) && !resume && romId !== "aros") {
+      const cur = await DB.get(romId), v = cur && (cur.kickVer !== undefined ? cur.kickVer : kickVersion(new Uint8Array(await cur.blob.slice(0, 16).arrayBuffer())));
+      if (v && v[0] < 37) {
+        const better = await romForWhd();
+        if (!better) throw new Error("WHDLoad a besoin d'un Kickstart 2.04 ou plus récent (le 3.1 de l'A1200) dans la Bibliothèque : avec le " + (KICK_NAMES[v[0]] || v[0]) + " il ne démarre pas. Le jeu, lui, peut utiliser le 1.3 : WHDLoad le lui fournit");
+        romId = better.id;
+        toast("Jeu WHDLoad : démarré avec " + (better.label || better.name) + " (WHDLoad a besoin d'un Kickstart 2.04 ou plus récent ; il fournit lui-même le 1.3 au jeu si besoin).");
+      }
+    }
     /* AROS ne tient pas dans le seul Mo de l'A600 : 4 Mo de Fast, comme une carte PCMCIA */
     if (model === "a600" && romId === "aros" && !+E.fast) { E.fast = "4"; toast("Amiga 600 avec AROS : 4 Mo de mémoire Fast ajoutés (AROS ne tient pas dans 1 Mo). Avec un vrai Kickstart 2.05 ou 3.1, l'A600 garde sa mémoire d'origine."); }
     if (cdtv && romId === "aros") throw new Error("le CDTV a besoin d'un vrai Kickstart (1.3 de préférence) dans la Bibliothèque");

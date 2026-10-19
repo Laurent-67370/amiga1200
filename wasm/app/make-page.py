@@ -176,7 +176,8 @@ rep("<li>Démarrez sur la disquette Install 3.1, lancez HDToolBox, partitionnez,
 
 # Lien vers l'ancienne version, conservée sous sae/
 note = "Vos fichiers restent dans ce navigateur (stockage local) et ne sont envoyés nulle part."
-rep(note, note + '\n    <br><a href="sae/">Ancienne version (cœur SAE)</a>, conservée pour comparer : elle partage la même Bibliothèque.')
+rep(note, note + '\n    <br><a href="sae/">Ancienne version (cœur SAE)</a>, conservée pour comparer : elle partage la même Bibliothèque.'
+    '\n    <br><b>Version du site : __BUILD__</b> (heure de Paris).')
 
 # Carte accélératrice, horloge et bruit des lecteurs (version PUAE)
 rep('compat: "normal", autoskip: true,', 'compat: "normal", accel: "none", model: "a1200", romId500: "auto", floppySound: false, autoskip: true,')

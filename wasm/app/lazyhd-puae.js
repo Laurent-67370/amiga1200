@@ -85,8 +85,12 @@ function pickLazyExtra() {
     card.innerHTML = '<div class="drive-head"><b>DH4: et suivants</b><small>disques UAE, sur place</small></div>'
       + '<div class="media empty" id="name-lazyx">Aucun autre disque</div>'
       + '<div class="acts"><button class="gad small" type="button" data-act="lazyadd" title="Brancher d\'autres gros disques .hdf sans les importer (WinUAE 6, pour cette séance)">Sur place…</button>'
-      + '<button class="gad small" type="button" data-act="lazyclear" disabled>Tout retirer</button></div>';
+      + '<button class="gad small" type="button" data-act="lazyclear" disabled>Tout retirer</button></div>'
+      + '<label class="lazyx-shared"><input type="checkbox" id="optShared"> Volume SHARED: intégré (sauvegardes des jeux d\'AGS, gardées d\'une séance à l\'autre)</label>';
     dh3.after(card);
+    const opt = card.querySelector("#optShared");
+    opt.checked = S.shared !== "off";
+    opt.addEventListener("change", () => { S.shared = opt.checked ? "on" : "off"; saveSettings(); });
     card.addEventListener("click", e => {
       const b = e.target.closest("button"); if (!b) return;
       e.preventDefault(); e.stopPropagation();
@@ -97,6 +101,42 @@ function pickLazyExtra() {
       renderLazyExtra();
     });
   } }
+/* Volume SHARED: intégré, pour AGS : ses disques y rangent les sauvegardes des jeux (SHARED:SaveGames), dans un
+   dossier du PC sous WinUAE. Ici, un dossier du cœur gardé dans la Bibliothèque d'une séance à l'autre, monté avec
+   les disques sur place. */
+const SHARED_ID = "shared";
+let sharedOn = false, sharedSig = "";
+async function sharedPrepare(m) {
+  const rec = await DB.get(SHARED_ID);
+  m.M.FS.mkdirTree("/save/SHARED/SaveGames");
+  for (const d of (rec && rec.dirs) || []) m.M.FS.mkdirTree("/save/SHARED/" + d);
+  for (const f of (rec && rec.files) || []) m.writeFile("/save/SHARED/" + f.path, new Uint8Array(await f.blob.arrayBuffer()));
+  sharedSig = rec ? rec.sig : ""; sharedOn = true;
+}
+async function saveShared() {
+  if (!machine || !sharedOn) return;
+  machine.flush();
+  const FS = machine.M.FS, files = [], dirs = [];
+  const walk = (dir, rel) => {
+    let names = []; try { names = FS.readdir(dir); } catch (e) { return; }
+    for (const n of names) {
+      if (n === "." || n === "..") continue;
+      const p = dir + "/" + n, st = FS.stat(p), r = rel ? rel + "/" + n : n;
+      if (FS.isDir(st.mode)) { dirs.push(r); walk(p, r); } else files.push({ path: r, full: p, size: st.size, mtime: +st.mtime });
+    }
+  };
+  walk("/save/SHARED", "");
+  const sig = [...dirs, ...files.map(f => f.path + ":" + f.size + ":" + f.mtime)].sort().join("|");
+  if (sig === sharedSig) return;
+  const saved = files.map(f => ({ path: f.path, blob: new Blob([FS.readFile(f.full)]) }));
+  await DB.put({ id: SHARED_ID, kind: "shared", name: "SHARED", dirs, files: saved, sig, size: saved.reduce((a, f) => a + f.blob.size, 0), added: Date.now() });
+  sharedSig = sig;
+}
+setInterval(() => { if (running && sharedOn) saveShared(); }, 5000);
+window.addEventListener("pagehide", () => { if (running && sharedOn) saveShared(); });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && running && sharedOn) saveShared(); });
+{ const _off = powerOff; powerOff = async () => { if (running && sharedOn) await saveShared().catch(e => console.warn("SHARED non enregistré", e)); await _off(); sharedOn = false; }; }
+
 /* Un autre disque mis à la place, ou retiré : le fichier sur place est oublié */
 { const _sm = setMounted;
   setMounted = (t, r) => {
@@ -109,3 +149,8 @@ function pickLazyExtra() {
   }; }
 /* Rechargement de la page : l'accès au fichier est perdu, l'unité redevient vide */
 for (const t of HD_TAGS) if (mounted[t] && String(mounted[t].id).startsWith("lazy:") && !lazyFiles[t]) setMounted(t, null);
+{ const again = sessionStorage.getItem("a1200.lazyagain");
+  if (again) {
+    sessionStorage.removeItem("a1200.lazyagain");
+    setTimeout(() => toast("Pour rallumer, la page s'est rechargée, et le navigateur ne redonne pas l'accès aux fichiers lus sur place. Rebranchez-les avec « Sur place… » (" + again + "), puis Démarrer. Pour redémarrer sans les perdre, utilisez plutôt Réinitialiser.", true), 800);
+  } }

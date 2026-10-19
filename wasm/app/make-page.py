@@ -651,6 +651,7 @@ for _n, _lbl in [(1, "IDE, esclave"), (2, "disque UAE"), (3, "disque UAE")]:
                .replace("DH0:", "DH%d:" % _n).replace('IDE interne 2,5"', _lbl))
 page = page[:_j] + _extra + page[_j:]
 rep(".tube > #vkbd{position:absolute;", """.hd-extra [data-act="profile"]{display:none}
+.lazyx-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 0}.lazyx-row span{overflow-wrap:anywhere}
 /* Sur téléphone, un disque dur supplémentaire libre se réduit à son titre et à ses deux boutons utiles */
 @media (max-width:760px){.hd-extra:has(.media.empty) .media,.hd-extra:has(.media.empty) button:disabled{display:none}.hd-extra:has(.media.empty){gap:6px;padding:8px 12px}}
 .tube > #vkbd{position:absolute;""")

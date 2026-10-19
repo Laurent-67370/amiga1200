@@ -48,6 +48,55 @@ for (const t of HD_TAGS) {
   ins.after(b);
   b.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); pickLazyHd(t); });
 }
+/* Autres disques sur place, au-delà des quatre unités : DH4: et suivants, branchés comme disques UAE (AGS en a 12) */
+function renderLazyExtra() {
+  const box = $("#name-lazyx"), clr = $('#drive-lazyx [data-act="lazyclear"]'); if (!box) return;
+  box.textContent = ""; box.classList.toggle("empty", !lazyExtra.length);
+  if (!lazyExtra.length) box.textContent = "Aucun autre disque";
+  for (const [i, f] of lazyExtra.entries()) {
+    const row = document.createElement("div"); row.className = "lazyx-row";
+    const name = document.createElement("span"); name.textContent = "DH" + (4 + i) + ": " + f.name + " (sur place)";
+    const del = document.createElement("button"); del.className = "gad small"; del.type = "button"; del.textContent = "Retirer"; del.dataset.lazyx = i;
+    row.append(name, del); box.appendChild(row);
+  }
+  if (clr) clr.disabled = !lazyExtra.length;
+  const add = $('#drive-lazyx [data-act="lazyadd"]'); if (add) add.disabled = lazyExtra.length >= LAZY_EXTRA_MAX;
+}
+function pickLazyExtra() {
+  if (running || starting) { toast("Éteignez l'Amiga pour brancher un disque dur.", true); return; }
+  const inp = $("#filePick"); inp.value = ""; inp.multiple = true; inp.accept = ".hdf";
+  inp.onchange = async () => {
+    const files = [...inp.files]; inp.multiple = false; if (!files.length) return;
+    for (const f of files) {
+      if (lazyExtra.length >= LAZY_EXTRA_MAX) { toast("Au plus " + LAZY_EXTRA_MAX + " autres disques sur place (DH4: à DH" + (3 + LAZY_EXTRA_MAX) + ":).", true); break; }
+      if (lazyExtra.some(x => x.name === f.name && x.size === f.size) || HD_TAGS.some(t => lazyFiles[t] && lazyFiles[t].name === f.name && lazyFiles[t].size === f.size)) continue;
+      lazyExtra.push(f);
+      const d = await lazyDescribe(f);
+      toast(f.name + " sur DH" + (3 + lazyExtra.length) + ": (disque UAE) — " + d + " (" + fmtSize(f.size) + ", lu directement dans le fichier.)");
+    }
+    renderLazyExtra();
+  };
+  inp.click();
+}
+{ const dh3 = $("#drive-dh3");
+  if (dh3) {
+    const card = document.createElement("div");
+    card.className = "drive wb hd-extra"; card.id = "drive-lazyx";
+    card.innerHTML = '<div class="drive-head"><b>DH4: et suivants</b><small>disques UAE, sur place</small></div>'
+      + '<div class="media empty" id="name-lazyx">Aucun autre disque</div>'
+      + '<div class="acts"><button class="gad small" type="button" data-act="lazyadd" title="Brancher d\'autres gros disques .hdf sans les importer (WinUAE 6, pour cette séance)">Sur place…</button>'
+      + '<button class="gad small" type="button" data-act="lazyclear" disabled>Tout retirer</button></div>';
+    dh3.after(card);
+    card.addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      e.preventDefault(); e.stopPropagation();
+      if (b.dataset.act === "lazyadd") return pickLazyExtra();
+      if (running || starting) { toast("Éteignez l'Amiga pour retirer un disque dur.", true); return; }
+      if (b.dataset.act === "lazyclear") lazyExtra.length = 0;
+      else if (b.dataset.lazyx != null) lazyExtra.splice(+b.dataset.lazyx, 1);
+      renderLazyExtra();
+    });
+  } }
 /* Un autre disque mis à la place, ou retiré : le fichier sur place est oublié */
 { const _sm = setMounted;
   setMounted = (t, r) => {

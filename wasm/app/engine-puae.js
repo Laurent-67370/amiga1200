@@ -458,7 +458,15 @@ async function powerOn() {
       lazyWorker = new Worker("lazydisk-worker.js");
       machine.M._amb_lazy_reset();
       /* Signal « prêt » du lecteur, attendu 5 s au plus (une ancienne copie hors ligne du lecteur ne l'envoie pas) */
-      const ready = Promise.race([new Promise(r => { lazyWorker.onmessage = r; }), new Promise(r => setTimeout(r, 5000))]);
+      const ready = Promise.race([new Promise(r => { lazyWorker.onmessage = e => { lazyWorker.onmessage = lazyMsg; r(e); }; }), new Promise(r => setTimeout(r, 5000))]);
+      const names = lazyList.map(f => f.name).join(", ");
+      function lazyMsg(e) {
+        const d = e.data || {};
+        if (d.err) toast("Disque sur place " + (d.file || "") + " : le navigateur refuse de lire le fichier (" + d.err + "). Copiez-le dans la mémoire de l'appareil, puis rebranchez-le.", true);
+        if (d.stats) toast("Disque sur place (" + names + ") : " + d.stats.reads + " lectures, " + fmtSize(d.stats.bytes) + " lus"
+          + (d.stats.errors ? ", " + d.stats.errors + " échecs (" + d.stats.last + ")" : "") + (d.stats.reads ? "." : " : l'Amiga n'a encore rien lu sur ce disque."), !!d.stats.errors || !d.stats.reads);
+      }
+      const w = lazyWorker; setTimeout(() => { if (lazyWorker === w) w.postMessage({ stats: true }); }, 10000);
       lazyWorker.onerror = e => console.warn("lecteur des disques sur place :", e.message || e);
       lazyWorker.postMessage({ files: lazyList, sizes: lazySizes, memory: machine.M.HEAPU8.buffer, req: machine.M._amb_lazy_req(), buf: machine.M._amb_lazy_buf() });
       await ready;

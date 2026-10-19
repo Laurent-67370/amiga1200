@@ -3,10 +3,13 @@
    dans sa mémoire partagée et attend ; ce fil lit le morceau voulu dans le fichier, de façon synchrone
    (FileReaderSync, permis dans un worker), le recopie dans la zone d'échange et réveille le cœur. */
 let files = [], sizes = [], i32 = null, u8 = null, req = 0, buf = 0;
+/* Compte rendu pour la page : lectures servies, octets lus, erreurs (la première est signalée tout de suite) */
+const stats = { reads: 0, bytes: 0, errors: 0, last: "" };
 const reader = new FileReaderSync();
 
 onmessage = e => {
   const d = e.data;
+  if (d.stats) { postMessage({ stats }); return; }
   if (d.files) { files = d.files; sizes = d.sizes || files.map(f => f.size); }
   if (d.memory) {
     i32 = new Int32Array(d.memory); u8 = new Uint8Array(d.memory); req = d.req >> 2; buf = d.buf;
@@ -33,8 +36,13 @@ function serve() {
         const want = Math.max(0, Math.min(len, size - off));
         if (data.length < want) u8.fill(0, buf + data.length, buf + want);
         res = Math.max(data.length, want);
+        stats.reads++; stats.bytes += data.length;
       }
-    } catch (x) { console.warn("disque sur place : lecture impossible", x); }
+    } catch (x) {
+      console.warn("disque sur place : lecture impossible", x);
+      stats.last = (x && x.name ? x.name + " : " : "") + (x && x.message || x);
+      if (!stats.errors++) postMessage({ err: stats.last, file: f && f.name });
+    }
     i32[req + 6] = res;
     Atomics.store(i32, req, 2);
     Atomics.notify(i32, req);

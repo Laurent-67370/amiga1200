@@ -104,11 +104,13 @@ jobs:
           SITE=../site-main
           if [ "$GITHUB_REF_NAME" = "main" ]; then
             # Version principale à la racine
-            for f in index.html essai.html puae.js puae.wasm amiberry.js amiberry.wasm ipf.js ipf.wasm puae-frontend.js adf.js hdf.js lha.js ffs.js coi.js coi-sw.js aros-rom.bin.gz aros-ext.bin.gz \
+            for f in index.html essai.html puae.js puae.wasm amiberry.js amiberry.wasm ipf.js ipf.wasm puae-frontend.js lazydisk-worker.js adf.js hdf.js lha.js ffs.js coi.js coi-sw.js aros-rom.bin.gz aros-ext.bin.gz \
                      manifest.webmanifest icon-192.png icon-512.png icon-maskable-512.png apple-touch-icon.png; do
               cp "wasm/dist/site/$f" "$SITE/$f"
             done
             mkdir -p "$SITE/whd" && cp wasm/dist/site/whd/* "$SITE/whd/"
+            # Chaque fichier que le service worker garde hors ligne doit être publié (sinon la page en a besoin et ne le trouve pas)
+            node -e 'const fs=require("fs"),s=fs.readFileSync("wasm/dist/site/coi-sw.js","utf8"),m=s.match(/const FILES = (\[[^\]]*\])/);const miss=JSON.parse(m[1].replace(/\s+/g," ")).filter(f=>f!=="./"&&!fs.existsSync(process.argv[1]+"/"+f));if(miss.length){console.log("::error title=Publication incomplète::fichiers absents : "+miss.join(", "));process.exit(1)}' "$SITE"
             mkdir -p "$SITE/sons" && cp wasm/dist/site/sons/* "$SITE/sons/"
             mkdir -p "$SITE/sae" && cp sae/index.html "$SITE/sae/index.html"
             # Ancienne adresse d'essai : redirection vers l'accueil

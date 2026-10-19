@@ -392,16 +392,23 @@ rep(".tube:fullscreen canvas{object-fit:contain}", """.tube:fullscreen canvas{ob
   color:#fff;background:rgba(20,24,30,.78);border:1px solid rgba(255,255,255,.25);border-radius:6px;cursor:pointer;transition:opacity .3s}
 .fs-exit svg{width:16px;height:16px}
 .tube:fullscreen .fs-exit,.tube:-webkit-full-screen .fs-exit{display:flex}
-.fs-exit.hide{opacity:0;pointer-events:none}""")
+.fs-exit.hide,.fs-bar.hide{opacity:0;pointer-events:none}
+/* Téléphone en paysage : l'écran de l'Amiga tient en entier dans la hauteur, sans défiler */
+@media (orientation:landscape) and (max-height:560px){.monitor{padding:6px 10px 4px}.bezel{padding:6px}
+  .tube:not(:fullscreen){max-width:calc((100svh - 26px) * 4 / 3);margin:0 auto}}""")
 rep('''$("#btnShot").onclick = () => {''', '''(function fullscreenExit() {
   const t = $("#tube"), b = $("#fsExit"); let timer = 0;
   const isFs = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
   /* iPhone : pas de plein écran pour une page (seulement pour les vidéos) ; l'application installée l'est déjà */
   if (!t.requestFullscreen && !t.webkitRequestFullscreen) $("#btnFull").hidden = true;
   const exit = () => { if (isFs()) (document.exitFullscreen || document.webkitExitFullscreen).call(document); };
-  const show = () => { if (!isFs()) return; b.classList.remove("hide"); clearTimeout(timer); timer = setTimeout(() => b.classList.add("hide"), 3000); };
+  /* La barre de touches du plein écran (fsBar) se cache avec le bouton : elle couvrait le haut de l'image de l'Amiga */
+  const hideAll = on => { b.classList.toggle("hide", on); const bar = $("#fsBar"); if (bar) bar.classList.toggle("hide", on); };
+  const show = () => { if (!isFs()) return; hideAll(false); clearTimeout(timer); timer = setTimeout(() => hideAll(true), 4000); };
   const onChange = () => {
-    if (!isFs()) { b.classList.add("hide"); return; }
+    if (!isFs()) { hideAll(true); try { screen.orientation.unlock(); } catch (e) {} return; }
+    /* Téléphone : l'image de l'Amiga est en largeur, le plein écran passe en paysage (Android ; ignoré ailleurs) */
+    if (isTouch && screen.orientation && screen.orientation.lock) screen.orientation.lock("landscape").catch(() => {});
     show();
     toast(isTouch ? "Pour quitter le plein écran : touchez l'écran puis le bouton en haut à droite, ou faites le geste retour."
                   : "Pour quitter le plein écran : Échap (deux fois si la souris est capturée), ou le bouton en haut à droite.");
@@ -573,7 +580,7 @@ rep('''      Clavier</button>
     <button class="gad small" data-vjoy aria-pressed="false" title="Joystick tactile sur l'écran (port 2)">Joystick</button>
     <button class="gad small" data-latch="MetaLeft"''')
 rep(".fs-exit svg{width:16px;height:16px}", """.fs-exit svg{width:16px;height:16px}
-.fs-bar{display:none;position:absolute;top:12px;left:12px;z-index:5;gap:6px;flex-wrap:wrap;max-width:calc(100% - 250px)}
+.fs-bar{display:none;position:absolute;top:12px;left:12px;z-index:5;gap:6px;flex-wrap:wrap;max-width:calc(100% - 250px);transition:opacity .3s}
 .tube:fullscreen .fs-bar,.tube:-webkit-full-screen .fs-bar{display:flex}
 .fsb{font:inherit;font-size:13px;color:#fff;background:rgba(20,24,30,.65);border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:8px 11px;cursor:pointer}
 .fsb[aria-pressed="true"]{background:var(--wb-blue)}
@@ -651,6 +658,7 @@ for _n, _lbl in [(1, "IDE, esclave"), (2, "disque UAE"), (3, "disque UAE")]:
                .replace("DH0:", "DH%d:" % _n).replace('IDE interne 2,5"', _lbl))
 page = page[:_j] + _extra + page[_j:]
 rep(".tube > #vkbd{position:absolute;", """.hd-extra [data-act="profile"]{display:none}
+.lazyx-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 0}.lazyx-row span{overflow-wrap:anywhere}.lazyx-shared{display:flex;gap:6px;align-items:flex-start;font-size:.92em}
 /* Sur téléphone, un disque dur supplémentaire libre se réduit à son titre et à ses deux boutons utiles */
 @media (max-width:760px){.hd-extra:has(.media.empty) .media,.hd-extra:has(.media.empty) button:disabled{display:none}.hd-extra:has(.media.empty){gap:6px;padding:8px 12px}}
 .tube > #vkbd{position:absolute;""")

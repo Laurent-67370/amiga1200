@@ -48,6 +48,95 @@ for (const t of HD_TAGS) {
   ins.after(b);
   b.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); pickLazyHd(t); });
 }
+/* Autres disques sur place, au-delà des quatre unités : DH4: et suivants, branchés comme disques UAE (AGS en a 12) */
+function renderLazyExtra() {
+  const box = $("#name-lazyx"), clr = $('#drive-lazyx [data-act="lazyclear"]'); if (!box) return;
+  box.textContent = ""; box.classList.toggle("empty", !lazyExtra.length);
+  if (!lazyExtra.length) box.textContent = "Aucun autre disque";
+  for (const [i, f] of lazyExtra.entries()) {
+    const row = document.createElement("div"); row.className = "lazyx-row";
+    const name = document.createElement("span"); name.textContent = "DH" + (4 + i) + ": " + f.name + " (sur place)";
+    const del = document.createElement("button"); del.className = "gad small"; del.type = "button"; del.textContent = "Retirer"; del.dataset.lazyx = i;
+    row.append(name, del); box.appendChild(row);
+  }
+  if (clr) clr.disabled = !lazyExtra.length;
+  const add = $('#drive-lazyx [data-act="lazyadd"]'); if (add) add.disabled = lazyExtra.length >= LAZY_EXTRA_MAX;
+}
+function pickLazyExtra() {
+  if (running || starting) { toast("Éteignez l'Amiga pour brancher un disque dur.", true); return; }
+  const inp = $("#filePick"); inp.value = ""; inp.multiple = true; inp.accept = ".hdf";
+  inp.onchange = async () => {
+    const files = [...inp.files]; inp.multiple = false; if (!files.length) return;
+    for (const f of files) {
+      if (lazyExtra.length >= LAZY_EXTRA_MAX) { toast("Au plus " + LAZY_EXTRA_MAX + " autres disques sur place (DH4: à DH" + (3 + LAZY_EXTRA_MAX) + ":).", true); break; }
+      if (lazyExtra.some(x => x.name === f.name && x.size === f.size) || HD_TAGS.some(t => lazyFiles[t] && lazyFiles[t].name === f.name && lazyFiles[t].size === f.size)) continue;
+      lazyExtra.push(f);
+      const d = await lazyDescribe(f);
+      toast(f.name + " sur DH" + (3 + lazyExtra.length) + ": (disque UAE) — " + d + " (" + fmtSize(f.size) + ", lu directement dans le fichier.)");
+    }
+    renderLazyExtra();
+  };
+  inp.click();
+}
+{ const dh3 = $("#drive-dh3");
+  if (dh3) {
+    const card = document.createElement("div");
+    card.className = "drive wb hd-extra"; card.id = "drive-lazyx";
+    card.innerHTML = '<div class="drive-head"><b>DH4: et suivants</b><small>disques UAE, sur place</small></div>'
+      + '<div class="media empty" id="name-lazyx">Aucun autre disque</div>'
+      + '<div class="acts"><button class="gad small" type="button" data-act="lazyadd" title="Brancher d\'autres gros disques .hdf sans les importer (WinUAE 6, pour cette séance)">Sur place…</button>'
+      + '<button class="gad small" type="button" data-act="lazyclear" disabled>Tout retirer</button></div>'
+      + '<label class="lazyx-shared"><input type="checkbox" id="optShared"> Volume SHARED: intégré (sauvegardes des jeux d\'AGS, gardées d\'une séance à l\'autre)</label>';
+    dh3.after(card);
+    const opt = card.querySelector("#optShared");
+    opt.checked = S.shared !== "off";
+    opt.addEventListener("change", () => { S.shared = opt.checked ? "on" : "off"; saveSettings(); });
+    card.addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      e.preventDefault(); e.stopPropagation();
+      if (b.dataset.act === "lazyadd") return pickLazyExtra();
+      if (running || starting) { toast("Éteignez l'Amiga pour retirer un disque dur.", true); return; }
+      if (b.dataset.act === "lazyclear") lazyExtra.length = 0;
+      else if (b.dataset.lazyx != null) lazyExtra.splice(+b.dataset.lazyx, 1);
+      renderLazyExtra();
+    });
+  } }
+/* Volume SHARED: intégré, pour AGS : ses disques y rangent les sauvegardes des jeux (SHARED:SaveGames), dans un
+   dossier du PC sous WinUAE. Ici, un dossier du cœur gardé dans la Bibliothèque d'une séance à l'autre, monté avec
+   les disques sur place. */
+const SHARED_ID = "shared";
+let sharedOn = false, sharedSig = "";
+async function sharedPrepare(m) {
+  const rec = await DB.get(SHARED_ID);
+  m.M.FS.mkdirTree("/save/SHARED/SaveGames");
+  for (const d of (rec && rec.dirs) || []) m.M.FS.mkdirTree("/save/SHARED/" + d);
+  for (const f of (rec && rec.files) || []) m.writeFile("/save/SHARED/" + f.path, new Uint8Array(await f.blob.arrayBuffer()));
+  sharedSig = rec ? rec.sig : ""; sharedOn = true;
+}
+async function saveShared() {
+  if (!machine || !sharedOn) return;
+  machine.flush();
+  const FS = machine.M.FS, files = [], dirs = [];
+  const walk = (dir, rel) => {
+    let names = []; try { names = FS.readdir(dir); } catch (e) { return; }
+    for (const n of names) {
+      if (n === "." || n === "..") continue;
+      const p = dir + "/" + n, st = FS.stat(p), r = rel ? rel + "/" + n : n;
+      if (FS.isDir(st.mode)) { dirs.push(r); walk(p, r); } else files.push({ path: r, full: p, size: st.size, mtime: +st.mtime });
+    }
+  };
+  walk("/save/SHARED", "");
+  const sig = [...dirs, ...files.map(f => f.path + ":" + f.size + ":" + f.mtime)].sort().join("|");
+  if (sig === sharedSig) return;
+  const saved = files.map(f => ({ path: f.path, blob: new Blob([FS.readFile(f.full)]) }));
+  await DB.put({ id: SHARED_ID, kind: "shared", name: "SHARED", dirs, files: saved, sig, size: saved.reduce((a, f) => a + f.blob.size, 0), added: Date.now() });
+  sharedSig = sig;
+}
+setInterval(() => { if (running && sharedOn) saveShared(); }, 5000);
+window.addEventListener("pagehide", () => { if (running && sharedOn) saveShared(); });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && running && sharedOn) saveShared(); });
+{ const _off = powerOff; powerOff = async () => { if (running && sharedOn) await saveShared().catch(e => console.warn("SHARED non enregistré", e)); await _off(); sharedOn = false; }; }
+
 /* Un autre disque mis à la place, ou retiré : le fichier sur place est oublié */
 { const _sm = setMounted;
   setMounted = (t, r) => {
@@ -60,3 +149,8 @@ for (const t of HD_TAGS) {
   }; }
 /* Rechargement de la page : l'accès au fichier est perdu, l'unité redevient vide */
 for (const t of HD_TAGS) if (mounted[t] && String(mounted[t].id).startsWith("lazy:") && !lazyFiles[t]) setMounted(t, null);
+{ const again = sessionStorage.getItem("a1200.lazyagain");
+  if (again) {
+    sessionStorage.removeItem("a1200.lazyagain");
+    setTimeout(() => toast("Pour rallumer, la page s'est rechargée, et le navigateur ne redonne pas l'accès aux fichiers lus sur place. Rebranchez-les avec « Sur place… » (" + again + "), puis Démarrer. Pour redémarrer sans les perdre, utilisez plutôt Réinitialiser.", true), 800);
+  } }

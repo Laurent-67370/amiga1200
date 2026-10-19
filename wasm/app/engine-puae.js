@@ -10,6 +10,8 @@ const HD_TAGS = ["dh0", "dh1", "dh2", "dh3"];
 /* Disques durs lus sur place (WinUAE 6) : le fichier choisi reste sur l'appareil, le cœur en lit les blocs au fil
    de l'eau par un fil annexe (lazydisk-worker.js) ; rien n'est copié dans le navigateur. Valables pour la séance. */
 const lazyFiles = {};
+/* Autres disques sur place, au-delà des quatre unités (DH4: et suivants) : branchés comme disques UAE */
+const lazyExtra = [], LAZY_EXTRA_MAX = 8;
 let lazyWorker = null;
 /* Début d'un disque branché (2 Mo : sa table de partitions et ses pilotes), sans le charger en entier */
 async function hdHead(tag) {
@@ -209,6 +211,11 @@ async function powerOn() {
   if (running || starting) return;
   /* Le cœur ne se rallume pas dans la même page : on recharge et on rallume aussitôt. */
   if (machine) {
+    /* Disques sur place : le rechargement fait perdre l'accès à leurs fichiers ; pas d'allumage sans eux, la page
+       dit lesquels rebrancher */
+    const lazyNames = [...HD_TAGS.filter(t => mounted[t] && String(mounted[t].id).startsWith("lazy:") && lazyFiles[t]).map(t => t.toUpperCase() + ": " + lazyFiles[t].name),
+      ...lazyExtra.map((f, i) => "DH" + (4 + i) + ": " + f.name)];
+    if (lazyNames.length) { sessionStorage.setItem("a1200.lazyagain", lazyNames.join(", ")); location.reload(); return; }
     sessionStorage.setItem("a1200.autostart", "1");
     if (whdGame) sessionStorage.setItem("a1200.whd", whdGame.id);
     if (instJob) sessionStorage.setItem("a1200.inst", instJob.recId);
@@ -317,7 +324,7 @@ async function powerOn() {
       machine.writeFile(fsPath[tag], new Uint8Array(await r.blob.arrayBuffer()));
       lines.push(`floppy${DRIVE_NUM[tag]}=${fsPath[tag]}`);
     }
-    const anyHd = HD_TAGS.some(t => mounted[t]);
+    const anyHd = HD_TAGS.some(t => mounted[t]) || lazyExtra.length > 0;
     if (anyHd && cd) toast("Les disques durs ne sont pas branchés sur la " + (cdtv ? "console CDTV." : "CD32."));
     else if (anyHd && whd) toast("Les disques durs ne sont pas branchés pendant un jeu WHDLoad.");
     else if (anyHd && a500) toast("Mode Amiga 500 : les disques durs ne sont pas branchés (l'A500 n'a pas de contrôleur IDE).");
@@ -326,15 +333,14 @@ async function powerOn() {
     /* Pilotes de systèmes de fichiers (PFS3…) fournis par les disques branchés : prêtés à un disque sur place qui en
        manque (les disques d'AGS n'ont le pilote PFS3 que sur Workbench.hdf, enregistré sous un autre type) */
     const fsPool = [];
-    if (!(a500 || whd || cd) && amb && HD_TAGS.some(t => mounted[t] && String(mounted[t].id).startsWith("lazy:")))
+    if (!(a500 || whd || cd) && amb && (lazyExtra.length || HD_TAGS.some(t => mounted[t] && String(mounted[t].id).startsWith("lazy:")))) {
       for (const t of HD_TAGS) { const h = await hdHead(t).catch(() => null); if (h) for (const x of rdbFileSystems(h)) fsPool.push({ ...x, from: mounted[t].name }); }
-    for (const [unit, tag] of HD_TAGS.entries()) {
-      fsPath[tag] = null;
-      if (!mounted[tag] || a500 || whd || cd) continue;
-      if (String(mounted[tag].id).startsWith("lazy:")) {
-        const f = lazyFiles[tag];
-        if (!f) { setMounted(tag, null); continue; }
-        if (!amb) { toast(f.name + " : un disque lu sur place ne se branche qu'avec le cœur WinUAE 6 (Configuration → Processeur et FPU).", true); continue; }
+      for (const f of lazyExtra) { const h = new Uint8Array(await f.slice(0, 2097152).arrayBuffer()); for (const x of rdbFileSystems(h)) fsPool.push({ ...x, from: f.name }); }
+    }
+    /* Disque lu sur place : préparé pour le lecteur (lazydisk-worker.js) et branché sur le contrôleur que donne
+       ctrl(taille) ; rend le chemin vu par le cœur */
+    async function lazyAttach(f, label, ctrl) {
+        if (!amb) { toast(f.name + " : un disque lu sur place ne se branche qu'avec le cœur WinUAE 6 (Configuration → Processeur et FPU).", true); return null; }
         const disk = lazyList.length;
         /* Début du disque (table de partitions) : partitions en double renommées, fin des partitions */
         const head = new Uint8Array(await f.slice(0, 2097152).arrayBuffer()), orig = head.slice();
@@ -363,11 +369,21 @@ async function powerOn() {
         for (let o = 0; o < head.length; o += 512) if (head.subarray(o, o + 512).some((v, i) => v !== orig[o + i])) lazyPatches.push([disk, o, head.slice(o, o + 512)]);
         const end = rdbEnd(head), size = end > f.size && end - f.size <= 1024 * 1048576 ? end : f.size;
         lazyList.push(f); lazySizes.push(size);
-        fsPath[tag] = "/lazy/" + disk + "/" + safeName(f.name).replace(/(\.hdf)?$/i, ".hdf");
-        machine.writeFile(fsPath[tag], new Uint8Array(0)); /* le chemin existe ; les octets viennent du fichier */
-        const geo = ideGeometry(size);
-        if (unit < 2 && model !== "a3000") lines.push(`hardfile2=rw,${tag.toUpperCase()}:${fsPath[tag]},0,0,0,512,0,,ide${unit}_mainboard,0${geo ? "," + geo : ""}`);
-        else lines.push(`hardfile2=rw,${tag.toUpperCase()}:${fsPath[tag]},0,0,0,512,0,,uae${model === "a3000" ? unit : unit - 2}`);
+        const path = "/lazy/" + disk + "/" + safeName(f.name).replace(/(\.hdf)?$/i, ".hdf");
+        machine.writeFile(path, new Uint8Array(0)); /* le chemin existe ; les octets viennent du fichier */
+        lines.push(`hardfile2=rw,${label}:${path},0,0,0,512,0,,${ctrl(size)}`);
+        return path;
+    }
+    for (const [unit, tag] of HD_TAGS.entries()) {
+      fsPath[tag] = null;
+      if (!mounted[tag] || a500 || whd || cd) continue;
+      if (String(mounted[tag].id).startsWith("lazy:")) {
+        const f = lazyFiles[tag];
+        if (!f) { setMounted(tag, null); continue; }
+        fsPath[tag] = await lazyAttach(f, tag.toUpperCase(), size => {
+          const geo = ideGeometry(size);
+          return unit < 2 && model !== "a3000" ? `ide${unit}_mainboard,0${geo ? "," + geo : ""}` : `uae${model === "a3000" ? unit : unit - 2}`;
+        });
         continue;
       }
       const r = await DB.get(mounted[tag].id);
@@ -401,8 +417,15 @@ async function powerOn() {
       if (unit < 2 && model !== "a3000") lines.push(`hardfile2=rw,${tag.toUpperCase()}:${fsPath[tag]},0,0,0,512,0,,ide${unit}_mainboard,0${geo ? "," + geo : ""}`);
       else lines.push(`hardfile2=rw,${tag.toUpperCase()}:${fsPath[tag]},0,0,0,512,0,,uae${model === "a3000" ? unit : unit - 2}`);
     }
-    /* uaehf.device a besoin de la ROM de démarrage d'UAE : seulement si DH2: ou DH3: est branché (voir plus haut) */
-    if (fsPath.dh2 || fsPath.dh3 || (model === "a3000" && HD_TAGS.some(t => fsPath[t]))) lines.splice(0, lines.length, ...lines.filter(l => !/^(boot_rom_uae|uaeboard)=/.test(l)));
+    /* Autres disques sur place : disques UAE après ceux de DH2: et DH3: */
+    let lazyMore = 0;
+    if (!(a500 || whd || cd)) for (const [i, f] of lazyExtra.slice(0, LAZY_EXTRA_MAX).entries())
+      if (await lazyAttach(f, "DH" + (4 + i), () => "uae" + ((model === "a3000" ? 4 : 2) + lazyMore))) lazyMore++;
+    /* Volume SHARED: (AGS), avec les disques sur place : jamais un disque de démarrage */
+    const shared = lazyList.length > 0 && S.shared !== "off";
+    if (shared) { await sharedPrepare(machine); lines.push("filesystem2=rw,DH12:SHARED:/save/SHARED,-128"); } else sharedOn = false;
+    /* uaehf.device a besoin de la ROM de démarrage d'UAE : seulement si DH2:, DH3:, un autre disque UAE ou SHARED: est branché (voir plus haut) */
+    if (fsPath.dh2 || fsPath.dh3 || lazyMore || shared || (model === "a3000" && HD_TAGS.some(t => fsPath[t]))) lines.splice(0, lines.length, ...lines.filter(l => !/^(boot_rom_uae|uaeboard)=/.test(l)));
     let content = "/cfg/a1200.uae", options = coreOptions();
     if (amb) options = { amiberry_crop_overscan: S.center ? "enabled" : "disabled", amiberry_statusline: "disabled", amiberry_midi_output: S.midi === "on" ? "libretro" : "disabled",
       amiberry_joyport_order: "21" }; /* manette 0 au port joystick, manette 1 au port souris quand il reçoit un joystick (2 joueurs) */

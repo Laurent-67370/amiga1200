@@ -5,8 +5,9 @@
  * Les blocs sont demandés à un fil de la page (lazydisk-worker.js) par une petite zone de mémoire partagée :
  * le fil du cœur y dépose la demande, réveille le lecteur et attend sa réponse (FileReaderSync, lecture
  * synchrone d'un morceau du fichier). Une réserve garde les derniers morceaux lus (64 Mo). Les écritures de
- * l'Amiga restent en mémoire (copie à l'écriture, par pages de 4 Ko) : le fichier d'origine n'est jamais modifié,
- * et elles disparaissent à l'extinction. */
+ * l'Amiga restent en mémoire (copie à l'écriture, par pages de 4 Ko) : le fichier d'origine n'est jamais modifié.
+ * La page relève les pages écrites (amb_lazy_take) pour les garder dans le navigateur, et les remet à l'allumage
+ * suivant (amb_lazy_restore). */
 #define _GNU_SOURCE 1
 #include <stdio.h>
 #include <stdint.h>
@@ -14,6 +15,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <unordered_map>
+#include <unordered_set>
 #include <emscripten/emscripten.h>
 #include <emscripten/threading.h>
 
@@ -54,6 +56,10 @@ struct lz_slot { int disk; int64_t chunk; int len; uint8_t *data; };
 static lz_slot lz_cache[LZ_SLOTS];
 static int64_t lz_size[LZ_DISKS];
 static std::unordered_map<uint64_t, uint8_t *> lz_pages[LZ_DISKS];
+/* Pages écrites par l'Amiga depuis le dernier relevé de la page (pour les garder d'une séance à l'autre) ;
+   pas celles que la page pose elle-même avant l'allumage (amb_lazy_patch) */
+static std::unordered_set<uint64_t> lz_dirty[LZ_DISKS];
+static int lz_patching;
 
 /* Morceau du disque, depuis la réserve ou lu dans le fichier (lz_mtx tenu) ; nullptr si illisible */
 static lz_slot *lz_chunk(int disk, int64_t chunk) {
@@ -107,6 +113,7 @@ static int lz_write(int disk, int64_t off, const uint8_t *src, int n) {
       lz_pages[disk][page] = pg;
     }
     memcpy(pg + in, src + done, k);
+    if (!lz_patching) lz_dirty[disk].insert(page);
     done += k;
   }
   return done;
@@ -156,7 +163,9 @@ extern "C" FILE *__wrap_fopen(const char *path, const char *mode) {
   f->disk = disk;
   cookie_io_functions_t io = { lz_cread, lz_cwrite, lz_cseek, lz_cclose };
   FILE *h = fopencookie(f, mode, io);
-  if (!h) free(f);
+  if (!h) { free(f); return nullptr; }
+  /* Sans tampon : chaque écriture arrive tout de suite dans les pages, que la page relève pour les garder */
+  setvbuf(h, nullptr, _IONBF, 0);
   return h;
 }
 
@@ -165,15 +174,46 @@ extern "C" EMSCRIPTEN_KEEPALIVE int amb_lazy_patch(int disk, uint32_t lo, uint32
   if (disk < 0 || disk >= LZ_DISKS) return -1;
   pthread_mutex_lock(&lz_mtx);
   if (!lz_size[disk]) { int64_t s = lz_call(1, disk, 0, 0); lz_size[disk] = s > 0 ? s : 0; }
+  lz_patching = 1;
   int put = lz_size[disk] ? lz_write(disk, (int64_t)(((uint64_t)hi << 32) | lo), src, len) : -1;
+  lz_patching = 0;
   pthread_mutex_unlock(&lz_mtx);
   return put;
+}
+
+/* Page gardée d'une séance précédente, remise telle quelle avant l'allumage (sans relire le fichier) */
+extern "C" EMSCRIPTEN_KEEPALIVE int amb_lazy_restore(int disk, uint32_t page, const uint8_t *src) {
+  if (disk < 0 || disk >= LZ_DISKS) return -1;
+  pthread_mutex_lock(&lz_mtx);
+  auto it = lz_pages[disk].find(page);
+  uint8_t *pg = it != lz_pages[disk].end() ? it->second : (uint8_t *)malloc(LZ_PAGE);
+  if (pg) { memcpy(pg, src, LZ_PAGE); lz_pages[disk][page] = pg; }
+  pthread_mutex_unlock(&lz_mtx);
+  return pg ? 0 : -1;
+}
+
+/* Relevé des pages écrites : jusqu'à max pages copiées dans out (numéro de page sur 4 octets, puis ses 4 Ko),
+   retirées du relevé. -1 si le cœur tient le verrou (lecture en cours) : la page réessaiera plus tard. */
+extern "C" EMSCRIPTEN_KEEPALIVE int amb_lazy_take(int disk, uint8_t *out, int max) {
+  if (disk < 0 || disk >= LZ_DISKS) return 0;
+  if (pthread_mutex_trylock(&lz_mtx)) return -1;
+  int n = 0;
+  for (auto it = lz_dirty[disk].begin(); it != lz_dirty[disk].end() && n < max; n++) {
+    uint32_t page = (uint32_t)*it;
+    uint8_t *o = out + (size_t)n * (4 + LZ_PAGE);
+    memcpy(o, &page, 4);
+    auto pg = lz_pages[disk].find(*it);
+    if (pg != lz_pages[disk].end()) memcpy(o + 4, pg->second, LZ_PAGE); else memset(o + 4, 0, LZ_PAGE);
+    it = lz_dirty[disk].erase(it);
+  }
+  pthread_mutex_unlock(&lz_mtx);
+  return n;
 }
 
 /* Nouvel allumage : la réserve et les écritures de la séance précédente sont oubliées */
 extern "C" EMSCRIPTEN_KEEPALIVE void amb_lazy_reset(void) {
   pthread_mutex_lock(&lz_mtx);
   for (auto &s : lz_cache) s.disk = -1;
-  for (int d = 0; d < LZ_DISKS; d++) { for (auto &kv : lz_pages[d]) free(kv.second); lz_pages[d].clear(); lz_size[d] = 0; }
+  for (int d = 0; d < LZ_DISKS; d++) { for (auto &kv : lz_pages[d]) free(kv.second); lz_pages[d].clear(); lz_dirty[d].clear(); lz_size[d] = 0; }
   pthread_mutex_unlock(&lz_mtx);
 }

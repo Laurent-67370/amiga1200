@@ -493,6 +493,8 @@ async function powerOn() {
       lazyWorker.onerror = e => console.warn("lecteur des disques sur place :", e.message || e);
       lazyWorker.postMessage({ files: lazyList, sizes: lazySizes, memory: machine.M.HEAPU8.buffer, req: machine.M._amb_lazy_req(), buf: machine.M._amb_lazy_buf() });
       await ready;
+      /* Ce que l'Amiga avait écrit sur ces disques lors des séances précédentes */
+      await lazyOvRestore(machine, lazyList).catch(e => console.warn("modifications gardées non réappliquées", e));
       /* Partitions renommées : gardées en mémoire comme des écritures, le fichier n'est pas touché */
       for (const [disk, off, data] of lazyPatches) {
         const p = machine.M._malloc(512); machine.M.HEAPU8.set(data, p);

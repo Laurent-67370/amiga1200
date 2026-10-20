@@ -25,6 +25,51 @@ async function lazyDescribe(f) {
     return "Partitions : " + (parts.join(", ") || "aucune") + " ; pilotes sur le disque : " + (fs.join(", ") || "aucun") + ".";
   } catch (e) { return ""; }
 }
+/* Disposition des disques sur place, gardée dans les réglages : le navigateur ne redonne pas l'accès aux fichiers
+   après un rechargement (et rallumer recharge la page), mais un seul choix de fichiers suffit à tout rebrancher,
+   chaque fichier retrouvant son unité d'après son nom et sa taille */
+function lazyPlan() { const p = S.lazyPlan || {}; return { slots: p.slots || {}, extra: p.extra || [] }; }
+function lazyPlanSave(p) { S.lazyPlan = p; saveSettings(); renderLazyPending(); }
+function lazyPlanSlot(tag, f) { const p = lazyPlan(); if (f) p.slots[tag] = { n: f.name, s: f.size }; else delete p.slots[tag]; lazyPlanSave(p); }
+function lazyPlanExtra() { const p = lazyPlan(); p.extra = lazyExtra.map(f => ({ n: f.name, s: f.size })); lazyPlanSave(p); }
+/* Disques prévus mais pas encore rebranchés dans cette page */
+function lazyPending() {
+  const p = lazyPlan(), out = [];
+  for (const t of HD_TAGS) if (p.slots[t] && !lazyFiles[t]) out.push({ tag: t, ...p.slots[t] });
+  p.extra.forEach((x, i) => { if (!lazyExtra.some(f => f.name === x.n && f.size === x.s)) out.push({ extra: i, ...x }); });
+  return out;
+}
+function renderLazyPending() {
+  const p = lazyPlan(), pend = lazyPending();
+  for (const t of HD_TAGS) {
+    const n = $("#name-" + t); if (!n || mounted[t]) continue;
+    const ej = $("#drive-" + t + ' [data-act="eject"]');
+    if (p.slots[t]) { n.textContent = p.slots[t].n + " (sur place) : à rebrancher"; n.classList.remove("empty"); n.classList.add("lazy-pending"); if (ej) ej.disabled = false; /* pour l'oublier */ }
+    else if (n.classList.contains("lazy-pending")) { n.classList.remove("lazy-pending"); n.classList.add("empty"); n.textContent = "Aucun disque dur"; if (ej) ej.disabled = true; }
+  }
+  for (const b of document.querySelectorAll(".lazy-again")) { b.hidden = !pend.length; b.textContent = "Rebrancher les disques sur place (" + pend.length + ")…"; }
+}
+function relinkLazy() {
+  if (running || starting) { toast("Éteignez l'Amiga pour brancher un disque dur.", true); return; }
+  const inp = $("#filePick"); inp.value = ""; inp.multiple = true; inp.accept = ".hdf";
+  inp.onchange = () => {
+    const files = [...inp.files]; inp.multiple = false; if (!files.length) return;
+    const p = lazyPlan(), used = new Set(), done = [];
+    const take = (x) => { const f = files.find(f => !used.has(f) && f.name === x.n && f.size === x.s) || files.find(f => !used.has(f) && f.name === x.n); if (f) used.add(f); return f; };
+    for (const t of HD_TAGS) if (p.slots[t] && !lazyFiles[t]) {
+      const f = take(p.slots[t]); if (!f) continue;
+      lazyFiles[t] = f; setMounted(t, { id: "lazy:" + t, name: f.name + " (sur place)" }); done.push(t.toUpperCase() + ": " + f.name);
+    }
+    const extra = p.extra.map(x => lazyExtra.find(f => f.name === x.n && f.size === x.s) || take(x)).filter(Boolean);
+    for (const f of extra) if (!lazyExtra.includes(f)) done.push(f.name);
+    lazyExtra.splice(0, lazyExtra.length, ...extra, ...lazyExtra.filter(f => !extra.includes(f)));
+    renderLazyExtra(); renderLazyPending();
+    const left = lazyPending().map(x => x.n);
+    toast((done.length ? done.length + " disque(s) rebranché(s)." : "Aucun fichier ne correspond aux disques prévus.")
+      + (left.length ? " Manquent encore : " + left.join(", ") + "." : " Tout est prêt : Démarrer."), !!left.length);
+  };
+  inp.click();
+}
 function pickLazyHd(tag) {
   if (running || starting) { toast("Éteignez l'Amiga pour brancher un disque dur.", true); return; }
   const inp = $("#filePick"); inp.value = ""; inp.multiple = false; inp.accept = ".hdf";
@@ -33,6 +78,7 @@ function pickLazyHd(tag) {
     for (const t of HD_TAGS) if (t !== tag && lazyFiles[t] && lazyFiles[t].name === f.name && lazyFiles[t].size === f.size) setMounted(t, null);
     lazyFiles[tag] = f;
     setMounted(tag, { id: "lazy:" + tag, name: f.name + " (sur place)" });
+    lazyPlanSlot(tag, f);
     lazyDescribe(f).then(d => toast(f.name + " sur " + tag.toUpperCase() + ": — " + d + " (" + fmtSize(f.size) + ", lu directement dans le fichier, sans copie.)"
       + ((S.core || "winuae6") !== "winuae6" ? " Il faut le cœur WinUAE 6 (Configuration → Processeur et FPU)." : "")
       + " Les modifications faites par l'Amiga ne sont pas gardées à l'extinction."));
@@ -59,7 +105,7 @@ function renderLazyExtra() {
     const del = document.createElement("button"); del.className = "gad small"; del.type = "button"; del.textContent = "Retirer"; del.dataset.lazyx = i;
     row.append(name, del); box.appendChild(row);
   }
-  if (clr) clr.disabled = !lazyExtra.length;
+  if (clr) clr.disabled = !lazyExtra.length && !lazyPlan().extra.length;
   const add = $('#drive-lazyx [data-act="lazyadd"]'); if (add) add.disabled = lazyExtra.length >= LAZY_EXTRA_MAX;
 }
 function pickLazyExtra() {
@@ -74,7 +120,7 @@ function pickLazyExtra() {
       const d = await lazyDescribe(f);
       toast(f.name + " sur DH" + (3 + lazyExtra.length) + ": (disque UAE) — " + d + " (" + fmtSize(f.size) + ", lu directement dans le fichier.)");
     }
-    renderLazyExtra();
+    renderLazyExtra(); lazyPlanExtra();
   };
   inp.click();
 }
@@ -85,7 +131,8 @@ function pickLazyExtra() {
     card.innerHTML = '<div class="drive-head"><b>DH4: et suivants</b><small>disques UAE, sur place</small></div>'
       + '<div class="media empty" id="name-lazyx">Aucun autre disque</div>'
       + '<div class="acts"><button class="gad small" type="button" data-act="lazyadd" title="Brancher d\'autres gros disques .hdf sans les importer (WinUAE 6, pour cette séance)">Sur place…</button>'
-      + '<button class="gad small" type="button" data-act="lazyclear" disabled>Tout retirer</button></div>'
+      + '<button class="gad small" type="button" data-act="lazyclear" disabled>Tout retirer</button>'
+      + '<button class="gad small lazy-again" type="button" hidden></button></div>'
       + '<label class="lazyx-shared"><input type="checkbox" id="optShared"> Volume SHARED: intégré (sauvegardes des jeux d\'AGS, gardées d\'une séance à l\'autre)</label>';
     dh3.after(card);
     const opt = card.querySelector("#optShared");
@@ -95,10 +142,11 @@ function pickLazyExtra() {
       const b = e.target.closest("button"); if (!b) return;
       e.preventDefault(); e.stopPropagation();
       if (b.dataset.act === "lazyadd") return pickLazyExtra();
+      if (b.classList.contains("lazy-again")) return relinkLazy();
       if (running || starting) { toast("Éteignez l'Amiga pour retirer un disque dur.", true); return; }
       if (b.dataset.act === "lazyclear") lazyExtra.length = 0;
       else if (b.dataset.lazyx != null) lazyExtra.splice(+b.dataset.lazyx, 1);
-      renderLazyExtra();
+      renderLazyExtra(); lazyPlanExtra();
     });
   } }
 /* Volume SHARED: intégré, pour AGS : ses disques y rangent les sauvegardes des jeux (SHARED:SaveGames), dans un
@@ -141,16 +189,27 @@ document.addEventListener("visibilitychange", () => { if (document.visibilitySta
 { const _sm = setMounted;
   setMounted = (t, r) => {
     if (isHd(t) && !(r && String(r.id).startsWith("lazy:"))) delete lazyFiles[t];
+    /* Un disque importé mis à la place d'un disque sur place prévu : la disposition l'oublie */
+    if (isHd(t) && r && !String(r.id).startsWith("lazy:") && lazyPlan().slots[t]) lazyPlanSlot(t, null);
     _sm(t, r);
+    if (isHd(t)) renderLazyPending();
     if (isHd(t) && r && String(r.id).startsWith("lazy:")) {
       const card = $("#drive-" + t);
       for (const a of ["download", "profile", "files"]) { const x = card && card.querySelector('[data-act="' + a + '"]'); if (x) x.disabled = true; }
     }
   }; }
+/* Débrancher : le disque sur place prévu pour cette unité est oublié (pas quand la page le vide elle-même) */
+for (const t of HD_TAGS) { const ej = $("#drive-" + t + ' [data-act="eject"]');
+  if (ej) ej.addEventListener("click", () => { if (!running && !starting && lazyPlan().slots[t]) lazyPlanSlot(t, null); }, true); }
+/* Bouton « Rebrancher… » aussi en tête des disques durs, visible tant qu'il reste des disques prévus */
+{ const dh0 = $("#drive-dh0");
+  if (dh0) { const b = document.createElement("button"); b.className = "gad lazy-again lazy-again-top"; b.type = "button"; b.hidden = true;
+    b.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); relinkLazy(); }); dh0.before(b); } }
+setTimeout(renderLazyPending, 0); setTimeout(renderLazyPending, 1500);
 /* Rechargement de la page : l'accès au fichier est perdu, l'unité redevient vide */
 for (const t of HD_TAGS) if (mounted[t] && String(mounted[t].id).startsWith("lazy:") && !lazyFiles[t]) setMounted(t, null);
 { const again = sessionStorage.getItem("a1200.lazyagain");
   if (again) {
     sessionStorage.removeItem("a1200.lazyagain");
-    setTimeout(() => toast("Pour rallumer, la page s'est rechargée, et le navigateur ne redonne pas l'accès aux fichiers lus sur place. Rebranchez-les avec « Sur place… » (" + again + "), puis Démarrer. Pour redémarrer sans les perdre, utilisez plutôt Réinitialiser.", true), 800);
+    setTimeout(() => toast("Pour rallumer, la page s'est rechargée, et le navigateur ne redonne pas l'accès aux fichiers lus sur place. Touchez « Rebrancher les disques sur place » (Configuration → Disques durs/CD) et choisissez-les tous d'un coup (" + again + "), puis Démarrer. Pour redémarrer sans les perdre, utilisez plutôt Réinitialiser.", true), 800);
   } }

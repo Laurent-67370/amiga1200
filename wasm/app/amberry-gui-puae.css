@@ -91,6 +91,7 @@
 .cfg-form input,#ambGui .ctl-grid select{background:var(--ab-frame);color:var(--ab-text);border:1px solid;
   border-color:var(--ab-border) var(--ab-shine) var(--ab-shine) var(--ab-border);padding:4px 6px}
 .cfg-btns{display:flex;gap:6px;flex-wrap:wrap}
+.cfg-check{display:flex;gap:6px;align-items:center}
 /* Commandes : action, puis touche ou rôle du bouton */
 .ctl-grid{display:grid;grid-template-columns:max-content minmax(0,320px);gap:5px 14px;align-items:center;margin:4px 0 12px}
 .ctl-grid .gad{justify-self:start;min-width:120px}

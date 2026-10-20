@@ -287,7 +287,7 @@ body:not(.is-touch) .vj-opts{display:none}
 .vj-range input{flex:1;max-width:260px}
 .vj-range output{min-width:3.5em;font-variant-numeric:tabular-nums}
 .hd-extra [data-act="profile"]{display:none}
-.lazyx-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 0}.lazyx-row span{overflow-wrap:anywhere}.lazyx-shared{display:flex;gap:6px;align-items:flex-start;font-size:.92em}.media.lazy-pending{font-style:italic;color:#7a4a00}.lazy-again-top{width:100%;grid-column:1/-1;margin-bottom:8px}#ambGui[data-panel="floppy"] .lazy-again-top{display:none!important}.lazy-again[hidden]{display:none!important}
+.lazyx-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 0}.lazyx-row span{overflow-wrap:anywhere}.lazyx-shared{display:flex;gap:6px;align-items:flex-start;font-size:.92em}.lazyx-ov{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.92em}.media.lazy-pending{font-style:italic;color:#7a4a00}.lazy-again-top{width:100%;grid-column:1/-1;margin-bottom:8px}#ambGui[data-panel="floppy"] .lazy-again-top{display:none!important}.lazy-again[hidden]{display:none!important}
 /* Sur téléphone, un disque dur supplémentaire libre se réduit à son titre et à ses deux boutons utiles */
 @media (max-width:760px){.hd-extra:has(.media.empty) .media,.hd-extra:has(.media.empty) button:disabled{display:none}.hd-extra:has(.media.empty){gap:6px;padding:8px 12px}}
 .vjoy-fire .vf3{display:none;width:min(12vmin,50px);background:rgba(90,90,90,.5);font-size:18px}
@@ -769,7 +769,7 @@ body.is-off #btnTurbo{display:none!important}
     Kickstart de secours : AROS, version d'août 2026 (AROS Public License). Les ROM Kickstart et disquettes Workbench d'origine ne sont pas fournies : importez les vôtres.
     Vos fichiers restent dans ce navigateur (stockage local) et ne sont envoyés nulle part.
     <br><a href="sae/">Ancienne version (cœur SAE)</a>, conservée pour comparer : elle partage la même Bibliothèque.
-    <br><b>Version du site : 20/10/2026 18:48 (9de0c55)</b> (heure de Paris).
+    <br><b>Version du site : 21/10/2026 01:19 (ca75a2d)</b> (heure de Paris).
   </p>
 </main>
 
@@ -1671,6 +1671,8 @@ async function powerOn() {
       lazyWorker.onerror = e => console.warn("lecteur des disques sur place :", e.message || e);
       lazyWorker.postMessage({ files: lazyList, sizes: lazySizes, memory: machine.M.HEAPU8.buffer, req: machine.M._amb_lazy_req(), buf: machine.M._amb_lazy_buf() });
       await ready;
+      /* Ce que l'Amiga avait écrit sur ces disques lors des séances précédentes */
+      await lazyOvRestore(machine, lazyList).catch(e => console.warn("modifications gardées non réappliquées", e));
       /* Partitions renommées : gardées en mémoire comme des écritures, le fichier n'est pas touché */
       for (const [disk, off, data] of lazyPatches) {
         const p = machine.M._malloc(512); machine.M.HEAPU8.set(data, p);
@@ -5744,7 +5746,7 @@ let uxDrivesRefresh = () => {};
   if (body && !body.querySelector(".ux-keys")) {
     const k = s => '<span class="kbd">' + s + "</span>";
     const sec = document.createElement("div"); sec.className = "ux-keys";
-    sec.innerHTML = '<p class="hint" id="siteVersion">Version du site : 20/10/2026 18:48 (9de0c55) (heure de Paris). Après une mise à jour, rechargez la page : ce numéro doit changer.</p>' + "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause, <b>Turbo</b> (chargements accélérés, sans le son). <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
+    sec.innerHTML = '<p class="hint" id="siteVersion">Version du site : 21/10/2026 01:19 (ca75a2d) (heure de Paris). Après une mise à jour, rechargez la page : ce numéro doit changer.</p>' + "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause, <b>Turbo</b> (chargements accélérés, sans le son). <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
       + "<h3>Quatre lecteurs de disquettes</h3><p>DF0: (interne) et trois lecteurs externes, DF1: à DF3: (DF2: et DF3: se déplient sous les lecteurs). Pour un jeu sur plusieurs disquettes, choisissez-les ou glissez-les <b>ensemble</b> (Insérer…, Ouvrir un fichier…, ou une archive .zip) : Disk 1 va dans DF0:, Disk 2 dans DF1:, etc., dans l'ordre des noms. DF2: et DF3: existent dès qu'une disquette y est placée à l'allumage ; sinon l'Amiga n'a que deux lecteurs, ce que certains jeux préfèrent. Les jeux qui savent lire plusieurs lecteurs ne demandent alors plus de changer de disquette. Les disquettes d'un même jeu (« Disk 1 », « Disk 2 »…) n'ont qu'une vignette à l'accueil, qui démarre sur la première ; pendant la partie, le bouton <b>Disquette suivante</b> (sous l'écran, et dans la barre du plein écran) met la suivante dans DF0:.</p>"
       + "<h3>Raccourcis clavier</h3><p>" + k("F12") + " ouvre ou ferme la Configuration (l'Amiga se met en pause). "
       + k("Ctrl") + "+" + k("Maj") + "+" + k("S") + " sauvegarde la partie dans l'emplacement 1, " + k("Ctrl") + "+" + k("Maj") + "+" + k("R") + " la reprend. " + k("Ctrl") + "+" + k("Maj") + "+" + k("→") + " active ou arrête le Turbo. "
@@ -5935,9 +5937,10 @@ nextDiskRefresh().catch(() => {});
    =========================================================
    « Sur place… » sur un disque dur : le fichier .hdf choisi n'est pas importé ; le cœur en lit les blocs au fur
    et à mesure, directement dans le fichier de l'appareil. Pas de limite de taille (au-delà de 2 Go, jusqu'à
-   ce que le Kickstart sait lire), rien ne s'ajoute au stockage du navigateur. Les écritures de l'Amiga restent
-   en mémoire pendant la séance : le fichier d'origine n'est jamais modifié. Le choix vaut pour la séance (le
-   navigateur ne redonne pas l'accès au fichier après un rechargement). */
+   ce que le Kickstart sait lire), rien ne s'ajoute au stockage du navigateur, sauf ce que l'Amiga y écrit : le
+   fichier d'origine n'est jamais modifié, ses blocs modifiés sont gardés dans le navigateur et réappliqués au
+   prochain allumage. L'accès au fichier vaut pour la séance (le navigateur ne le redonne pas après un
+   rechargement) : un seul choix de fichiers suffit à tout rebrancher. */
 /* Ce que contient le disque, lu dans sa table de partitions (RDB) : pour comprendre d'un coup d'œil un disque qui ne monte pas */
 async function lazyDescribe(f) {
   try {
@@ -6013,7 +6016,7 @@ function pickLazyHd(tag) {
     lazyPlanSlot(tag, f);
     lazyDescribe(f).then(d => toast(f.name + " sur " + tag.toUpperCase() + ": — " + d + " (" + fmtSize(f.size) + ", lu directement dans le fichier, sans copie.)"
       + ((S.core || "winuae6") !== "winuae6" ? " Il faut le cœur WinUAE 6 (Configuration → Processeur et FPU)." : "")
-      + " Les modifications faites par l'Amiga ne sont pas gardées à l'extinction."));
+      + (S.lazyKeep !== "off" ? " Ce que l'Amiga y écrit est gardé dans le navigateur (le fichier n'est pas modifié)." : " Ce que l'Amiga y écrit est oublié à l'extinction.")));
   };
   inp.click();
 }
@@ -6022,7 +6025,7 @@ for (const t of HD_TAGS) {
   const b = document.createElement("button");
   b.className = "gad small"; b.type = "button"; b.dataset.act = "lazy";
   b.textContent = "Sur place…";
-  b.title = "Brancher un gros disque .hdf sans l'importer : il est lu directement dans le fichier de l'appareil (WinUAE 6, pour cette séance ; les modifications ne sont pas gardées)";
+  b.title = "Brancher un gros disque .hdf sans l'importer : il est lu directement dans le fichier de l'appareil (WinUAE 6 ; le fichier n'est jamais modifié, ce que l'Amiga écrit est gardé dans le navigateur)";
   ins.after(b);
   b.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); pickLazyHd(t); });
 }
@@ -6065,8 +6068,13 @@ function pickLazyExtra() {
       + '<div class="acts"><button class="gad small" type="button" data-act="lazyadd" title="Brancher d\'autres gros disques .hdf sans les importer (WinUAE 6, pour cette séance)">Sur place…</button>'
       + '<button class="gad small" type="button" data-act="lazyclear" disabled>Tout retirer</button>'
       + '<button class="gad small lazy-again" type="button" hidden></button></div>'
-      + '<label class="lazyx-shared"><input type="checkbox" id="optShared"> Volume SHARED: intégré (sauvegardes des jeux d\'AGS, gardées d\'une séance à l\'autre)</label>';
+      + '<label class="lazyx-shared"><input type="checkbox" id="optShared"> Volume SHARED: intégré (sauvegardes des jeux d\'AGS, gardées d\'une séance à l\'autre)</label>'
+      + '<label class="lazyx-shared"><input type="checkbox" id="optLazyKeep"> Garder ce que l\'Amiga écrit sur les disques sur place (favoris, réglages, fichiers ; les fichiers .hdf ne sont jamais modifiés)</label>'
+      + '<div class="lazyx-ov"><span id="lazyOvInfo">Aucune modification gardée</span> <button class="gad small" type="button" data-act="ovclear" disabled>Effacer…</button></div>';
     dh3.after(card);
+    const keep = card.querySelector("#optLazyKeep");
+    keep.checked = S.lazyKeep !== "off";
+    keep.addEventListener("change", () => { S.lazyKeep = keep.checked ? "on" : "off"; saveSettings(); });
     const opt = card.querySelector("#optShared");
     opt.checked = S.shared !== "off";
     opt.addEventListener("change", () => { S.shared = opt.checked ? "on" : "off"; saveSettings(); });
@@ -6075,6 +6083,7 @@ function pickLazyExtra() {
       e.preventDefault(); e.stopPropagation();
       if (b.dataset.act === "lazyadd") return pickLazyExtra();
       if (b.classList.contains("lazy-again")) return relinkLazy();
+      if (b.dataset.act === "ovclear") return clearLazyOv();
       if (running || starting) { toast("Éteignez l'Amiga pour retirer un disque dur.", true); return; }
       if (b.dataset.act === "lazyclear") lazyExtra.length = 0;
       else if (b.dataset.lazyx != null) lazyExtra.splice(+b.dataset.lazyx, 1);
@@ -6116,6 +6125,96 @@ setInterval(() => { if (running && sharedOn) saveShared(); }, 5000);
 window.addEventListener("pagehide", () => { if (running && sharedOn) saveShared(); });
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && running && sharedOn) saveShared(); });
 { const _off = powerOff; powerOff = async () => { if (running && sharedOn) await saveShared().catch(e => console.warn("SHARED non enregistré", e)); await _off(); sharedOn = false; }; }
+
+/* Ce que l'Amiga écrit sur les disques sur place, gardé d'une séance à l'autre. Le cœur garde ces écritures par
+   pages de 4 Ko et en tient le relevé (lazy_disk.cpp) ; la page vide ce relevé toutes les 10 s, à l'extinction et
+   quand elle passe en arrière-plan, et range les pages par segments de 1 Mo dans la Bibliothèque (enregistrements
+   cachés), sous le nom et la taille du fichier. À l'allumage, elles sont remises avant que l'Amiga ne lise le
+   disque. La date du fichier est notée : un fichier modifié ailleurs (WinUAE…) ne reçoit pas d'anciennes pages. */
+const OV_PAGE = 4096, OV_SEG = 256;
+let lazyOvDisks = [], lazyOvBusy = false;
+const ovKey = f => f.name + "|" + f.size;
+const ovSegId = (f, seg) => "lazyov:" + ovKey(f) + ":" + seg;
+async function lazyOvRestore(m, files) {
+  lazyOvDisks = files.map((f, disk) => ({ f, disk }));
+  if (S.lazyKeep === "off") { lazyOvDisks = []; return; }
+  const found = [];
+  for (const d of lazyOvDisks) {
+    const head = await DB.get("lazyovh:" + ovKey(d.f)); if (!head) continue;
+    if (head.lm && d.f.lastModified && head.lm !== d.f.lastModified) {
+      d.skip = true;
+      toast(d.f.name + " a changé depuis ses dernières modifications gardées (il a été modifié ailleurs, par WinUAE par exemple) : elles ne sont pas réappliquées, et rien n'est gardé cette fois. « Effacer… » (Disques durs/CD) pour repartir de ce fichier.", true);
+      continue;
+    }
+    const p = m.M._malloc(OV_PAGE); let n = 0;
+    for (const seg of head.segs || []) {
+      const r = await DB.get(ovSegId(d.f, seg)); if (!r || !r.blob) continue;
+      const u8 = new Uint8Array(await r.blob.arrayBuffer());
+      r.pages.forEach((pg, i) => { m.M.HEAPU8.set(u8.subarray(i * OV_PAGE, (i + 1) * OV_PAGE), p); if (!m.M._amb_lazy_restore(d.disk, pg, p)) n++; });
+    }
+    m.M._free(p);
+    if (n) found.push(d.f.name + " (" + fmtSize(n * OV_PAGE) + ")");
+  }
+  if (found.length) toast("Modifications gardées réappliquées : " + found.join(", ") + ".");
+}
+async function ovWrite(f, got) {
+  const segs = new Map();
+  for (const [pg, data] of got) { const s = Math.floor(pg / OV_SEG); if (!segs.has(s)) segs.set(s, new Map()); segs.get(s).set(pg, data); }
+  const head = (await DB.get("lazyovh:" + ovKey(f))) || { id: "lazyovh:" + ovKey(f), kind: "lazyovh", name: f.name, size: f.size, segs: [], pages: 0 };
+  for (const [s, pages] of segs) {
+    const id = ovSegId(f, s), old = await DB.get(id), all = new Map();
+    if (old && old.blob) { const u8 = new Uint8Array(await old.blob.arrayBuffer()); old.pages.forEach((pg, i) => all.set(pg, u8.subarray(i * OV_PAGE, (i + 1) * OV_PAGE))); }
+    const before = all.size;
+    for (const [pg, data] of pages) all.set(pg, data);
+    const keys = [...all.keys()].sort((a, b) => a - b);
+    await DB.put({ id, kind: "lazyov", owner: head.id, pages: keys, blob: new Blob(keys.map(k => all.get(k))) });
+    head.pages += all.size - before;
+    if (!head.segs.includes(s)) head.segs.push(s);
+  }
+  Object.assign(head, { lm: f.lastModified || 0, updated: Date.now() });
+  await DB.put(head);
+}
+async function saveLazyOv() {
+  if (lazyOvBusy || !machine || !machine.M || !machine.M._amb_lazy_take || !lazyOvDisks.length || S.lazyKeep === "off") return;
+  lazyOvBusy = true;
+  const M = machine.M, max = 256, rec = 4 + OV_PAGE;
+  let buf = 0;
+  try {
+    buf = M._malloc(max * rec);
+    for (const d of lazyOvDisks) {
+      if (d.skip) continue;
+      const got = new Map();
+      for (let guard = 0; guard < 4096; guard++) {
+        const n = M._amb_lazy_take(d.disk, buf, max); if (n <= 0) break;
+        const h = M.HEAPU8;
+        for (let i = 0; i < n; i++) { const o = buf + i * rec; got.set((h[o] | h[o + 1] << 8 | h[o + 2] << 16 | h[o + 3] << 24) >>> 0, h.slice(o + 4, o + rec)); }
+        if (n < max) break;
+      }
+      if (got.size) await ovWrite(d.f, got);
+    }
+  } catch (e) { console.warn("modifications des disques sur place non enregistrées", e); toast("Les modifications des disques sur place n'ont pas pu être enregistrées (stockage du navigateur plein ?).", true); }
+  finally { if (buf) M._free(buf); lazyOvBusy = false; renderLazyOv(); }
+}
+async function renderLazyOv() {
+  const info = $("#lazyOvInfo"), btn = $('#drive-lazyx [data-act="ovclear"]'); if (!info) return;
+  const heads = (await DB.all().catch(() => [])).filter(r => r.kind === "lazyovh");
+  const bytes = heads.reduce((a, h) => a + (h.pages || 0) * OV_PAGE, 0);
+  info.textContent = heads.length ? "Modifications gardées : " + heads.map(h => h.name).join(", ") + " (" + fmtSize(bytes) + ")" : "Aucune modification gardée";
+  if (btn) btn.disabled = !heads.length;
+}
+async function clearLazyOv() {
+  if (running || starting) { toast("Éteignez l'Amiga pour effacer les modifications gardées.", true); return; }
+  const all = await DB.all(), heads = all.filter(r => r.kind === "lazyovh");
+  if (!heads.length) return;
+  if (!confirm("Effacer ce que l'Amiga a écrit sur " + heads.map(h => h.name).join(", ") + " ? Ces disques repartiront de leur fichier d'origine.")) return;
+  for (const r of all) if (r.kind === "lazyov" || r.kind === "lazyovh") await DB.del(r.id);
+  renderLazyOv(); toast("Modifications gardées effacées.");
+}
+setInterval(() => { if (running && lazyOvDisks.length) saveLazyOv(); }, 10000);
+window.addEventListener("pagehide", () => { if (running && lazyOvDisks.length) saveLazyOv(); });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && running && lazyOvDisks.length) saveLazyOv(); });
+{ const _off = powerOff; powerOff = async () => { if (running && lazyOvDisks.length) await saveLazyOv(); await _off(); lazyOvDisks = []; }; }
+setTimeout(renderLazyOv, 1000);
 
 /* Un autre disque mis à la place, ou retiré : le fichier sur place est oublié */
 { const _sm = setMounted;

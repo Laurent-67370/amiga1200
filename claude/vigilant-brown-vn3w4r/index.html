@@ -495,6 +495,7 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
 .cfg-form input,#ambGui .ctl-grid select{background:var(--ab-frame);color:var(--ab-text);border:1px solid;
   border-color:var(--ab-border) var(--ab-shine) var(--ab-shine) var(--ab-border);padding:4px 6px}
 .cfg-btns{display:flex;gap:6px;flex-wrap:wrap}
+.cfg-check{display:flex;gap:6px;align-items:center}
 /* Commandes : action, puis touche ou rôle du bouton */
 .ctl-grid{display:grid;grid-template-columns:max-content minmax(0,320px);gap:5px 14px;align-items:center;margin:4px 0 12px}
 .ctl-grid .gad{justify-self:start;min-width:120px}
@@ -766,7 +767,7 @@ body.is-off #btnTurbo{display:none!important}
     Kickstart de secours : AROS, version d'août 2026 (AROS Public License). Les ROM Kickstart et disquettes Workbench d'origine ne sont pas fournies : importez les vôtres.
     Vos fichiers restent dans ce navigateur (stockage local) et ne sont envoyés nulle part.
     <br><a href="sae/">Ancienne version (cœur SAE)</a>, conservée pour comparer : elle partage la même Bibliothèque.
-    <br><b>Version du site : 20/10/2026 01:56 (fe27934)</b> (heure de Paris).
+    <br><b>Version du site : 20/10/2026 07:25 (6156204)</b> (heure de Paris).
   </p>
 </main>
 
@@ -5095,6 +5096,34 @@ let CFGS = [];
 try { CFGS = JSON.parse(localStorage.getItem("a1200.configs") || "[]"); } catch (e) {}
 const cfgStore = () => { try { localStorage.setItem("a1200.configs", JSON.stringify(CFGS)); } catch (e) { toast("Configuration non enregistrée : stockage du navigateur plein.", true); } };
 function cfgSnapshot() { const s = {}; for (const k of CFG_KEYS) if (S[k] !== undefined) s[k] = JSON.parse(JSON.stringify(S[k])); return s; }
+/* Disques de la configuration : disquettes et disques durs importés (par leur enregistrement de la Bibliothèque),
+   et disposition des disques sur place (noms et tailles : leurs fichiers sont à rebrancher après chargement) */
+function cfgDisks() {
+  const d = { slots: {} };
+  for (const t of [...FD_TAGS, ...HD_TAGS]) if (mounted[t] && !String(mounted[t].id).startsWith("lazy:")) d.slots[t] = { id: mounted[t].id, name: mounted[t].name };
+  const p = lazyPlan(); if (Object.keys(p.slots).length || p.extra.length) d.lazy = p;
+  return d;
+}
+async function cfgApplyDisks(d) {
+  const all = await DB.all(), notes = [];
+  const lazy = d.lazy || { slots: {}, extra: [] };
+  for (const t of [...FD_TAGS, ...HD_TAGS]) {
+    const x = d.slots[t];
+    if (x) {
+      const r = all.find(r => r.id === x.id) || all.find(r => r.name === x.name && (isHd(t) ? r.kind === "hdf" : r.kind === "adf"));
+      if (r) setMounted(t, r); else { notes.push(x.name + " absent de la Bibliothèque"); setMounted(t, null); }
+    } else if (lazy.slots[t]) {
+      /* Même fichier déjà branché sur place : il reste */
+      if (!(lazyFiles[t] && lazyFiles[t].name === lazy.slots[t].n && lazyFiles[t].size === lazy.slots[t].s)) setMounted(t, null);
+    } else setMounted(t, null);
+  }
+  const keep = lazy.extra.map(x => lazyExtra.find(f => f.name === x.n && f.size === x.s)).filter(Boolean);
+  lazyExtra.splice(0, lazyExtra.length, ...keep);
+  lazyPlanSave({ slots: lazy.slots, extra: lazy.extra }); renderLazyExtra();
+  const pend = lazyPending().length;
+  if (pend) notes.push(pend + " disque(s) sur place à rebrancher (Disques durs/CD → « Rebrancher les disques sur place »)");
+  return notes;
+}
 function cfgRefreshAll() {
   try {
     syncSettingsForm();
@@ -5114,24 +5143,40 @@ async function cfgLoad(c) {
     S[k] = JSON.parse(JSON.stringify(c.s[k]));
   }
   saveSettings(); cfgRefreshAll();
-  toast("Configuration « " + c.name + " » chargée" + (running ? " : elle s'appliquera au prochain allumage (Recharger)." : "."));
+  let notes = [];
+  if (c.d && $("#cfgWithDisks") && $("#cfgWithDisks").checked) {
+    if (running || starting) notes.push("disques non changés : l'Amiga est allumé");
+    else notes = await cfgApplyDisks(c.d);
+  }
+  toast("Configuration « " + c.name + " » chargée" + (running ? " : elle s'appliquera au prochain allumage (Recharger)" : "") + (notes.length ? " — " + notes.join(" ; ") : "") + ".", notes.length > 0);
 }
 /* Texte .uae (WinUAE, Amiberry) : les réglages de la page en lignes de configuration, et la configuration exacte en commentaire */
-function cfgUae(name, desc, s) {
+function cfgUae(name, desc, s, d) {
   const e = Object.assign({}, DEFAULTS, CHIP_DEFAULTS, s);
   const qs = { a500: "A500", a600: "A600", a1200: "A1200", a3000: "A3000", a4000: "A4000", cd32: "CD32", cdtv: "CDTV" }[e.model] || "A1200";
   const l = ["; Configuration exportée par l'émulateur Amiga du navigateur (WinUAE 6 / Amiberry)", "config_description=" + (desc || name)];
   l.push(...amberryLines(qs, null, e).filter(x => !/^(kickstart_|amiberry\.midi|floppy\dsound)/.test(x)), ...chipLines(e));
+  /* Disques par leur nom de fichier : WinUAE les cherche à côté du .uae, l'import les retrouve dans la Bibliothèque */
+  if (d) {
+    for (const [t, x] of Object.entries(d.slots)) if (/^df/.test(t)) l.push(t.replace("df", "floppy") + "=" + x.name);
+    const hds = [];
+    HD_TAGS.forEach((t, i) => { const n = d.slots[t] ? d.slots[t].name : d.lazy && d.lazy.slots[t] ? d.lazy.slots[t].n : null; if (n) hds.push([t, n, i]); });
+    if (d.lazy) d.lazy.extra.forEach((x, i) => hds.push(["dh" + (4 + i), x.n, 4 + i]));
+    for (const [t, n, i] of hds) l.push(`hardfile2=rw,${t.toUpperCase()}:${n},0,0,0,512,0,,${i < 2 ? "ide" + i : "uae" + (i - 2)}`);
+  }
   l.push("; amiga1200web=" + JSON.stringify(s));
+  if (d) l.push("; amiga1200web-disks=" + JSON.stringify(d));
   return l.join("\r\n") + "\r\n";
 }
 /* Lecture d'un .uae : réglages reconnus, disques et Kickstart retrouvés dans la Bibliothèque par leur nom de fichier */
 async function cfgParseUae(text, fname) {
   const kv = {}, hard = [];
-  let exact = null;
+  let exact = null, exactDisks = null;
   for (const raw of text.split(/\r?\n/)) {
     const m = /^;\s*amiga1200web=(\{.*\})\s*$/.exec(raw);
     if (m) { try { exact = JSON.parse(m[1]); } catch (e) {} continue; }
+    const md = /^;\s*amiga1200web-disks=(\{.*\})\s*$/.exec(raw);
+    if (md) { try { exactDisks = JSON.parse(md[1]); } catch (e) {} continue; }
     const line = raw.trim(); if (!line || line[0] === ";" || line[0] === "#") continue;
     const i = line.indexOf("="); if (i < 0) continue;
     const k = line.slice(0, i).trim().toLowerCase(), v = line.slice(i + 1).trim();
@@ -5171,12 +5216,12 @@ async function cfgParseUae(text, fname) {
   const all = await DB.all(), base = p => (p || "").split(/[\\/]/).pop().toLowerCase();
   const find = (p, kinds) => { const b = base(p); return b ? all.find(r => kinds.includes(r.kind) && r.name.toLowerCase() === b) : null; };
   const mounts = [];
-  for (const n of [0, 1, 2, 3]) {
+  if (!exactDisks) for (const n of [0, 1, 2, 3]) {
     const p = kv["floppy" + n]; if (!p) continue;
     const r = find(p, ["adf"]);
     if (r) mounts.push(["df" + n, r]); else notes.push("disquette DF" + n + ": " + base(p) + " absente de la Bibliothèque");
   }
-  hard.forEach((h, i) => {
+  if (!exactDisks) hard.forEach((h, i) => {
     const f = h.split(","), p = (f[1] || "").replace(/^[^:]*:/, ""), tag = HD_TAGS[i]; if (!tag) return;
     const r = find(p, ["hdf"]);
     if (r) mounts.push([tag, r]); else notes.push("disque dur " + base(p) + " absent de la Bibliothèque");
@@ -5187,7 +5232,7 @@ async function cfgParseUae(text, fname) {
     else if (!r) notes.push("Kickstart " + base(kv.kickstart_rom_file) + " absent de la Bibliothèque (le meilleur disponible sera pris)");
   }
   const name = (kv.config_description || fname.replace(/\.uae$/i, "")).slice(0, 60);
-  return { name, desc: kv.config_description || "", s, mounts, notes };
+  return { name, desc: kv.config_description || "", s, mounts, notes, d: exactDisks };
 }
 { const box = document.createElement("div"); box.id = "abConfigs"; box.className = "ab-cfg";
   box.innerHTML = `<div class="cfg-wrap">
@@ -5198,11 +5243,13 @@ async function cfgParseUae(text, fname) {
         <div class="cfg-btns"><button class="gad" data-cfg="load" type="button">Charger</button>
           <button class="gad" data-cfg="save" type="button">Enregistrer</button>
           <button class="gad" data-cfg="del" type="button">Supprimer</button></div>
-        <div class="cfg-btns"><button class="gad" data-cfg="import" type="button">Importer un .uae…</button>
-          <button class="gad" data-cfg="export" type="button">Exporter en .uae</button></div>
-        <input type="file" class="cfg-file" accept=".uae,.cfg,text/plain" hidden>
+        <label class="cfg-check"><input type="checkbox" id="cfgWithDisks" checked> Charger aussi ses disques</label>
+        <div class="cfg-btns"><button class="gad" data-cfg="import" type="button">Importer…</button>
+          <button class="gad" data-cfg="export" type="button">Exporter en .uae</button>
+          <button class="gad" data-cfg="exportall" type="button">Exporter tout…</button></div>
+        <input type="file" class="cfg-file" accept=".uae,.cfg,.json,text/plain,application/json" hidden>
       </div></div>
-    <p class="hint">Enregistrer garde tous les réglages affichés (modèle, cœur, processeur, mémoire, chipset, affichage, commandes, Kickstart) sous le nom choisi ; Charger les remet d'un coup. Un double-clic sur la liste charge aussi. L'export .uae s'ouvre dans WinUAE ou Amiberry, et l'import lit leurs fichiers : réglages reconnus, disquettes, disques durs et Kickstart retrouvés dans la Bibliothèque par leur nom.</p>`;
+    <p class="hint">Enregistrer garde tous les réglages affichés (modèle, cœur, processeur, mémoire, chipset, affichage, commandes, Kickstart) et les disques branchés sous le nom choisi ; Charger les remet d'un coup (les disques lus sur place sont alors à rebrancher en un seul choix de fichiers). « Exporter tout » enregistre toutes les configurations dans un fichier .json, à réimporter ici ou sur un autre appareil avec « Importer ». Un double-clic sur la liste charge aussi. L'export .uae s'ouvre dans WinUAE ou Amiberry, et l'import lit leurs fichiers : réglages reconnus, disquettes, disques durs et Kickstart retrouvés dans la Bibliothèque par leur nom.</p>`;
   $("#abStash").appendChild(box);
   const list = box.querySelector(".cfg-list"), nameI = box.querySelector(".cfg-name"), descI = box.querySelector(".cfg-desc"), file = box.querySelector(".cfg-file");
   const sel = () => CFGS[list.selectedIndex] || null;
@@ -5215,7 +5262,7 @@ async function cfgParseUae(text, fname) {
     else if (act === "save") {
       const name = nameI.value.trim(); if (!name) { toast("Donnez un nom à la configuration.", true); nameI.focus(); return; }
       const old = CFGS.findIndex(x => x.name.toLowerCase() === name.toLowerCase());
-      const rec = { name, desc: descI.value.trim(), s: cfgSnapshot(), t: Date.now() };
+      const rec = { name, desc: descI.value.trim(), s: cfgSnapshot(), d: cfgDisks(), t: Date.now() };
       if (old >= 0) CFGS[old] = rec; else CFGS.push(rec);
       CFGS.sort((x, y) => x.name.localeCompare(y.name, "fr")); cfgStore(); renderCfgs(name);
       toast("Configuration « " + name + " » " + (old >= 0 ? "mise à jour." : "enregistrée."));
@@ -5225,21 +5272,44 @@ async function cfgParseUae(text, fname) {
       CFGS.splice(list.selectedIndex, 1); cfgStore(); renderCfgs(); nameI.value = descI.value = "";
     } else if (act === "export") {
       const name = nameI.value.trim() || (c && c.name) || "amiga";
-      download(new TextEncoder().encode(cfgUae(name, descI.value.trim(), c && c.name === name ? c.s : cfgSnapshot())), safeName(name) + ".uae");
+      const same = c && c.name === name;
+      download(new TextEncoder().encode(cfgUae(name, descI.value.trim(), same ? c.s : cfgSnapshot(), same ? c.d : cfgDisks())), safeName(name) + ".uae");
+    } else if (act === "exportall") {
+      if (!CFGS.length) return toast("Aucune configuration enregistrée à exporter.", true);
+      download(new TextEncoder().encode(JSON.stringify({ format: "amiga1200-configs", v: 1, configs: CFGS }, null, 1)), "configurations-amiga.json");
+      toast(CFGS.length + " configuration(s) exportée(s) dans configurations-amiga.json.");
     } else if (act === "import") file.click();
   });
   file.onchange = async () => {
     const f = file.files[0]; file.value = ""; if (!f) return;
-    try { await cfgImport(await f.text(), f.name); } catch (x) { console.error(x); toast("Lecture du fichier impossible : " + x.message, true); }
+    try {
+      const text = await f.text();
+      if (/\.json$/i.test(f.name) || /^\s*\{/.test(text)) await cfgImportAll(text); else await cfgImport(text, f.name);
+    } catch (x) { console.error(x); toast("Lecture du fichier impossible : " + x.message, true); }
   };
+}
+/* Fichier de toutes les configurations (Exporter tout) : ajoutées à la liste, celles du même nom remplacées */
+async function cfgImportAll(text) {
+  const j = JSON.parse(text);
+  if (!j || j.format !== "amiga1200-configs" || !Array.isArray(j.configs)) throw new Error("ce n'est pas un fichier de configurations de cet émulateur");
+  let n = 0;
+  for (const c of j.configs) {
+    if (!c || typeof c.name !== "string" || !c.s || typeof c.s !== "object") continue;
+    const old = CFGS.findIndex(x => x.name.toLowerCase() === c.name.toLowerCase());
+    if (old >= 0) CFGS[old] = c; else CFGS.push(c);
+    n++;
+  }
+  CFGS.sort((x, y) => x.name.localeCompare(y.name, "fr")); cfgStore(); renderCfgs();
+  toast(n + " configuration(s) importée(s). Choisissez-en une dans la liste puis Charger.");
 }
 async function cfgImport(text, fname) {
   const p = await cfgParseUae(text, fname);
-  const c = { name: p.name, desc: p.desc, s: Object.assign(cfgSnapshot(), p.s), t: Date.now() };
+  const c = { name: p.name, desc: p.desc, s: Object.assign(cfgSnapshot(), p.s), t: Date.now(), ...(p.d ? { d: p.d } : {}) };
   const old = CFGS.findIndex(x => x.name.toLowerCase() === c.name.toLowerCase());
   if (old >= 0) CFGS[old] = c; else CFGS.push(c);
   CFGS.sort((x, y) => x.name.localeCompare(y.name, "fr")); cfgStore();
   await cfgLoad(c);
+  if (p.d) { renderCfgs(c.name); return; } /* fichier exporté ici : cfgLoad a remis ses disques */
   if (p.mounts.length && !running && !starting) {
     /* Les lecteurs du fichier remplacent ceux en place (disquettes d'un côté, disques durs de l'autre) */
     const fl = p.mounts.some(m => /^df/.test(m[0])), hd = p.mounts.some(m => isHd(m[0]));
@@ -5666,7 +5736,7 @@ let uxDrivesRefresh = () => {};
   if (body && !body.querySelector(".ux-keys")) {
     const k = s => '<span class="kbd">' + s + "</span>";
     const sec = document.createElement("div"); sec.className = "ux-keys";
-    sec.innerHTML = '<p class="hint" id="siteVersion">Version du site : 20/10/2026 01:56 (fe27934) (heure de Paris). Après une mise à jour, rechargez la page : ce numéro doit changer.</p>' + "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause, <b>Turbo</b> (chargements accélérés, sans le son). <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
+    sec.innerHTML = '<p class="hint" id="siteVersion">Version du site : 20/10/2026 07:25 (6156204) (heure de Paris). Après une mise à jour, rechargez la page : ce numéro doit changer.</p>' + "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause, <b>Turbo</b> (chargements accélérés, sans le son). <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
       + "<h3>Quatre lecteurs de disquettes</h3><p>DF0: (interne) et trois lecteurs externes, DF1: à DF3: (DF2: et DF3: se déplient sous les lecteurs). Pour un jeu sur plusieurs disquettes, choisissez-les ou glissez-les <b>ensemble</b> (Insérer…, Ouvrir un fichier…, ou une archive .zip) : Disk 1 va dans DF0:, Disk 2 dans DF1:, etc., dans l'ordre des noms. DF2: et DF3: existent dès qu'une disquette y est placée à l'allumage ; sinon l'Amiga n'a que deux lecteurs, ce que certains jeux préfèrent. Les jeux qui savent lire plusieurs lecteurs ne demandent alors plus de changer de disquette. Les disquettes d'un même jeu (« Disk 1 », « Disk 2 »…) n'ont qu'une vignette à l'accueil, qui démarre sur la première ; pendant la partie, le bouton <b>Disquette suivante</b> (sous l'écran, et dans la barre du plein écran) met la suivante dans DF0:.</p>"
       + "<h3>Raccourcis clavier</h3><p>" + k("F12") + " ouvre ou ferme la Configuration (l'Amiga se met en pause). "
       + k("Ctrl") + "+" + k("Maj") + "+" + k("S") + " sauvegarde la partie dans l'emplacement 1, " + k("Ctrl") + "+" + k("Maj") + "+" + k("R") + " la reprend. " + k("Ctrl") + "+" + k("Maj") + "+" + k("→") + " active ou arrête le Turbo. "

@@ -393,6 +393,7 @@ rep(".tube:fullscreen canvas{object-fit:contain}", """.tube:fullscreen canvas{ob
 .fs-exit svg{width:16px;height:16px}
 .tube:fullscreen .fs-exit,.tube:-webkit-full-screen .fs-exit{display:flex}
 .fs-exit.hide,.fs-bar.hide{opacity:0;pointer-events:none}
+.tube.fs-fill:fullscreen canvas,.tube.fs-fill:-webkit-full-screen canvas{object-fit:fill}
 /* Téléphone en paysage : l'écran de l'Amiga tient en entier dans la hauteur, sans défiler */
 @media (orientation:landscape) and (max-height:560px){.monitor{padding:6px 10px 4px}.bezel{padding:6px}
   .tube:not(:fullscreen){max-width:calc((100svh - 26px) * 4 / 3);margin:0 auto}}""")
@@ -402,6 +403,12 @@ rep('''$("#btnShot").onclick = () => {''', '''(function fullscreenExit() {
   /* iPhone : pas de plein écran pour une page (seulement pour les vidéos) ; l'application installée l'est déjà */
   if (!t.requestFullscreen && !t.webkitRequestFullscreen) $("#btnFull").hidden = true;
   const exit = () => { if (isFs()) (document.exitFullscreen || document.webkitExitFullscreen).call(document); };
+  /* Pleine largeur : en plein écran, l'image s'étire sur toute la largeur (téléphone en paysage) au lieu de garder
+     les proportions de l'Amiga avec des bandes noires sur les côtés ; choix gardé dans les réglages */
+  const fill = $("#fsFill");
+  const applyFill = () => { t.classList.toggle("fs-fill", !!S.fsFill); if (fill) fill.setAttribute("aria-pressed", S.fsFill ? "true" : "false"); };
+  if (fill) fill.addEventListener("click", e => { e.stopPropagation(); S.fsFill = !S.fsFill; saveSettings(); applyFill(); show(); });
+  applyFill();
   /* La barre de touches du plein écran (fsBar) se cache avec le bouton : elle couvrait le haut de l'image de l'Amiga */
   const hideAll = on => { b.classList.toggle("hide", on); const bar = $("#fsBar"); if (bar) bar.classList.toggle("hide", on); };
   const show = () => { if (!isFs()) return; hideAll(false); clearTimeout(timer); timer = setTimeout(() => hideAll(true), 4000); };
@@ -564,6 +571,7 @@ rep('''  machine.setJoy(0, joyKeys);
 rep('''<button class="fs-exit" id="fsExit" type="button">''', '''<div class="fs-bar" id="fsBar">
           <button class="fsb" id="fsKbd" type="button" aria-pressed="false">Clavier</button>
           <button class="fsb" data-vjoy type="button" aria-pressed="false">Joystick</button>
+          <button class="fsb" id="fsFill" type="button" aria-pressed="false" title="Étirer l'image sur toute la largeur de l'écran (ou revenir aux proportions de l'Amiga)">Pleine largeur</button>
           <button class="fsb" data-tap="Space" type="button">Espace</button>
           <button class="fsb" data-tap="Enter" type="button">Entrée</button>
           <button class="fsb" data-tap="Escape" type="button">Échap</button>

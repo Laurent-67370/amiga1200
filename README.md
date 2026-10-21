@@ -1,37 +1,47 @@
-# Émulateur Amiga 1200
+# Émulateur Amiga dans le navigateur
 
-Un Amiga 1200 complet dans le navigateur : processeur 68EC020, chipset AGA, 2 Mo de Chip RAM,
-contrôleur IDE Gayle, deux lecteurs de disquettes. Deux moteurs, compilés en WebAssembly :
-**WinUAE 6** (par défaut, le cœur libretro d'[Amiberry](https://github.com/BlitterStudio/amiberry)) et
-**PUAE** (base WinUAE 5, [libretro-uae](https://github.com/libretro/libretro-uae)), plus léger pour les appareils anciens.
+**L'Amiga 1200, l'A500, le CD32 et toute la gamme Amiga dans une page web**, sur ordinateur, Android et iPhone, sans rien
+installer. Le cœur est **WinUAE 6** (celui d'[Amiberry](https://github.com/BlitterStudio/amiberry)), compilé en
+WebAssembly, avec **PUAE** ([libretro-uae](https://github.com/libretro/libretro-uae)) comme second moteur, plus léger.
 
-**https://laurent-67370.github.io/amiga1200/**
+### ▶ **https://laurent-67370.github.io/amiga1200/**
 
-L'ancienne version, au cœur JavaScript SAE, reste disponible pour comparer : https://laurent-67370.github.io/amiga1200/sae/
-Les deux partagent la même Bibliothèque et les mêmes réglages (stockage local du navigateur).
+## Points forts
+
+- **Une vraie machine complète** : A500, A600, A1200, A3000, A4000, CD32, CDTV ; chipsets OCS, ECS, AGA ; cartes
+  68030/68040/68060, mémoire Fast et Zorro III, **carte graphique RTG** pour un Workbench en haute résolution, MIDI.
+- **Jeux WHDLoad en un geste** : une archive `.lha` devient une vignette qui lance le jeu, réglé automatiquement grâce
+  à la base d'Amiberry (plus de 11 000 jeux).
+- **Gros disques durs lus sur place** : jusqu'à **12 disques de plusieurs Go** branchés sans les importer, lus
+  directement dans les fichiers de l'appareil. Une collection comme **AGS (Amiga Game Selector)** tourne même sur un
+  téléphone. Les fichiers ne sont jamais modifiés : ce que l'Amiga écrit est gardé dans le navigateur.
+- **Pensé pour le téléphone** : plein écran en paysage, joystick et clavier Amiga tactiles, souris au doigt.
+- **Application installable et hors ligne** (PWA), interface en français, sauvegardes d'état, configurations
+  exportables, tout reste dans le navigateur.
+
+Les ROM Kickstart et les disquettes d'origine ne sont pas fournies : sans ROM, l'Amiga démarre sur **AROS**, un
+Kickstart libre. Vos fichiers restent dans le navigateur (IndexedDB) et ne sont envoyés nulle part.
 
 ## Démarrer
 
 L'écran du moniteur sert d'accueil tant que l'Amiga est éteint :
 
-1. **Kickstart** : sans ROM, la machine démarre sur AROS (version d'août 2026), un Kickstart libre. Pour retrouver
-   l'A1200 d'origine, **Importer le mien…** et choisissez votre ROM Kickstart 3.1 A1200 (40.068).
-2. **Une disquette** : **Ouvrir une disquette…** (`.adf`, ou une archive `.zip`), ou glissez-la sur la page.
-   Elle est rangée dans la Bibliothèque pour les fois suivantes.
+1. **Kickstart** : pour retrouver l'A1200 d'origine, **Importer le mien…** et choisissez votre ROM Kickstart 3.1 A1200
+   (40.068). Les Kickstart chiffrés d'Amiga Forever sont acceptés avec leur `rom.key`.
+2. **Un disque** : **Ouvrir un fichier…** (disquette `.adf`, archive `.zip`, jeu WHDLoad `.lha`, image de CD), ou
+   glissez-le sur la page. Il est rangé dans la Bibliothèque pour les fois suivantes.
 3. **Allumer**.
 
 Ensuite, l'accueil présente les derniers disques utilisés en vignettes : une touche insère le disque et allume
-l'Amiga ; un jeu qui a une sauvegarde d'état montre sa capture et propose **Reprendre la sauvegarde**.
-
-Les ROM et disquettes Workbench d'origine ne sont pas fournies. Vos fichiers restent dans le navigateur (IndexedDB)
-et ne sont envoyés nulle part. La page se recharge une fois au premier passage pour activer l'isolation nécessaire
-au WebAssembly multi-fils.
+l'Amiga ; un jeu qui a une sauvegarde d'état montre sa capture et propose **Reprendre la sauvegarde**. La page se
+recharge une fois au premier passage pour activer l'isolation nécessaire au WebAssembly multi-fils. La version publiée
+s'affiche en bas de la page.
 
 ## Installer l'application (hors ligne)
 
 L'émulateur est une application web installable (PWA) : une fois installé, il a son icône, s'ouvre en plein écran
-et fonctionne **sans connexion**. Tout le site (environ 16 Mo) est copié sur l'appareil à la première visite ;
-une nouvelle version publiée est téléchargée seule et prend effet au lancement suivant.
+et fonctionne **sans connexion**. Le site est copié sur l'appareil à la première visite ; une nouvelle version publiée
+est téléchargée seule et prend effet au lancement suivant.
 
 - **Android, ordinateur (Chrome, Edge)** : bouton **Installer** de la barre d'outils, ou menu du navigateur → « Installer l'application ».
   Ouvrez la page dans Chrome lui-même : le navigateur intégré d'une autre application (lien ouvert depuis une messagerie) ne sait pas installer.
@@ -41,47 +51,48 @@ La Bibliothèque est propre à chaque navigateur : importez votre Kickstart et v
 
 ## Fonctions
 
-- Accueil : étapes au premier passage, derniers disques en vignettes, Kickstart utilisé toujours visible
-- Habillage selon le modèle : couleurs du Workbench 3.1 pour l'A1200, du Workbench 1.3 (bleu et orange) pour l'A500,
-  arc-en-ciel du logo Amiga et Boing Ball sur l'accueil
-- Disquettes `.adf`, `.dms`, `.adz`, archives `.zip` et `.gz` ; DF0: et DF1:, insertion à chaud, disquettes vierges formatées
-- Disque dur IDE `.hdf` jusqu'à **2 Go** (512 Mo sur téléphone et tablette), par exemple avec des jeux WHDLoad installés :
-  image avec table de partitions (RDB), ou image d'une seule partition FFS/OFS (« partition hardfile » de WinUAE),
-  complétée automatiquement d'une table de partitions pour démarrer. Rangé par morceaux de 8 Mo : seuls ceux que l'Amiga modifie sont réenregistrés
-- **Quatre disques durs** : DH0: et DH1: sur l'IDE de l'A1200 (maître, esclave), DH2: et DH3: par le pilote de disque d'UAE ;
-  chaque unité a son panneau sous l'écran (sur téléphone, une unité libre se réduit à Choisir… et Nouveau)
-- **Nouveau** crée un disque partitionné (RDB) et formaté (FFS), prêt pour le Workbench
-- **Copier des fichiers sur le disque dur** (Amiga éteint, bouton *Fichiers…*) : fichiers, dossier entier, archives `.lha`/`.lzh`
-  et `.zip` décompressées au passage, dans le dossier choisi ; c'est la façon d'installer des jeux **WHDLoad**.
-  Un bouton copie aussi vos Kickstart dans `Devs:Kickstarts` sous les noms attendus par WHDLoad (`kick34005.A500`, `kick40068.A1200`…).
-  Partitions OFS et FFS (DOS\0 à DOS\3) ; PFS, SFS et FFS à cache de dossiers ne sont pas modifiables
-- **CD32** : troisième modèle sur l'accueil (A1200 / A500 / CD32), avec l'état des ROM et leur import ; images `.iso`, ou `.cue` avec ses pistes `.bin` (CD audio), lancées depuis leur vignette sur la console émulée
-  (Akiko, manette CD32 à 7 boutons ; ▶ = Play sur écran tactile). Il faut les ROM de la console : Kickstart CD32 40.060 et
-  son extension, ou la ROM CD32 complète d'1 Mo
-- **Mode Amiga 500** (68000, OCS, 512 Ko Chip + 512 Ko Slow) pour les jeux A500 qui refusent l'A1200 : bascule sur l'accueil,
-  dans Réglages ou dans le profil d'une disquette ; Kickstart 1.3 choisi automatiquement dans la Bibliothèque
-- **Jeux WHDLoad en un geste** : une archive `.lha` de jeu WHDLoad se lance directement depuis sa vignette, sans Workbench ni disque dur
-- Archives `.lha` acceptées aussi pour les disquettes qu'elles contiennent
-- Enregistrement automatique des disques modifiés dans la Bibliothèque, téléchargement
-- **Changer d'appareil** : *Exporter tout…* (Bibliothèque) range tout dans un seul fichier `.tar` (disquettes, disques durs,
-  Kickstart, jeux WHDLoad, sauvegardes) ; *Importer…* sur l'autre appareil, ce qui y est déjà et plus récent est gardé
+### Machines et moteurs
+
+- **Deux cœurs** (Configuration → Processeur et FPU) : **WinUAE 6** (par défaut, le plus fidèle) ou **PUAE** (base WinUAE 5,
+  plus léger pour les appareils anciens) ; émulation dans un fil séparé, pour que l'interface ne la ralentisse pas
+- **Modèles** : A1200 (68EC020, AGA, IDE Gayle), A500 (68000, OCS, 512 Ko Chip + 512 Ko Slow, Kickstart 1.3 choisi
+  automatiquement), et avec WinUAE 6 : A600, A3000, A4000, CDTV ; chipset au choix
+- **Cartes accélératrices** : 68030 + FPU 68882 (28 MHz), 68040 (28 MHz) ou 68060 (42 MHz) ; mémoire Fast, **Zorro III
+  jusqu'à 256 Mo** ; horloge sauvegardée (MSM6242B) avec la mémoire Fast
+- **Carte graphique RTG** de 16 Mo (WinUAE 6) : Workbench en haute résolution avec Picasso96 ou P96
+- **CD32** (Akiko, manette à 7 boutons ; ▶ = Play sur écran tactile) : images `.iso`, ou `.cue` avec ses pistes `.bin`
+  (CD audio), lancées depuis leur vignette ; il faut les ROM de la console (Kickstart CD32 40.060 et son extension, ou la ROM d'1 Mo)
+- **MIDI** sur le port série (Web MIDI) : synthétiseur ou clavier branché à l'ordinateur ; bruit des lecteurs en option
+
+### Disquettes et disques durs
+
+- Disquettes `.adf`, `.dms`, `.adz`, `.ipf`, archives `.zip`, `.gz` et `.lha` ; DF0: à DF3:, insertion à chaud, disquettes vierges formatées
+- **Disques durs importés** `.hdf`/`.hdz` jusqu'à **2 Go** (512 Mo sur téléphone et tablette), avec table de partitions (RDB)
+  ou image d'une seule partition FFS/OFS, complétée automatiquement pour démarrer ; rangés par morceaux de 8 Mo, seuls
+  ceux que l'Amiga modifie sont réenregistrés. **Nouveau** crée un disque partitionné et formaté, prêt pour le Workbench
+- **Disques durs lus sur place**, sans limite de taille, jusqu'à 12 (voir plus bas)
+- **Copier des fichiers sur un disque dur** (Amiga éteint, *Fichiers…*) : fichiers, dossiers, archives `.lha`/`.zip`
+  décompressées au passage ; copie de vos Kickstart dans `Devs:Kickstarts` sous les noms attendus par WHDLoad.
+  Partitions OFS et FFS (DOS\0 à DOS\3)
+
+### Sauvegardes, profils et configurations
+
 - **Sauvegardes d'état** : 4 emplacements par jeu, avec vignette ; Ctrl+Maj+S / Ctrl+Maj+R
-- **Profils par disque** : modèle (A1200/A500), cycle exact, vitesse, carte accélératrice, mémoire Fast, PAL/NTSC, joystick, lecteurs
-- **Carte accélératrice** au choix : 68030 + FPU 68882 (28 MHz), 68040 (28 MHz) ou 68060 (42 MHz) ; même le 68060 tient
-  largement le temps réel (le cœur est environ 4 fois plus rapide qu'avant sur ces cartes)
-- Horloge sauvegardée (MSM6242B) avec la mémoire Fast, comme une carte trappe ; bruit des lecteurs en option
-- Kickstart Amiga Forever chiffrés avec `rom.key`
-- Clavier A1200 à l'écran (AZERTY ou QWERTY), souris tactile, manette USB, touches Amiga
-- Saut d'images automatique, centrage de l'image, effet moniteur, capture
-- Plein écran : on en sort avec Échap (deux fois si la souris est capturée), le bouton *Quitter le plein écran* qui apparaît en haut à droite quand on bouge la souris ou touche l'écran, ou le geste retour sur téléphone.
-  Sur téléphone, il passe en paysage ; la barre de touches se cache au bout de 4 s (une touche sur l'écran la rappelle) ;
-  **Pleine largeur** étire l'image sur toute la largeur (choix gardé)
-- **Deux cœurs** (Configuration → Processeur et FPU) : WinUAE 6 (par défaut) ou PUAE ; avec WinUAE 6, modèles A600, A3000, A4000, CDTV,
-  chipset au choix, **carte graphique RTG** de 16 Mo (Workbench en haute résolution avec Picasso96/P96), mémoire Fast Zorro III jusqu'à 256 Mo,
-  **MIDI** sur le port série (Web MIDI), émulation dans un fil séparé
-- **Configurations** nommées : tous les réglages et les disques branchés, chargés d'un coup ; *Exporter tout…* les range dans un
-  fichier `.json` (autre appareil, sauvegarde), *Importer…* le relit, ainsi que les `.uae` de WinUAE et d'Amiberry ; *Exporter en .uae*
-- **Gros disques lus sur place** (voir plus bas) : jusqu'à 12 disques sans les importer, pour des collections comme AGS
+- **Profils par disque** : modèle, cycle exact, vitesse, carte accélératrice, mémoire, PAL/NTSC, joystick, lecteurs
+- **Configurations** nommées : tous les réglages et les disques branchés, chargés d'un coup ; *Exporter tout…* les range
+  dans un fichier `.json` (autre appareil, sauvegarde), *Importer…* le relit, ainsi que les `.uae` de WinUAE et
+  d'Amiberry ; *Exporter en .uae*
+- **Changer d'appareil** : *Exporter tout…* (Bibliothèque) range tout dans un seul fichier `.tar` (disquettes, disques
+  durs, Kickstart, jeux WHDLoad, sauvegardes) ; *Importer…* sur l'autre appareil
+
+### Affichage et commandes
+
+- Habillage selon le modèle (Workbench 3.1 pour l'A1200, Workbench 1.3 pour l'A500), effet moniteur, centrage de l'image,
+  saut d'images automatique, capture d'écran
+- **Plein écran** : sur téléphone, il passe en paysage ; la barre de touches (clavier, joystick, Espace, Entrée, Échap,
+  F1, F2) se cache au bout de 4 s ; **Pleine largeur** étire l'image sur toute la largeur. On en sort avec Échap, le
+  bouton *Quitter le plein écran* ou le geste retour
+- Clavier A1200 à l'écran (AZERTY ou QWERTY), souris tactile, joystick tactile, manette USB, touches Amiga
 
 ## Jeux WHDLoad
 

@@ -604,7 +604,7 @@ body:not(.is-touch) [data-vjoy]{display:none}
 .tube > #vkbd{position:absolute;left:0;right:0;bottom:0;z-index:7;margin:0;opacity:.94}""")
 rep("/* Profil par disque */", (APP / "touchctl-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 rep('''      <h3>Écran tactile</h3>''', '''      <h3>Jouer sur écran tactile</h3>
-      <p>Le bouton <b>Joystick</b> (sous l'écran, ou dans la barre du plein écran) pose un joystick sur l'écran : le manche à gauche, <b>FEU</b> et un deuxième bouton à droite ; il commande le port joystick de l'Amiga, même en plein écran. En plein écran, une barre en haut à gauche donne aussi le <b>Clavier</b> complet, Espace, Entrée, Échap, F1 et F2, souvent demandés pour lancer un jeu.</p>
+      <p>Le bouton <b>Joystick</b> (sous l'écran, ou dans la barre du plein écran) pose un joystick sur l'écran : le manche à gauche, <b>FEU</b> et un deuxième bouton à droite ; il commande le port joystick de l'Amiga, même en plein écran. En plein écran, une barre en haut à gauche donne aussi le <b>Clavier</b> complet, Espace, Entrée, Échap, F1 et F2, souvent demandés pour lancer un jeu ; elle se cache au bout de 4 secondes (touchez l'écran pour la rappeler). Sur téléphone, le plein écran passe en paysage, et <b>Pleine largeur</b> étire l'image sur toute la largeur (un second appui revient aux proportions de l'Amiga).</p>
       <h3>Écran tactile</h3>''')
 
 # Joystick tactile : zone morte réglable, disposition gaucher, transparence, vibration
@@ -678,7 +678,10 @@ rep('<button class="gad" id="libImport">Ajouter des fichiers…</button>', '''<b
 rep("/* Profil par disque */", (APP / "library-io-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 rep("<li>Sous DH0:, cliquez sur <b>Nouveau</b> et choisissez une taille.</li>", "<li>Sous DH0:, cliquez sur <b>Nouveau</b> et choisissez une taille. DH1: à DH3: accueillent d'autres disques, pour vos jeux ou vos données.</li>")
 rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Plusieurs disques durs</h3>
-      <p>Jusqu'à quatre disques : <b>DH0:</b> et <b>DH1:</b> sur le contrôleur IDE de l'A1200 (maître et esclave), <b>DH2:</b> et <b>DH3:</b> par le pilote de disque d'UAE (uaehf.device), reconnu par tous les Kickstart. Chaque unité a son panneau sous l'écran, à côté des lecteurs de disquettes : <b>Nouveau</b> y crée un disque (sa partition prend le nom de l'unité), <b>Choisir…</b> en importe un. Dans la Bibliothèque, les boutons <b>DH0:</b> à <b>DH3:</b> branchent un disque déjà rangé ; un disque ne peut être branché qu'à un endroit. Les disques se branchent Amiga éteint. L'Amiga démarre sur DH0:. Si deux disques ont une partition du même nom (souvent DH0), celle du second est renommée au démarrage.</p>
+      <p>Quatre disques importés, et jusqu'à douze avec les disques lus sur place (voir ci-dessous) : <b>DH0:</b> et <b>DH1:</b> sur le contrôleur IDE de l'A1200 (maître et esclave), <b>DH2:</b> et <b>DH3:</b> par le pilote de disque d'UAE (uaehf.device), reconnu par tous les Kickstart. Chaque unité a son panneau sous l'écran, à côté des lecteurs de disquettes : <b>Nouveau</b> y crée un disque (sa partition prend le nom de l'unité), <b>Choisir…</b> en importe un. Dans la Bibliothèque, les boutons <b>DH0:</b> à <b>DH3:</b> branchent un disque déjà rangé ; un disque ne peut être branché qu'à un endroit. Les disques se branchent Amiga éteint. L'Amiga démarre sur DH0:. Si deux disques ont une partition du même nom (souvent DH0), celle du second est renommée au démarrage.</p>
+      <h3>Gros disques lus sur place (AGS…)</h3>
+      <p>Avec le cœur WinUAE 6, <b>Sur place…</b> branche un fichier .hdf <b>sans l'importer</b> : l'Amiga en lit les blocs au fur et à mesure, directement dans le fichier de l'appareil, sans limite de taille ni copie dans le navigateur. Le panneau <b>DH4: et suivants</b> en branche jusqu'à 8 de plus, choisis d'un coup. <b>Vos fichiers ne sont jamais modifiés</b> : ce que l'Amiga écrit (favoris, réglages, fichiers créés) est gardé dans le navigateur et réappliqué à l'allumage suivant (case pour le désactiver, bouton <b>Effacer…</b>) ; un fichier modifié ailleurs (WinUAE…) ne reçoit pas d'anciennes modifications. Le volume <b>SHARED:</b> intégré reçoit les sauvegardes des jeux d'AGS. Éteindre puis Démarrer garde les disques branchés (3 fois sur téléphone, 5 sur ordinateur, puis la page se recharge pour rendre la mémoire) ; après un rechargement, le navigateur ne redonne pas l'accès aux fichiers : <b>Rebrancher les disques sur place</b> les remet tous à leur place en un seul choix, chacun reconnu par son nom et sa taille. <b>Réinitialiser</b> redémarre sans rien rebrancher. Les fichiers doivent être sur l'appareil, pas dans un dossier en ligne.</p>
+      <p><b>AGS 3.0 sur téléphone</b> : Amiga 1200, WinUAE 6, Kickstart 3.1, carte 68030, 8 Mo de Fast et 64 Mo de Zorro III. Workbench.hdf sur <b>DH2:</b> (sur l'IDE, son démarrage reste sur un écran noir), Work.hdf sur DH3:, les autres disques d'AGS dans DH4: et suivants, DH0: et DH1: vides. Puis Configurations → Enregistrer.</p>
       <h3>Changer d'appareil</h3>
       <p>Dans la Bibliothèque, <b>Exporter tout…</b> enregistre tout dans un seul fichier .tar : disquettes, disques durs, Kickstart, jeux WHDLoad, sauvegardes d'état et de jeux. Sur l'autre appareil, <b>Importer…</b> (ou glissez le fichier sur la page) les ajoute ; ce qui y est déjà et plus récent est gardé. Le fichier reste lisible par 7-Zip ou tar.</p>
       <h3>Copier des fichiers sur le disque dur</h3>''')
@@ -796,7 +799,7 @@ rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>A60
       <h3>Copier des fichiers sur le disque dur</h3>''')
 
 rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Configurations, chipset et commandes</h3>
-      <p>Dans l'interface (F12) : <b>Configurations</b> enregistre tous les réglages sous un nom et les recharge d'un clic ; l'export .uae s'ouvre dans WinUAE ou Amiberry, et l'import lit leurs fichiers (disquettes, disques et Kickstart retrouvés dans la Bibliothèque par leur nom). <b>Chipset</b> choisit OCS, ECS ou AGA (WinUAE 6), le blitter et les collisions ; <b>Mémoire</b> la Chip et la Slow. <b>Entrées</b> change les touches du joystick au clavier et le rôle de chaque bouton de la manette (bouton, direction ou touche du clavier), pour tous les jeux ou pour le jeu en place seulement. Pour jouer <b>à deux</b>, choisissez « 2 joueurs » dans Entrées : la première manette branchée garde le port joystick, la deuxième (ou le clavier, en ZQSD) prend le port de la souris.</p>
+      <p>Dans l'interface (F12) : <b>Configurations</b> enregistre tous les réglages et les disques branchés sous un nom et les recharge d'un clic (les disques lus sur place sont alors à rebrancher en un seul choix) ; <b>Exporter tout…</b> les range dans un fichier .json, à réimporter ici ou sur un autre appareil ; l'export .uae s'ouvre dans WinUAE ou Amiberry, et l'import lit leurs fichiers (disquettes, disques et Kickstart retrouvés dans la Bibliothèque par leur nom). <b>Chipset</b> choisit OCS, ECS ou AGA (WinUAE 6), le blitter et les collisions ; <b>Mémoire</b> la Chip et la Slow. <b>Entrées</b> change les touches du joystick au clavier et le rôle de chaque bouton de la manette (bouton, direction ou touche du clavier), pour tous les jeux ou pour le jeu en place seulement. Pour jouer <b>à deux</b>, choisissez « 2 joueurs » dans Entrées : la première manette branchée garde le port joystick, la deuxième (ou le clavier, en ZQSD) prend le port de la souris.</p>
       <h3>Copier des fichiers sur le disque dur</h3>''')
 
 # Interface façon Amiberry 8 (en dernier : elle reprend les éléments mis en place par les autres modules)
@@ -824,6 +827,27 @@ rep("/* Profil par disque */", (APP / "ux-puae.js").read_text(encoding="utf-8") 
 rep("/* Profil par disque */", (APP / "games-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 # Disques durs lus sur place, sans import (WinUAE 6)
 rep("/* Profil par disque */", (APP / "lazyhd-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+# Aide rangée par thèmes, avec recherche (en dernier : elle reprend les rubriques posées par tous les modules)
+rep("/* Profil par disque */", (APP / "helpux-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+rep("</style>", """.help-ui{display:flex;flex-direction:column;gap:12px}
+.help-search{font:inherit;font-size:16px;padding:10px 12px;border:2px solid;border-color:var(--wb-dark,#555) var(--wb-light,#fff) var(--wb-light,#fff) var(--wb-dark,#555);background:#fff;color:#000;width:100%;box-sizing:border-box}
+.help-tasks,.help-chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.help-label{font-weight:700;margin-right:4px}
+.help-task,.help-chip{font:inherit;font-size:14px;cursor:pointer;padding:8px 12px;border-radius:18px;border:1px solid rgba(0,0,0,.35);background:rgba(255,255,255,.75);color:#123}
+.help-task{background:#2f6db0;color:#fff;border-color:#24548a}
+.help-task:hover,.help-chip:hover{filter:brightness(1.08)}
+.help-group h2{font-size:17px;margin:14px 0 6px;padding-bottom:4px;border-bottom:2px solid rgba(0,0,0,.2)}
+.help-sec{border:1px solid rgba(0,0,0,.18);border-radius:8px;margin:6px 0;background:rgba(255,255,255,.55)}
+.help-sec>summary{cursor:pointer;padding:10px 12px;font-weight:700;list-style:none;display:flex;align-items:center;gap:8px}
+.help-sec>summary::-webkit-details-marker{display:none}
+.help-sec>summary::before{content:"▸";transition:transform .15s;display:inline-block}
+.help-sec[open]>summary::before{transform:rotate(90deg)}
+.help-sec[open]>summary{border-bottom:1px solid rgba(0,0,0,.12)}
+.help-txt{padding:4px 14px 10px;line-height:1.5}
+.help-txt p{margin:8px 0}
+.help-none{font-style:italic}
+@media (max-width:760px){.help-task,.help-chip{font-size:13px;padding:6px 10px}.help-search{font-size:15px;padding:8px 10px}}
+</style>""")
 rep("</style>", (APP / "ux-puae.css").read_text(encoding="utf-8") + "</style>")
 
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)

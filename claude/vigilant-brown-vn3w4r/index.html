@@ -769,7 +769,7 @@ body.is-off #btnTurbo{display:none!important}
     Kickstart de secours : AROS, version d'août 2026 (AROS Public License). Les ROM Kickstart et disquettes Workbench d'origine ne sont pas fournies : importez les vôtres.
     Vos fichiers restent dans ce navigateur (stockage local) et ne sont envoyés nulle part.
     <br><a href="sae/">Ancienne version (cœur SAE)</a>, conservée pour comparer : elle partage la même Bibliothèque.
-    <br><b>Version du site : 21/10/2026 01:19 (ca75a2d)</b> (heure de Paris).
+    <br><b>Version du site : 21/10/2026 08:06 (2fcd498)</b> (heure de Paris).
   </p>
 </main>
 
@@ -1336,10 +1336,27 @@ function loadScript(src) {
     document.head.appendChild(el);
   });
 }
+/* Code du cœur WinUAE 6 compilé une seule fois par page : rallumer sans recharger crée un nouveau module, qui
+   reprend ce code au lieu de recompiler les 28 Mo du .wasm (chaque compilation garderait une centaine de Mo
+   jusqu'au rechargement de la page) */
+let ambWasm = null;
+function ambCompiled() {
+  if (!ambWasm) ambWasm = WebAssembly.compileStreaming(fetch("amiberry.wasm"))
+    .catch(() => fetch("amiberry.wasm").then(r => { if (!r.ok) throw new Error("amiberry.wasm : " + r.status); return r.arrayBuffer(); }).then(b => WebAssembly.compile(b)))
+    .catch(e => { ambWasm = null; throw e; });
+  return ambWasm;
+}
 async function coreFactory(core) {
   if (core !== "winuae6") return window.createPuae;
   if (!window.createAmiberry) await loadScript("amiberry.js");
-  return window.createAmiberry;
+  return opts => new Promise((resolve, reject) => {
+    window.createAmiberry(Object.assign({}, opts, {
+      instantiateWasm(imports, done) {
+        ambCompiled().then(mod => WebAssembly.instantiate(mod, imports).then(inst => done(inst, mod))).catch(reject);
+        return {};
+      }
+    })).then(resolve, reject);
+  });
 }
 /* Clavier pour WinUAE 6 : mêmes touches que sous PUAE (Insert et Menu = Help, Page préc./suiv. et Ctrl droit =
    Amiga gauche/droite, Origine/Fin = parenthèses du pavé numérique), traduites vers celles qu'attend Amiberry
@@ -1385,10 +1402,8 @@ function amberryLines(model, key, e = E) {
   return l;
 }
 
-async function powerOn() {
-  if (running || starting) return;
-  /* Le cœur ne se rallume pas dans la même page : on recharge et on rallume aussitôt. */
-  if (machine) {
+/* Rallumer en rechargeant la page (cœur PUAE, ou si le nouveau cœur WinUAE 6 n'a pas pu être créé) */
+function reloadToStart(resume) {
     /* Disques sur place : le rechargement fait perdre l'accès à leurs fichiers ; pas d'allumage sans eux, la page
        dit lesquels rebrancher */
     const lazyNames = [...HD_TAGS.filter(t => mounted[t] && String(mounted[t].id).startsWith("lazy:") && lazyFiles[t]).map(t => t.toUpperCase() + ": " + lazyFiles[t].name),
@@ -1398,8 +1413,23 @@ async function powerOn() {
     if (whdGame) sessionStorage.setItem("a1200.whd", whdGame.id);
     if (instJob) sessionStorage.setItem("a1200.inst", instJob.recId);
     if (cdGame) sessionStorage.setItem("a1200.cd", cdGame.id);
-    if (pendingResume) sessionStorage.setItem("a1200.resume", pendingResume.id);
-    location.reload(); return;
+    if (resume || pendingResume) sessionStorage.setItem("a1200.resume", (resume || pendingResume).id);
+    location.reload();
+}
+/* Rallumages dans la même page : avec l'émulation dans un fil séparé, le fil du son du navigateur garde la mémoire
+   d'un cœur éteint (une centaine de Mo) jusqu'au rechargement de la page ; au-delà de quelques rallumages, on
+   recharge pour la rendre */
+let inPageRestarts = 0;
+const inPageRestartsMax = () => isTouch ? 3 : 5;
+async function powerOn() {
+  if (running || starting) return;
+  /* Rallumage : le cœur WinUAE 6 éteint est détruit (fils arrêtés) et un nouveau est créé dans la même page, sans
+     perdre l'accès aux disques sur place. Le cœur PUAE ne sait pas s'arrêter ainsi : on recharge la page et on
+     rallume aussitôt. */
+  let restarted = false;
+  if (machine) {
+    if (machine.M && machine.M.terminateAllThreads && inPageRestarts < inPageRestartsMax()) { machine.destroy(); machine = null; restarted = true; inPageRestarts++; }
+    else return reloadToStart();
   }
   if (!window.crossOriginIsolated) { toast("La page doit être rechargée une fois pour activer l'émulateur (isolation du navigateur).", true); return; }
   starting = true; setPowerUi("starting");
@@ -1692,6 +1722,8 @@ async function powerOn() {
     if (resume) await applyState(resume, true);
   } catch (e) {
     console.error(e); starting = false; setPowerUi("off");
+    /* Nouveau cœur impossible à créer dans la page (mémoire de l'appareil) : rallumage par rechargement */
+    if (restarted && !running) { machine = null; return reloadToStart(pendingResume); }
     const msg = e && e.message ? e.message : String(e);
     if (/fetching of the wasm|failed to fetch|networkerror/i.test(msg))
       toast("Démarrage impossible : le cœur " + (E.core === "winuae6" ? "WinUAE 6" : "PUAE") + " n'a pas pu être téléchargé (connexion coupée, ou site en cours de mise à jour). Rechargez la page puis rallumez.", true);
@@ -5746,7 +5778,7 @@ let uxDrivesRefresh = () => {};
   if (body && !body.querySelector(".ux-keys")) {
     const k = s => '<span class="kbd">' + s + "</span>";
     const sec = document.createElement("div"); sec.className = "ux-keys";
-    sec.innerHTML = '<p class="hint" id="siteVersion">Version du site : 21/10/2026 01:19 (ca75a2d) (heure de Paris). Après une mise à jour, rechargez la page : ce numéro doit changer.</p>' + "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause, <b>Turbo</b> (chargements accélérés, sans le son). <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
+    sec.innerHTML = '<p class="hint" id="siteVersion">Version du site : 21/10/2026 08:06 (2fcd498) (heure de Paris). Après une mise à jour, rechargez la page : ce numéro doit changer.</p>' + "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause, <b>Turbo</b> (chargements accélérés, sans le son). <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
       + "<h3>Quatre lecteurs de disquettes</h3><p>DF0: (interne) et trois lecteurs externes, DF1: à DF3: (DF2: et DF3: se déplient sous les lecteurs). Pour un jeu sur plusieurs disquettes, choisissez-les ou glissez-les <b>ensemble</b> (Insérer…, Ouvrir un fichier…, ou une archive .zip) : Disk 1 va dans DF0:, Disk 2 dans DF1:, etc., dans l'ordre des noms. DF2: et DF3: existent dès qu'une disquette y est placée à l'allumage ; sinon l'Amiga n'a que deux lecteurs, ce que certains jeux préfèrent. Les jeux qui savent lire plusieurs lecteurs ne demandent alors plus de changer de disquette. Les disquettes d'un même jeu (« Disk 1 », « Disk 2 »…) n'ont qu'une vignette à l'accueil, qui démarre sur la première ; pendant la partie, le bouton <b>Disquette suivante</b> (sous l'écran, et dans la barre du plein écran) met la suivante dans DF0:.</p>"
       + "<h3>Raccourcis clavier</h3><p>" + k("F12") + " ouvre ou ferme la Configuration (l'Amiga se met en pause). "
       + k("Ctrl") + "+" + k("Maj") + "+" + k("S") + " sauvegarde la partie dans l'emplacement 1, " + k("Ctrl") + "+" + k("Maj") + "+" + k("R") + " la reprend. " + k("Ctrl") + "+" + k("Maj") + "+" + k("→") + " active ou arrête le Turbo. "

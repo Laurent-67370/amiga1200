@@ -75,6 +75,7 @@ em++ -pthread -fwasm-exceptions -sSUPPORT_LONGJMP=wasm -O3 -sPTHREAD_POOL_SIZE=1
   -sMODULARIZE=1 -sEXPORT_NAME=createAmiberry -sENVIRONMENT=web,worker -sFORCE_FILESYSTEM=1 \
   -sEXPORTED_FUNCTIONS="$EXPORTS" \
   -sEXPORTED_RUNTIME_METHODS='["FS","UTF8ToString","stringToNewUTF8","setValue","getValue","HEAPU8","HEAP16","HEAPU32","HEAPF32"]' \
+  --post-js "$HERE/amb_post.js" \
   -Wl,--wrap=fopen frontend.o amb_glue.o lazy_disk.o libco_pthread.o z_*.o @objs.txt -o amiberry.js
 
 # ROM AROS libres pour le banc d'essai

@@ -515,6 +515,24 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
   .ab-pane{padding:10px 6px}
   .ab-btn{min-width:0;flex:1 1 auto}
 }
+.help-ui{display:flex;flex-direction:column;gap:12px}
+.help-search{font:inherit;font-size:16px;padding:10px 12px;border:2px solid;border-color:var(--wb-dark,#555) var(--wb-light,#fff) var(--wb-light,#fff) var(--wb-dark,#555);background:#fff;color:#000;width:100%;box-sizing:border-box}
+.help-tasks,.help-chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.help-label{font-weight:700;margin-right:4px}
+.help-task,.help-chip{font:inherit;font-size:14px;cursor:pointer;padding:8px 12px;border-radius:18px;border:1px solid rgba(0,0,0,.35);background:rgba(255,255,255,.75);color:#123}
+.help-task{background:#2f6db0;color:#fff;border-color:#24548a}
+.help-task:hover,.help-chip:hover{filter:brightness(1.08)}
+.help-group h2{font-size:17px;margin:14px 0 6px;padding-bottom:4px;border-bottom:2px solid rgba(0,0,0,.2)}
+.help-sec{border:1px solid rgba(0,0,0,.18);border-radius:8px;margin:6px 0;background:rgba(255,255,255,.55)}
+.help-sec>summary{cursor:pointer;padding:10px 12px;font-weight:700;list-style:none;display:flex;align-items:center;gap:8px}
+.help-sec>summary::-webkit-details-marker{display:none}
+.help-sec>summary::before{content:"▸";transition:transform .15s;display:inline-block}
+.help-sec[open]>summary::before{transform:rotate(90deg)}
+.help-sec[open]>summary{border-bottom:1px solid rgba(0,0,0,.12)}
+.help-txt{padding:4px 14px 10px;line-height:1.5}
+.help-txt p{margin:8px 0}
+.help-none{font-style:italic}
+@media (max-width:760px){.help-task,.help-chip{font-size:13px;padding:6px 10px}.help-search{font-size:15px;padding:8px 10px}}
 /* ---------- Navigation : barre de commandes en groupes ---------- */
 .toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 0}
 .toolbar .tb-group{display:flex;flex-wrap:wrap;align-items:center;gap:5px;padding:0 8px}
@@ -769,7 +787,7 @@ body.is-off #btnTurbo{display:none!important}
     Kickstart de secours : AROS, version d'août 2026 (AROS Public License). Les ROM Kickstart et disquettes Workbench d'origine ne sont pas fournies : importez les vôtres.
     Vos fichiers restent dans ce navigateur (stockage local) et ne sont envoyés nulle part.
     <br><a href="sae/">Ancienne version (cœur SAE)</a>, conservée pour comparer : elle partage la même Bibliothèque.
-    <br><b>Version du site : 21/10/2026 16:52 (c6466bc)</b> (heure de Paris).
+    <br><b>Version du site : 21/10/2026 16:55 (c33be44)</b> (heure de Paris).
   </p>
 </main>
 
@@ -5781,7 +5799,7 @@ let uxDrivesRefresh = () => {};
   if (body && !body.querySelector(".ux-keys")) {
     const k = s => '<span class="kbd">' + s + "</span>";
     const sec = document.createElement("div"); sec.className = "ux-keys";
-    sec.innerHTML = '<p class="hint" id="siteVersion">Version du site : 21/10/2026 16:52 (c6466bc) (heure de Paris). Après une mise à jour, rechargez la page : ce numéro doit changer.</p>' + "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause, <b>Turbo</b> (chargements accélérés, sans le son). <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
+    sec.innerHTML = '<p class="hint" id="siteVersion">Version du site : 21/10/2026 16:55 (c33be44) (heure de Paris). Après une mise à jour, rechargez la page : ce numéro doit changer.</p>' + "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause, <b>Turbo</b> (chargements accélérés, sans le son). <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
       + "<h3>Quatre lecteurs de disquettes</h3><p>DF0: (interne) et trois lecteurs externes, DF1: à DF3: (DF2: et DF3: se déplient sous les lecteurs). Pour un jeu sur plusieurs disquettes, choisissez-les ou glissez-les <b>ensemble</b> (Insérer…, Ouvrir un fichier…, ou une archive .zip) : Disk 1 va dans DF0:, Disk 2 dans DF1:, etc., dans l'ordre des noms. DF2: et DF3: existent dès qu'une disquette y est placée à l'allumage ; sinon l'Amiga n'a que deux lecteurs, ce que certains jeux préfèrent. Les jeux qui savent lire plusieurs lecteurs ne demandent alors plus de changer de disquette. Les disquettes d'un même jeu (« Disk 1 », « Disk 2 »…) n'ont qu'une vignette à l'accueil, qui démarre sur la première ; pendant la partie, le bouton <b>Disquette suivante</b> (sous l'écran, et dans la barre du plein écran) met la suivante dans DF0:.</p>"
       + "<h3>Raccourcis clavier</h3><p>" + k("F12") + " ouvre ou ferme la Configuration (l'Amiga se met en pause). "
       + k("Ctrl") + "+" + k("Maj") + "+" + k("S") + " sauvegarde la partie dans l'emplacement 1, " + k("Ctrl") + "+" + k("Maj") + "+" + k("R") + " la reprend. " + k("Ctrl") + "+" + k("Maj") + "+" + k("→") + " active ou arrête le Turbo. "
@@ -6279,6 +6297,108 @@ for (const t of HD_TAGS) if (mounted[t] && String(mounted[t].id).startsWith("laz
     sessionStorage.removeItem("a1200.lazyagain");
     setTimeout(() => toast("Pour rallumer, la page s'est rechargée, et le navigateur ne redonne pas l'accès aux fichiers lus sur place. Touchez « Rebrancher les disques sur place » (Configuration → Disques durs/CD) et choisissez-les tous d'un coup (" + again + "), puis Démarrer. Pour redémarrer sans les perdre, utilisez plutôt Réinitialiser.", true), 800);
   } }
+
+/* =========================================================
+   Aide plus facile à parcourir
+   =========================================================
+   Les rubriques de l'aide (titres h3 posés par la page et par chaque module) sont rangées par thème, dans des
+   sections dépliables, avec une recherche, des boutons de thème et des raccourcis vers les questions les plus
+   courantes. Le texte lui-même ne change pas : il reste écrit à côté de chaque fonction. */
+const HELP_GROUPS = [
+  { id: "debut", icon: "🚀", title: "Bien démarrer", items: ["Démarrer comme un vrai A1200", "Où trouver quoi", "Installer l'application", "Installer sur disque dur", "Formats acceptés"] },
+  { id: "jouer", icon: "🎮", title: "Jouer", items: ["Jeux WHDLoad en un geste", "Réglages par jeu WHDLoad", "Programmes seuls et paquets d'installation WHDLoad", "Quatre lecteurs de disquettes", "Disquettes protégées (IPF, SCP)", "Sauvegardes d'état", "CD32", "Amiga 500"] },
+  { id: "disques", icon: "💾", title: "Disques durs et fichiers", items: ["Plusieurs disques durs", "Gros disques lus sur place (AGS…)", "Copier des fichiers sur le disque dur", "Enregistrement des disques", "Changer d'appareil"] },
+  { id: "commandes", icon: "🕹️", title: "Clavier, souris et tactile", items: ["Clavier et souris", "Raccourcis clavier", "Jouer sur écran tactile", "Écran tactile"] },
+  { id: "machine", icon: "⚙️", title: "Machine et réglages", items: ["Deux cœurs d'émulation", "Compatibilité et vitesse", "Configurations, chipset et commandes", "Workbench en haute résolution (RTG)", "A600, A3000, A4000 et CDTV", "MIDI"] }
+];
+/* Questions courantes : un bouton ouvre la bonne rubrique */
+const HELP_TASKS = [
+  ["Lancer un jeu WHDLoad (.lha)", "Jeux WHDLoad en un geste"],
+  ["Installer le Workbench", "Installer sur disque dur"],
+  ["AGS et gros disques .hdf", "Gros disques lus sur place (AGS…)"],
+  ["Jouer au doigt sur téléphone", "Jouer sur écran tactile"],
+  ["Sauvegarder ma partie", "Sauvegardes d'état"],
+  ["Passer sur un autre appareil", "Changer d'appareil"]
+];
+const helpNorm = t => String(t).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+function helpBuild() {
+  const body = $("#winHelp .body"); if (!body || body.querySelector(".help-ui")) return;
+  /* Rubriques existantes : un titre et ce qui le suit jusqu'au titre suivant */
+  const secs = new Map();
+  for (const h of [...body.querySelectorAll("h3")]) {
+    const parts = []; let n = h.nextElementSibling;
+    while (n && n.tagName !== "H3") { parts.push(n); n = n.nextElementSibling; }
+    secs.set(h.textContent.trim(), { h, parts });
+  }
+  if (!secs.size) return;
+  const version = body.querySelector("#siteVersion");
+  const ui = document.createElement("div"); ui.className = "help-ui";
+  ui.innerHTML = '<input type="search" class="help-search" placeholder="🔍 Rechercher dans l\'aide (ex. joystick, AGS, sauvegarde)…" aria-label="Rechercher dans l\'aide">'
+    + '<div class="help-tasks"><span class="help-label">Je veux…</span></div>'
+    + '<div class="help-chips"></div><div class="help-groups"></div><p class="help-none" hidden>Aucune rubrique ne correspond. Essayez un autre mot.</p>';
+  const tasks = ui.querySelector(".help-tasks"), chips = ui.querySelector(".help-chips"), groups = ui.querySelector(".help-groups");
+  const details = new Map();
+  const used = new Set();
+  const makeSec = (title, sec) => {
+    const d = document.createElement("details"); d.className = "help-sec";
+    const s = document.createElement("summary"); s.textContent = title; d.appendChild(s);
+    const c = document.createElement("div"); c.className = "help-txt";
+    for (const p of sec.parts) c.appendChild(p);
+    d.appendChild(c); sec.h.remove();
+    details.set(title, d); used.add(title);
+    return d;
+  };
+  const all = [...HELP_GROUPS, { id: "autres", icon: "📌", title: "Autres sujets", items: [] }];
+  for (const g of all) {
+    const titles = g.id === "autres" ? [...secs.keys()].filter(t => !used.has(t) && !HELP_GROUPS.some(x => x.items.includes(t))) : g.items.filter(t => secs.has(t));
+    if (!titles.length) continue;
+    const box = document.createElement("section"); box.className = "help-group"; box.id = "help-" + g.id;
+    const h = document.createElement("h2"); h.textContent = g.icon + " " + g.title; box.appendChild(h);
+    for (const t of titles) box.appendChild(makeSec(t, secs.get(t)));
+    groups.appendChild(box);
+    const chip = document.createElement("button"); chip.type = "button"; chip.className = "help-chip"; chip.textContent = g.icon + " " + g.title;
+    chip.onclick = () => { search.value = ""; filter(); box.scrollIntoView({ behavior: "smooth", block: "start" }); };
+    chips.appendChild(chip);
+  }
+  const openSec = title => {
+    const d = details.get(title); if (!d) return;
+    search.value = ""; filter();
+    d.open = true; d.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  for (const [label, title] of HELP_TASKS) {
+    if (!details.has(title)) continue;
+    const b = document.createElement("button"); b.type = "button"; b.className = "help-task"; b.textContent = label;
+    b.onclick = () => openSec(title); tasks.appendChild(b);
+  }
+  /* Recherche : rubriques dont le titre ou le texte contient tous les mots tapés, dépliées */
+  const search = ui.querySelector(".help-search"), none = ui.querySelector(".help-none");
+  const filter = () => {
+    const words = helpNorm(search.value).split(/\s+/).filter(Boolean);
+    let shown = 0;
+    for (const box of groups.children) {
+      let any = false;
+      for (const d of box.querySelectorAll(".help-sec")) {
+        const ok = !words.length || words.every(w => helpNorm(d.textContent).includes(w));
+        d.hidden = !ok; if (ok) { any = true; shown++; }
+        if (words.length) d.open = ok;
+      }
+      box.hidden = !any;
+    }
+    tasks.hidden = chips.hidden = words.length > 0;
+    none.hidden = shown > 0;
+  };
+  search.addEventListener("input", filter);
+  /* Ce qui reste hors rubriques (version du site…) garde sa place, en tête */
+  const leftovers = [...body.children].filter(n => n !== version && !n.matches(".ux-keys"));
+  const ux = body.querySelector(".ux-keys"); if (ux && !ux.children.length) ux.remove(); else if (ux) leftovers.push(ux);
+  body.textContent = "";
+  if (version) body.appendChild(version);
+  body.appendChild(ui);
+  for (const n of leftovers) if (n.textContent.trim()) groups.appendChild(n);
+}
+helpBuild();
+/* Panneau « Aide et à propos » de la Configuration : l'aide d'abord, les crédits ensuite */
+{ const p = typeof AB_PANELS !== "undefined" && AB_PANELS.find(x => x.id === "about"); if (p && p.hosts[0] === "about") p.hosts = ["help", "about"]; }
 
 /* Profil par disque */
 let profTarget = null;

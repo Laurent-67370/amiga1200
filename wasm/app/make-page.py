@@ -827,6 +827,27 @@ rep("/* Profil par disque */", (APP / "ux-puae.js").read_text(encoding="utf-8") 
 rep("/* Profil par disque */", (APP / "games-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 # Disques durs lus sur place, sans import (WinUAE 6)
 rep("/* Profil par disque */", (APP / "lazyhd-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+# Aide rangée par thèmes, avec recherche (en dernier : elle reprend les rubriques posées par tous les modules)
+rep("/* Profil par disque */", (APP / "helpux-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+rep("</style>", """.help-ui{display:flex;flex-direction:column;gap:12px}
+.help-search{font:inherit;font-size:16px;padding:10px 12px;border:2px solid;border-color:var(--wb-dark,#555) var(--wb-light,#fff) var(--wb-light,#fff) var(--wb-dark,#555);background:#fff;color:#000;width:100%;box-sizing:border-box}
+.help-tasks,.help-chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.help-label{font-weight:700;margin-right:4px}
+.help-task,.help-chip{font:inherit;font-size:14px;cursor:pointer;padding:8px 12px;border-radius:18px;border:1px solid rgba(0,0,0,.35);background:rgba(255,255,255,.75);color:#123}
+.help-task{background:#2f6db0;color:#fff;border-color:#24548a}
+.help-task:hover,.help-chip:hover{filter:brightness(1.08)}
+.help-group h2{font-size:17px;margin:14px 0 6px;padding-bottom:4px;border-bottom:2px solid rgba(0,0,0,.2)}
+.help-sec{border:1px solid rgba(0,0,0,.18);border-radius:8px;margin:6px 0;background:rgba(255,255,255,.55)}
+.help-sec>summary{cursor:pointer;padding:10px 12px;font-weight:700;list-style:none;display:flex;align-items:center;gap:8px}
+.help-sec>summary::-webkit-details-marker{display:none}
+.help-sec>summary::before{content:"▸";transition:transform .15s;display:inline-block}
+.help-sec[open]>summary::before{transform:rotate(90deg)}
+.help-sec[open]>summary{border-bottom:1px solid rgba(0,0,0,.12)}
+.help-txt{padding:4px 14px 10px;line-height:1.5}
+.help-txt p{margin:8px 0}
+.help-none{font-style:italic}
+@media (max-width:760px){.help-task,.help-chip{font-size:13px;padding:6px 10px}.help-search{font-size:15px;padding:8px 10px}}
+</style>""")
 rep("</style>", (APP / "ux-puae.css").read_text(encoding="utf-8") + "</style>")
 
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)

@@ -1,8 +1,9 @@
 # Émulateur Amiga 1200
 
 Un Amiga 1200 complet dans le navigateur : processeur 68EC020, chipset AGA, 2 Mo de Chip RAM,
-contrôleur IDE Gayle, deux lecteurs de disquettes. Le moteur est celui de WinUAE ([PUAE](https://github.com/libretro/libretro-uae)),
-compilé en WebAssembly.
+contrôleur IDE Gayle, deux lecteurs de disquettes. Deux moteurs, compilés en WebAssembly :
+**WinUAE 6** (par défaut, le cœur libretro d'[Amiberry](https://github.com/BlitterStudio/amiberry)) et
+**PUAE** (base WinUAE 5, [libretro-uae](https://github.com/libretro/libretro-uae)), plus léger pour les appareils anciens.
 
 **https://laurent-67370.github.io/amiga1200/**
 
@@ -72,7 +73,15 @@ La Bibliothèque est propre à chaque navigateur : importez votre Kickstart et v
 - Kickstart Amiga Forever chiffrés avec `rom.key`
 - Clavier A1200 à l'écran (AZERTY ou QWERTY), souris tactile, manette USB, touches Amiga
 - Saut d'images automatique, centrage de l'image, effet moniteur, capture
-- Plein écran : on en sort avec Échap (deux fois si la souris est capturée), le bouton *Quitter le plein écran* qui apparaît en haut à droite quand on bouge la souris ou touche l'écran, ou le geste retour sur téléphone
+- Plein écran : on en sort avec Échap (deux fois si la souris est capturée), le bouton *Quitter le plein écran* qui apparaît en haut à droite quand on bouge la souris ou touche l'écran, ou le geste retour sur téléphone.
+  Sur téléphone, il passe en paysage ; la barre de touches se cache au bout de 4 s (une touche sur l'écran la rappelle) ;
+  **Pleine largeur** étire l'image sur toute la largeur (choix gardé)
+- **Deux cœurs** (Configuration → Processeur et FPU) : WinUAE 6 (par défaut) ou PUAE ; avec WinUAE 6, modèles A600, A3000, A4000, CDTV,
+  chipset au choix, **carte graphique RTG** de 16 Mo (Workbench en haute résolution avec Picasso96/P96), mémoire Fast Zorro III jusqu'à 256 Mo,
+  **MIDI** sur le port série (Web MIDI), émulation dans un fil séparé
+- **Configurations** nommées : tous les réglages et les disques branchés, chargés d'un coup ; *Exporter tout…* les range dans un
+  fichier `.json` (autre appareil, sauvegarde), *Importer…* le relit, ainsi que les `.uae` de WinUAE et d'Amiberry ; *Exporter en .uae*
+- **Gros disques lus sur place** (voir plus bas) : jusqu'à 12 disques sans les importer, pour des collections comme AGS
 
 ## Jeux WHDLoad
 
@@ -98,6 +107,35 @@ sur un petit volume qui contient WHDLoad, monte l'archive en lecture seule et la
 4. **Fichiers…** → dossier `Jeux` : vos jeux `.lha`, décompressés directement.
 5. Réglages : 8 Mo de Fast. Démarrez sur le Workbench, ouvrez Jeux et double-cliquez sur l'icône du jeu. F10 pour quitter.
 
+## Gros disques lus sur place (AGS…)
+
+Avec le cœur WinUAE 6, le bouton **Sur place…** d'un disque dur branche un fichier `.hdf` **sans l'importer** : le cœur en lit
+les blocs au fur et à mesure, directement dans le fichier de l'appareil (ordinateur, Android). Pas de limite de taille ni
+de copie dans le navigateur : c'est ce qui permet de lancer une collection comme **AGS** (Amiga Game Selector), faite de
+disques de 4 Go.
+
+- **12 disques** : DH0: et DH1: (IDE), DH2: et DH3: (disques UAE), et **DH4: et suivants** (jusqu'à 8 disques UAE de plus,
+  plusieurs fichiers choisis d'un coup).
+- **Tes fichiers ne sont jamais modifiés.** Ce que l'Amiga écrit (favoris, réglages, fichiers créés) est gardé dans le
+  navigateur par blocs de 4 Ko et réappliqué à l'allumage suivant ; un fichier modifié ailleurs entre-temps (WinUAE…) ne
+  reçoit pas d'anciens blocs. Case pour le désactiver et bouton *Effacer…* dans le panneau « DH4: et suivants ».
+- **Volume `SHARED:` intégré** (case cochée par défaut) : AGS y range les sauvegardes des jeux (`SHARED:SaveGames`) ;
+  il est gardé dans le navigateur d'une séance à l'autre.
+- **Après un rechargement** (rallumer recharge la page), le navigateur ne redonne pas l'accès aux fichiers : leur disposition
+  est mémorisée, et **Rebrancher les disques sur place** les remet tous en place en un seul choix de fichiers, chacun reconnu
+  par son nom et sa taille. *Réinitialiser* redémarre l'Amiga sans rien rebrancher.
+- Pilotes de systèmes de fichiers (PFS3…) lus dans la table de partitions du disque, et prêtés aux disques qui n'en ont pas ;
+  partitions en double renommées, partitions « sans montage automatique » montées quand même (en mémoire).
+- Un compte rendu des lectures s'affiche 10 s après l'allumage (lectures, Mo lus, erreurs), pour vérifier que l'appareil lit bien le fichier.
+
+**AGS 3.0 (édition UAE) sur téléphone** :
+
+1. Configuration : Amiga 1200, WinUAE 6, Kickstart 3.1, carte 68030, 8 Mo de Fast et 64 Mo de Zorro III, carte RTG au choix.
+2. Disques durs/CD : **Workbench.hdf** sur **DH2:** (disque UAE, comme dans la configuration WinUAE d'AGS ; sur l'IDE, son
+   démarrage reste sur un écran noir), **Work.hdf** sur DH3:, et AGS_Drive, Games, Extra, Media, WHD_Demos… dans
+   **DH4: et suivants** ; laisser DH0: et DH1: vides. Les fichiers doivent être sur l'appareil (pas dans le nuage).
+3. **Démarrer**. Puis Configurations → Enregistrer, pour tout retrouver la fois suivante.
+
 ## Clavier et souris
 
 Le clavier suit la position physique des touches : choisissez le keymap `f` dans les Préférences Input du Workbench.
@@ -115,21 +153,26 @@ Inser = Help, Page préc. / Page suiv. = touches Amiga.
 ## Construire
 
 Tout est construit par la GitHub Action `.github/workflows/puae-wasm.yml` à chaque modification :
-le cœur PUAE (Emscripten), la page principale, l'ancienne version, un banc d'essai, puis la publication.
+les cœurs WinUAE 6 et PUAE et le convertisseur IPF (Emscripten), la page principale, l'ancienne version, des bancs d'essai,
+puis la publication. Chaque branche poussée est publiée dans `/<nom de la branche>/` pour les essais ; la version
+publiée s'affiche en bas de la page (date, heure de Paris, et numéro du commit).
 
 | Chemin | Contenu |
 |---|---|
 | `src/template.html` | Interface commune (écran, boîtier, lecteurs, Bibliothèque, réglages) |
 | `wasm/` | Version principale : frontal libretro (`frontend.c`), page (`app/` : moteur, médias, sauvegardes, accueil, copie de fichiers, commandes tactiles), fichiers web (`web/` : frontal JS, disques RDB/FFS, archives LhA, service worker, manifeste, icônes), compilation (`build.sh`) |
 | `vendor/puae/` | Cœur PUAE en sous-module, avec `wasm/patches/` |
+| `wasm-amiberry/` | Cœur WinUAE 6 (Amiberry, version figée, adaptée par `patches/`), colle libretro (`amb_glue.cpp`), disques lus sur place (`lazy_disk.cpp`, servi par `wasm/web/lazydisk-worker.js`), compilation (`build.sh`) |
+| `wasm-ipf/` | Convertisseur de disquettes IPF (module séparé) |
 | `vendor/sae/`, `build.py` | Ancienne version : cœur SAE, construit dans `sae/index.html` |
 | `vendor/aros/` | ROM AROS libres |
-| `index.html`, `puae.*`, `*.js`, `sae/` | Site publié (généré) |
+| `index.html`, `puae.*`, `amiberry.*`, `*.js`, `sae/` | Site publié (généré) |
 
 Détails techniques et historique du portage : `wasm/README.md`.
 
 ## Licences
 
+- Cœur WinUAE 6 (Amiberry, dérivé de WinUAE) : GNU GPL v3.
 - Cœur PUAE (libretro-uae, dérivé de WinUAE) et cœur SAE (R. Hausberger) : GNU GPL v2.
 - AROS : AROS Public License.
 - L'ensemble est distribué sous GNU GPL v2 (voir `LICENSE`).

@@ -121,9 +121,12 @@ disques de 4 Go.
   reçoit pas d'anciens blocs. Case pour le désactiver et bouton *Effacer…* dans le panneau « DH4: et suivants ».
 - **Volume `SHARED:` intégré** (case cochée par défaut) : AGS y range les sauvegardes des jeux (`SHARED:SaveGames`) ;
   il est gardé dans le navigateur d'une séance à l'autre.
-- **Après un rechargement** (rallumer recharge la page), le navigateur ne redonne pas l'accès aux fichiers : leur disposition
-  est mémorisée, et **Rebrancher les disques sur place** les remet tous en place en un seul choix de fichiers, chacun reconnu
-  par son nom et sa taille. *Réinitialiser* redémarre l'Amiga sans rien rebrancher.
+- **Éteindre puis Démarrer** ne recharge plus la page avec WinUAE 6 : les disques sur place restent branchés (jusqu'à
+  3 rallumages sur téléphone, 5 sur ordinateur ; ensuite la page se recharge une fois pour rendre la mémoire que le
+  navigateur garde pour le son).
+- **Après un rechargement**, le navigateur ne redonne pas l'accès aux fichiers : leur disposition est mémorisée, et
+  **Rebrancher les disques sur place** les remet tous en place en un seul choix de fichiers, chacun reconnu par son nom
+  et sa taille. *Réinitialiser* redémarre l'Amiga sans rien rebrancher.
 - Pilotes de systèmes de fichiers (PFS3…) lus dans la table de partitions du disque, et prêtés aux disques qui n'en ont pas ;
   partitions en double renommées, partitions « sans montage automatique » montées quand même (en mémoire).
 - Un compte rendu des lectures s'affiche 10 s après l'allumage (lectures, Mo lus, erreurs), pour vérifier que l'appareil lit bien le fichier.

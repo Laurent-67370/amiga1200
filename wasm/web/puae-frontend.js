@@ -46,11 +46,14 @@ class Ring extends AudioWorkletProcessor {
     this.min = sampleRate * 0.05; this.max = sampleRate * 0.15; this.target = this.min;
     this.started = false; this.under = 0; this.calm = 0; this.tick = 0;
     this.port.onmessage = e => {
+      /* Arrêt : le processeur lâche la mémoire du cœur (sinon elle resterait retenue par le fil du son) */
+      if (e.data === "stop") { this.h16 = this.ix = null; this.q = []; this.dead = true; return; }
       const b = e.data; this.q.push(b); this.tot += b.length / 2;
       while (this.q.length > 1 && this.tot - this.pos > Math.max(this.target * 2, this.target + sampleRate * 0.06)) { this.tot -= this.q.shift().length / 2; this.pos = 0; }
     };
   }
   process(_, outputs) {
+    if (this.dead) return false;
     if (this.h16) return this.direct(outputs);
     const L = outputs[0][0], R = outputs[0][1] || outputs[0][0], n = L.length;
     if (!this.started) {
@@ -312,11 +315,21 @@ export class PuaeMachine {
     this.running = false;
     if (this.threaded) this.M._fe_thread_stop();
     clearInterval(this._timer);
+    /* Le canal du worklet retient la machine (et la mémoire du cœur) tant qu'il a un écouteur : il est fermé */
+    if (this.node) {
+      const node = this.node, ac = this.ac; this.node = null; this.ac = null;
+      try { node.port.onmessage = null; node.port.postMessage("stop"); } catch (e) {}
+      setTimeout(() => { try { node.port.close(); node.disconnect(); } catch (e) {} try { ac && ac.close(); } catch (e) {} }, 300);
+    }
     if (this.ac) { try { this.ac.close(); } catch (e) {} this.ac = null; }
-    window.removeEventListener("keydown", this._onKey);
-    window.removeEventListener("keyup", this._onKey);
-    document.removeEventListener("mousemove", this._onMove);
+    if (this._listen) this._listen.abort();
     if (document.pointerLockElement === this.canvas) document.exitPointerLock();
+  }
+  /** Détruit le cœur éteint avant d'en créer un autre dans la même page : arrête tous ses fils (le module WinUAE 6
+      expose terminateAllThreads, voir wasm-amiberry/amb_post.js), pour que sa mémoire soit rendue. */
+  destroy() {
+    if (this.running) this.stop();
+    try { if (this.M.terminateAllThreads) this.M.terminateAllThreads(); } catch (e) { console.warn("fils du cœur non arrêtés", e); }
   }
   /** Date de dernière écriture d'un fichier (ms), pour repérer ce que l'Amiga a modifié. */
   /** Vide les tampons d'écriture du cœur : à appeler avant de relire un média. */
@@ -488,14 +501,18 @@ export class PuaeMachine {
       /* Un modificateur ajouté pour une touche est relâché avec elle */
       if (!down && !isMod && this._synth.size) { for (const c of this._synth) send(c, false); this._synth.clear(); }
     };
-    window.addEventListener("keydown", this._onKey);
-    window.addEventListener("keyup", this._onKey);
-    c.addEventListener("click", () => { if (document.pointerLockElement !== c && c.requestPointerLock) c.requestPointerLock(); });
+    /* Tous retirés à l'arrêt (stop) : un cœur éteint ne doit plus être retenu par le canevas, sinon sa mémoire
+       ne serait pas rendue quand un autre cœur est créé dans la même page */
+    this._listen = new AbortController();
+    const signal = this._listen.signal;
+    window.addEventListener("keydown", this._onKey, { signal });
+    window.addEventListener("keyup", this._onKey, { signal });
+    c.addEventListener("click", () => { if (document.pointerLockElement !== c && c.requestPointerLock) c.requestPointerLock(); }, { signal });
     this._onMove = e => { if (document.pointerLockElement === c) this.mouseMove(e.movementX, e.movementY); };
-    document.addEventListener("mousemove", this._onMove);
-    c.addEventListener("mousedown", e => { if (document.pointerLockElement === c) { this.mouseButton(e.button, true); e.preventDefault(); } });
-    c.addEventListener("mouseup", e => { if (document.pointerLockElement === c) { this.mouseButton(e.button, false); e.preventDefault(); } });
-    c.addEventListener("contextmenu", e => e.preventDefault());
+    document.addEventListener("mousemove", this._onMove, { signal });
+    c.addEventListener("mousedown", e => { if (document.pointerLockElement === c) { this.mouseButton(e.button, true); e.preventDefault(); } }, { signal });
+    c.addEventListener("mouseup", e => { if (document.pointerLockElement === c) { this.mouseButton(e.button, false); e.preventDefault(); } }, { signal });
+    c.addEventListener("contextmenu", e => e.preventDefault(), { signal });
   }
 
   /* ---------- disquettes, réinitialisation, états ---------- */

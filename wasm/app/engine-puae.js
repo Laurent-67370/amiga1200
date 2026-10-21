@@ -158,10 +158,27 @@ function loadScript(src) {
     document.head.appendChild(el);
   });
 }
+/* Code du cœur WinUAE 6 compilé une seule fois par page : rallumer sans recharger crée un nouveau module, qui
+   reprend ce code au lieu de recompiler les 28 Mo du .wasm (chaque compilation garderait une centaine de Mo
+   jusqu'au rechargement de la page) */
+let ambWasm = null;
+function ambCompiled() {
+  if (!ambWasm) ambWasm = WebAssembly.compileStreaming(fetch("amiberry.wasm"))
+    .catch(() => fetch("amiberry.wasm").then(r => { if (!r.ok) throw new Error("amiberry.wasm : " + r.status); return r.arrayBuffer(); }).then(b => WebAssembly.compile(b)))
+    .catch(e => { ambWasm = null; throw e; });
+  return ambWasm;
+}
 async function coreFactory(core) {
   if (core !== "winuae6") return window.createPuae;
   if (!window.createAmiberry) await loadScript("amiberry.js");
-  return window.createAmiberry;
+  return opts => new Promise((resolve, reject) => {
+    window.createAmiberry(Object.assign({}, opts, {
+      instantiateWasm(imports, done) {
+        ambCompiled().then(mod => WebAssembly.instantiate(mod, imports).then(inst => done(inst, mod))).catch(reject);
+        return {};
+      }
+    })).then(resolve, reject);
+  });
 }
 /* Clavier pour WinUAE 6 : mêmes touches que sous PUAE (Insert et Menu = Help, Page préc./suiv. et Ctrl droit =
    Amiga gauche/droite, Origine/Fin = parenthèses du pavé numérique), traduites vers celles qu'attend Amiberry
@@ -207,10 +224,8 @@ function amberryLines(model, key, e = E) {
   return l;
 }
 
-async function powerOn() {
-  if (running || starting) return;
-  /* Le cœur ne se rallume pas dans la même page : on recharge et on rallume aussitôt. */
-  if (machine) {
+/* Rallumer en rechargeant la page (cœur PUAE, ou si le nouveau cœur WinUAE 6 n'a pas pu être créé) */
+function reloadToStart(resume) {
     /* Disques sur place : le rechargement fait perdre l'accès à leurs fichiers ; pas d'allumage sans eux, la page
        dit lesquels rebrancher */
     const lazyNames = [...HD_TAGS.filter(t => mounted[t] && String(mounted[t].id).startsWith("lazy:") && lazyFiles[t]).map(t => t.toUpperCase() + ": " + lazyFiles[t].name),
@@ -220,8 +235,23 @@ async function powerOn() {
     if (whdGame) sessionStorage.setItem("a1200.whd", whdGame.id);
     if (instJob) sessionStorage.setItem("a1200.inst", instJob.recId);
     if (cdGame) sessionStorage.setItem("a1200.cd", cdGame.id);
-    if (pendingResume) sessionStorage.setItem("a1200.resume", pendingResume.id);
-    location.reload(); return;
+    if (resume || pendingResume) sessionStorage.setItem("a1200.resume", (resume || pendingResume).id);
+    location.reload();
+}
+/* Rallumages dans la même page : avec l'émulation dans un fil séparé, le fil du son du navigateur garde la mémoire
+   d'un cœur éteint (une centaine de Mo) jusqu'au rechargement de la page ; au-delà de quelques rallumages, on
+   recharge pour la rendre */
+let inPageRestarts = 0;
+const inPageRestartsMax = () => isTouch ? 3 : 5;
+async function powerOn() {
+  if (running || starting) return;
+  /* Rallumage : le cœur WinUAE 6 éteint est détruit (fils arrêtés) et un nouveau est créé dans la même page, sans
+     perdre l'accès aux disques sur place. Le cœur PUAE ne sait pas s'arrêter ainsi : on recharge la page et on
+     rallume aussitôt. */
+  let restarted = false;
+  if (machine) {
+    if (machine.M && machine.M.terminateAllThreads && inPageRestarts < inPageRestartsMax()) { machine.destroy(); machine = null; restarted = true; inPageRestarts++; }
+    else return reloadToStart();
   }
   if (!window.crossOriginIsolated) { toast("La page doit être rechargée une fois pour activer l'émulateur (isolation du navigateur).", true); return; }
   starting = true; setPowerUi("starting");
@@ -514,6 +544,8 @@ async function powerOn() {
     if (resume) await applyState(resume, true);
   } catch (e) {
     console.error(e); starting = false; setPowerUi("off");
+    /* Nouveau cœur impossible à créer dans la page (mémoire de l'appareil) : rallumage par rechargement */
+    if (restarted && !running) { machine = null; return reloadToStart(pendingResume); }
     const msg = e && e.message ? e.message : String(e);
     if (/fetching of the wasm|failed to fetch|networkerror/i.test(msg))
       toast("Démarrage impossible : le cœur " + (E.core === "winuae6" ? "WinUAE 6" : "PUAE") + " n'a pas pu être téléchargé (connexion coupée, ou site en cours de mise à jour). Rechargez la page puis rallumez.", true);

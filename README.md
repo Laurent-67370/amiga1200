@@ -21,7 +21,7 @@ configurations exportables, MIDI.
 
 Passer de l'une à l'autre : une configuration exportée en **.uae** (machine, mémoire, disques) se relit dans les
 quatre versions, et aussi dans WinUAE et Amiberry. Les applications Android, Mac et PC ont un bouton **Web** en haut
-de leur accueil qui mène ici ; Android et Mac ajoutent le **JIT**, que WebAssembly interdit au navigateur. Les
+de leur accueil qui mène ici, et la page web un bouton **Applications** (barre d'outils) qui mène à elles ; Android et Mac ajoutent le **JIT**, que WebAssembly interdit au navigateur. Les
 Kickstart et les disques restent à ajouter dans chaque version : ils ne sont jamais fournis ni envoyés nulle part.
 
 ## Points forts

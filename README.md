@@ -101,6 +101,10 @@ La Bibliothèque est propre à chaque navigateur : importez votre Kickstart et v
 - **Configurations** nommées : tous les réglages et les disques branchés, chargés d'un coup ; *Exporter tout…* les range
   dans un fichier `.json` (autre appareil, sauvegarde), *Importer…* le relit, ainsi que les `.uae` de WinUAE et
   d'Amiberry ; *Exporter en .uae*
+- **Ajouter sur un disque dur** (bouton *Fichiers…* du disque, Amiga éteint) : fichiers, dossiers, jeux WHDLoad `.lha`
+  et archives `.zip` décompressés, contenu des disquettes `.adf` (OFS et FFS, chacune dans un dossier à son nom avec son
+  icône) ; *Préparer le disque pour WHDLoad* copie WHDLoad dans C:, ses fichiers `.RTB` et vos Kickstart dans
+  Devs:Kickstarts.
 - **Scanner un dossier** (Bibliothèque, ou accueil) : un dossier choisi (Amiga Forever, clé USB…) est parcouru avec ses
   sous-dossiers ; Kickstart (reconnus par empreinte, ROM chiffrées d'Amiga Forever comprises), disquettes, jeux WHDLoad,
   disques durs, CD et configurations `.uae` sont reconnus par leur contenu. Un bilan dit ce qui est déjà là et quels

@@ -179,6 +179,50 @@ note = "Vos fichiers restent dans ce navigateur (stockage local) et ne sont envo
 rep(note, note + '\n    <br><a href="sae/">Ancienne version (cœur SAE)</a>, conservée pour comparer : elle partage la même Bibliothèque.'
     '\n    <br><b>Version du site : __BUILD__</b> (heure de Paris).')
 
+# Applications Android, Mac, Windows et Linux : bouton, fenêtre, aide, bas de page (les applications ont un bouton Web vers cette page)
+rep('''    <br><a href="sae/">Ancienne version''', '''    <br>Aussi en application, sur le même cœur : <a href="https://github.com/laurent-67370/amiga1200-android/releases/tag/dev" rel="noopener" target="_blank">Android</a> et <a href="https://github.com/laurent-67370/amiga1200-mac/releases/tag/dev" rel="noopener" target="_blank">Mac</a> (avec JIT), <a href="https://github.com/laurent-67370/amiga1200-pc/releases/tag/dev" rel="noopener" target="_blank">Windows et Linux</a>.
+    <br><a href="sae/">Ancienne version''')
+rep('''<!-- Fenêtre : Aide -->''', '''<!-- Fenêtre : Applications -->
+<div class="veil" id="winApps" role="dialog" aria-modal="true" aria-labelledby="tApps">
+  <div class="win wb">
+    <div class="titlebar"><button class="closebox" data-close aria-label="Fermer"></button><span class="t" id="tApps">Applications Amiga 1200</span><span class="stripes"></span></div>
+    <div class="body">
+      <p>Cette page est l'origine du projet. Le même émulateur existe aussi en application à installer, sur le même cœur (WinUAE 6 par Amiberry 8.3), avec la même Bibliothèque, WHDLoad en un geste, CD32, CDTV et RTG. Android et Mac ajoutent le <b>JIT</b>, que le navigateur ne permet pas.</p>
+      <div class="apps">
+      <div class="app" data-app="android">
+        <div><b>Android</b> <span class="app-mine">· pour cet appareil</span></div>
+        <div class="app-for">Téléphones et tablettes 64 bits, Android 9 et plus</div>
+        <div class="app-what">JIT (68040 rapide), manette et clavier tactiles, raccourcis de jeux sur l'écran d'accueil.</div>
+        <div class="app-go"><a class="gad primary small" href="https://github.com/laurent-67370/amiga1200-android/releases/tag/dev" target="_blank" rel="noopener">Télécharger l'APK</a><a class="gad small" href="https://github.com/laurent-67370/amiga1200-android" target="_blank" rel="noopener">Code source</a></div>
+      </div>
+      <div class="app" data-app="mac">
+        <div><b>Mac</b> <span class="app-mine">· pour cet appareil</span></div>
+        <div class="app-for">Mac Apple Silicon (M1 et suivants), macOS 13 et plus</div>
+        <div class="app-what">JIT, vraie application macOS : menus, MIDI (CoreMIDI), manettes.</div>
+        <div class="app-go"><a class="gad primary small" href="https://github.com/laurent-67370/amiga1200-mac/releases/tag/dev" target="_blank" rel="noopener">Télécharger le .dmg</a><a class="gad small" href="https://github.com/laurent-67370/amiga1200-mac" target="_blank" rel="noopener">Code source</a></div>
+      </div>
+      <div class="app" data-app="pc">
+        <div><b>Windows et Linux</b> <span class="app-mine">· pour cet appareil</span></div>
+        <div class="app-for">PC x64 : Windows 10 et 11, Linux (Ubuntu 22.04+, Debian 12, Fedora…)</div>
+        <div class="app-what">Windows : .zip portable, rien à installer. Linux : AppImage autonome. Sans JIT (68040 interprété).</div>
+        <div class="app-go"><a class="gad primary small" href="https://github.com/laurent-67370/amiga1200-pc/releases/tag/dev" target="_blank" rel="noopener">Télécharger</a><a class="gad small" href="https://github.com/laurent-67370/amiga1200-pc" target="_blank" rel="noopener">Code source</a></div>
+      </div>
+      </div>
+      <p class="hint">Une configuration exportée en <b>.uae</b> (Configuration → Configurations) se relit dans les applications, et inversement. Les Kickstart et les disques s'importent dans chaque version : ils ne sont jamais fournis ni envoyés nulle part. Les applications ne sont pas signées : au premier lancement, macOS demande « Ouvrir quand même » (Réglages Système → Confidentialité et sécurité), Windows « Informations complémentaires » puis « Exécuter quand même ». Leur bouton <b>Web</b> ramène ici.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Fenêtre : Aide -->''')
+rep('''$("#btnHelp").onclick = () => showWin("winHelp");''', '''$("#btnHelp").onclick = () => showWin("winHelp");
+/* Applications : celle qui convient à l'appareil est mise en avant (un iPad se présente comme un Mac, mais tactile) */
+{ const ua = navigator.userAgent, touch = navigator.maxTouchPoints > 1;
+  const mine = /Android/i.test(ua) ? "android" : /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && touch) ? "" : /Macintosh|Mac OS X/i.test(ua) ? "mac" : /Windows|Linux|X11/i.test(ua) ? "pc" : "";
+  const row = mine && $('#winApps [data-app="' + mine + '"]');
+  if (row) { row.classList.add("mine"); row.parentNode.prepend(row); } }
+$("#btnApps").onclick = () => showWin("winApps");
+document.addEventListener("click", e => { const a = e.target.closest("[data-apps]"); if (a) { e.preventDefault(); showWin("winApps"); } });''')
+
 # Carte accélératrice, horloge et bruit des lecteurs (version PUAE)
 rep('compat: "normal", autoskip: true,', 'compat: "normal", accel: "none", model: "a1200", romId500: "auto", floppySound: false, autoskip: true,')
 rep("""      <h3>Affichage</h3>
@@ -228,6 +272,9 @@ rep('''    <button class="gad" id="btnHelp" aria-label="Aide">?</button>''',
     '''    <button class="gad" id="btnInstall" hidden title="Installer l'émulateur comme une application, utilisable hors ligne">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="1.5" width="8" height="13" rx="1.2"/><path d="M8 4.5v5M5.8 7.5 8 9.7l2.2-2.2"/></svg>
       Installer</button>
+    <button class="gad" id="btnApps" title="Applications à installer : Android, Mac, Windows et Linux">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="2.5" width="10" height="7.5"/><path d="M3.5 13h5M6 10v3"/><rect x="11" y="6" width="4" height="8.5" rx=".8"/></svg>
+      Applications</button>
     <button class="gad" id="btnHelp" aria-label="Aide">?</button>''')
 rep('''      <h3>Sauvegardes d'état</h3>''', '''      <h3>Installer l'application</h3>
       <p>L'émulateur s'installe comme une application et fonctionne ensuite <b>sans connexion</b>, avec votre Bibliothèque et vos réglages.
@@ -518,7 +565,9 @@ async function renderRom500() {
 $$('#winSettings input[name="model"]').forEach(i => i.addEventListener("change", () => renderLauncherSoon()));
 
 /* Profil par disque */''')
-rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Amiga 500</h3>
+rep('''      <h3>Copier des fichiers sur le disque dur</h3>''', '''      <h3>Applications Android, Mac, Windows et Linux</h3>
+      <p>Le même émulateur existe en application à installer : <b>Android</b> et <b>Mac</b> Apple Silicon, avec le JIT (bien plus rapide pour les configurations 68040), et <b>Windows</b> et <b>Linux</b>. Bouton <b>Applications</b> de la barre d'outils : liens de téléchargement et appareils compatibles. Une configuration exportée en .uae passe de l'une à l'autre.</p>
+      <h3>Amiga 500</h3>
       <p>Certains jeux A500 ne fonctionnent pas sur l'A1200. Choisissez <b>Amiga 500</b> sur l'écran d'accueil ou dans Réglages (68000, chipset OCS, 512 Ko de Chip + 512 Ko de Slow), ou seulement pour une disquette dans son <b>Profil</b>. Importez le Kickstart 1.3 dans Réglages : il est choisi automatiquement pour l'A500. Les jeux A500 installés sur disque dur se lancent, eux, avec WHDLoad sur l'A1200.</p>
       <h3>Copier des fichiers sur le disque dur</h3>''')
 

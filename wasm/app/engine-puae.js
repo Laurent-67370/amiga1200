@@ -454,8 +454,10 @@ async function powerOn() {
     /* Volume SHARED: (AGS), avec les disques sur place : jamais un disque de démarrage */
     const shared = lazyList.length > 0 && S.shared !== "off";
     if (shared) { await sharedPrepare(machine); lines.push("filesystem2=rw,DH12:SHARED:/save/SHARED,-128"); } else sharedOn = false;
-    /* uaehf.device a besoin de la ROM de démarrage d'UAE : seulement si DH2:, DH3:, un autre disque UAE ou SHARED: est branché (voir plus haut) */
-    if (fsPath.dh2 || fsPath.dh3 || lazyMore || shared || (model === "a3000" && HD_TAGS.some(t => fsPath[t]))) lines.splice(0, lines.length, ...lines.filter(l => !/^(boot_rom_uae|uaeboard)=/.test(l)));
+    /* uaehf.device a besoin de la ROM de démarrage d'UAE : seulement si DH2:, DH3:, un autre disque UAE ou SHARED: est branché (voir plus haut) ;
+       la carte RTG aussi (uaegfx.card passe par elle) */
+    const rtgOn = amb && +E.rtg > 0 && HAS_ACCEL.has(model) && !whd && !cd;
+    if (fsPath.dh2 || fsPath.dh3 || lazyMore || shared || rtgOn || (model === "a3000" && HD_TAGS.some(t => fsPath[t]))) lines.splice(0, lines.length, ...lines.filter(l => !/^(boot_rom_uae|uaeboard)=/.test(l)));
     let content = "/cfg/a1200.uae", options = coreOptions();
     if (amb) options = { amiberry_crop_overscan: S.center ? "enabled" : "disabled", amiberry_statusline: "disabled", amiberry_midi_output: S.midi === "on" ? "libretro" : "disabled",
       amiberry_joyport_order: "21" }; /* manette 0 au port joystick, manette 1 au port souris quand il reçoit un joystick (2 joueurs) */

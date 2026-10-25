@@ -10,7 +10,8 @@ WebAssembly, avec **PUAE** ([libretro-uae](https://github.com/libretro/libretro-
 
 Quatre versions du même émulateur, toutes sur le **même cœur Amiberry 8.3 (WinUAE 6)**, avec les mêmes bases :
 Bibliothèque, jeux WHDLoad en un geste, gros disques durs (AGS), CD32 et CDTV, carte graphique RTG, sauvegardes d'état,
-configurations exportables, MIDI.
+configurations exportables, MIDI, et le **scan d'un dossier** (Kickstart, jeux, disquettes, disques et CD reconnus d'un coup,
+Amiga Forever compris).
 
 | Version | Dépôt | Pour | Particularités | Obtenir |
 |---|---|---|---|---|

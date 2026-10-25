@@ -187,7 +187,7 @@ rep('''<!-- Fenêtre : Aide -->''', '''<!-- Fenêtre : Applications -->
   <div class="win wb">
     <div class="titlebar"><button class="closebox" data-close aria-label="Fermer"></button><span class="t" id="tApps">Applications Amiga 1200</span><span class="stripes"></span></div>
     <div class="body">
-      <p>Cette page est l'origine du projet. Le même émulateur existe aussi en application à installer, sur le même cœur (WinUAE 6 par Amiberry 8.3), avec la même Bibliothèque, WHDLoad en un geste, CD32, CDTV et RTG. Android et Mac ajoutent le <b>JIT</b>, que le navigateur ne permet pas.</p>
+      <p>Cette page est l'origine du projet. Le même émulateur existe aussi en application à installer, sur le même cœur (WinUAE 6 par Amiberry 8.3), avec la même Bibliothèque, WHDLoad en un geste, CD32, CDTV, RTG et le scan de dossier. Android et Mac ajoutent le <b>JIT</b>, que le navigateur ne permet pas.</p>
       <div class="apps">
       <div class="app" data-app="android">
         <div><b>Android</b> <span class="app-mine">· pour cet appareil</span></div>

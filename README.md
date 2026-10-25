@@ -100,6 +100,10 @@ La Bibliothèque est propre à chaque navigateur : importez votre Kickstart et v
 - **Configurations** nommées : tous les réglages et les disques branchés, chargés d'un coup ; *Exporter tout…* les range
   dans un fichier `.json` (autre appareil, sauvegarde), *Importer…* le relit, ainsi que les `.uae` de WinUAE et
   d'Amiberry ; *Exporter en .uae*
+- **Scanner un dossier** (Bibliothèque, ou accueil) : un dossier choisi (Amiga Forever, clé USB…) est parcouru avec ses
+  sous-dossiers ; Kickstart (reconnus par empreinte, ROM chiffrées d'Amiga Forever comprises), disquettes, jeux WHDLoad,
+  disques durs, CD et configurations `.uae` sont reconnus par leur contenu. Un bilan dit ce qui est déjà là et quels
+  Kickstart manquent, puis ajoute ce qui est coché. Sur iPhone et iPad, on choisit les fichiers à la place du dossier.
 - **Changer d'appareil** : *Exporter tout…* (Bibliothèque) range tout dans un seul fichier `.tar` (disquettes, disques
   durs, Kickstart, jeux WHDLoad, sauvegardes) ; *Importer…* sur l'autre appareil
 

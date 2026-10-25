@@ -53,3 +53,23 @@ body.is-off #btnTurbo{display:none!important}
 .app .app-mine{display:none;font-size:12px;font-weight:600;color:var(--wb-blue)}
 .app.mine .app-mine{display:inline}
 @media (max-width:520px){.app{grid-template-columns:1fr}.app .app-go{grid-column:1;grid-row:auto;flex-direction:row;flex-wrap:wrap}}
+/* Scanner un dossier : bilan par type, cases à cocher, liste des fichiers repliable */
+.scan-win{width:min(720px,100%)}
+.scan-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0 0 10px}
+.scan-prog{display:flex;flex-direction:column;gap:6px;padding:8px 0}
+.scan-prog span{font-size:13px;color:#222;overflow-wrap:anywhere}
+.scan-head{font-weight:600}
+.scan-kicks{font-size:14px}
+.scan-warn{color:#7a2e00}
+.scan-cat{background:#bbb;border:1px solid;border-color:#fff #000 #000 #fff;margin:6px 0;padding:0}
+.scan-cat>summary{cursor:pointer;padding:7px 10px;display:flex;align-items:center;gap:8px;font-weight:600}
+.scan-cat>summary input{accent-color:var(--wb-blue)}
+.scan-list{list-style:none;margin:0;padding:0 10px 8px;max-height:220px;overflow:auto;font-size:13px}
+.scan-list li{padding:2px 0;border-top:1px solid rgba(0,0,0,.08)}
+.scan-list li.off{color:#555}
+.scan-list label{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;cursor:pointer}
+.scan-list input{accent-color:var(--wb-blue)}
+.scan-n{overflow-wrap:anywhere;min-width:0}
+.scan-d{color:#333;font-size:12px}
+#scanActs .scan-left{flex:1}
+#scanActs{flex-wrap:wrap;justify-content:flex-end}

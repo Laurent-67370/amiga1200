@@ -5,7 +5,7 @@
    sections dépliables, avec une recherche, des boutons de thème et des raccourcis vers les questions les plus
    courantes. Le texte lui-même ne change pas : il reste écrit à côté de chaque fonction. */
 const HELP_GROUPS = [
-  { id: "debut", icon: "🚀", title: "Bien démarrer", items: ["Démarrer comme un vrai A1200", "Où trouver quoi", "Installer l'application", "Applications Android, Mac, Windows et Linux", "Installer sur disque dur", "Formats acceptés"] },
+  { id: "debut", icon: "🚀", title: "Bien démarrer", items: ["Démarrer comme un vrai A1200", "Où trouver quoi", "Installer l'application", "Applications Android, Mac, Windows et Linux", "Scanner un dossier", "Installer sur disque dur", "Formats acceptés"] },
   { id: "jouer", icon: "🎮", title: "Jouer", items: ["Jeux WHDLoad en un geste", "Réglages par jeu WHDLoad", "Programmes seuls et paquets d'installation WHDLoad", "Quatre lecteurs de disquettes", "Disquettes protégées (IPF, SCP)", "Sauvegardes d'état", "CD32", "Amiga 500"] },
   { id: "disques", icon: "💾", title: "Disques durs et fichiers", items: ["Plusieurs disques durs", "Gros disques lus sur place (AGS…)", "Copier des fichiers sur le disque dur", "Enregistrement des disques", "Changer d'appareil"] },
   { id: "commandes", icon: "🕹️", title: "Clavier, souris et tactile", items: ["Clavier et souris", "Raccourcis clavier", "Jouer sur écran tactile", "Écran tactile"] },
@@ -14,6 +14,7 @@ const HELP_GROUPS = [
 /* Questions courantes : un bouton ouvre la bonne rubrique */
 const HELP_TASKS = [
   ["Lancer un jeu WHDLoad (.lha)", "Jeux WHDLoad en un geste"],
+  ["Retrouver mes Kickstart et jeux d'un dossier", "Scanner un dossier"],
   ["Installer le Workbench", "Installer sur disque dur"],
   ["AGS et gros disques .hdf", "Gros disques lus sur place (AGS…)"],
   ["Jouer au doigt sur téléphone", "Jouer sur écran tactile"],

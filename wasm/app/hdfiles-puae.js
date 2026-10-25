@@ -148,7 +148,8 @@ async function collectItems(files, unpack) {
         const data = /\.adf$/i.test(f.name) ? u8 : ((await expandFile(f.name, u8))[0] || {}).data;
         const r = data && readAdf(data);
         if (!r) { problems.push(f.name + " : pas de fichiers AmigaDOS sur cette disquette (jeu à chargeur spécial) ; utilisez-la directement dans un lecteur"); continue; }
-        const folder = amigaName(f.name.replace(/\.(adf\.gz|adf|adz)$/i, ""));
+        /* 25 caractères au plus : son icône « dossier.info » doit tenir dans les 30 d'un nom AmigaDOS (sinon même nom) */
+        const folder = amigaName(f.name.replace(/\.(adf\.gz|adf|adz)$/i, "")).slice(0, 25).replace(/[ (\[]+$/, "") || "Disquette";
         items.push({ path: folder, dir: true, date });
         let icon = null;
         for (const e of r.items) {

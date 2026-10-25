@@ -105,6 +105,7 @@ function abBuild() {
     <dt>Kickstart libre</dt><dd>AROS (AROS Public License)</dd>
     <dt>Disquettes IPF</dt><dd>SPS Decoder Library 5.1 (© 2001-2014 István Fábián, KryoFlux Products &amp; Services Ltd), usage non commercial, module séparé</dd>
     <dt>Hors ligne</dt><dd id="abOffline"></dd>
+    <dt>Applications</dt><dd>Android et Mac (avec JIT), Windows et Linux : <a href="#" data-apps>liens de téléchargement</a></dd>
     <dt>Interface</dt><dd>inspirée de celle d'Amiberry ; police Amiga Topaz de Patrick Lauke (CC BY 3.0)</dd>
   </dl>`;
   const sound = document.createElement("div"); sound.id = "abSound";

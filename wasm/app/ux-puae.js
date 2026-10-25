@@ -33,7 +33,7 @@
     sp.classList.add("tb-lbl"); b.classList.add("tb-icon");
   }
   const groups = [["Machine", ["btnPower", "btnReset", "btnPause"]], ["Jeux et fichiers", ["btnLib", "btnStates"]],
-    ["Écran et son", ["btnFull", "btnShot", "btnMute"]], ["Émulateur", ["btnSettings", "btnInstall", "btnHelp"]]];
+    ["Écran et son", ["btnFull", "btnShot", "btnMute"]], ["Émulateur", ["btnSettings", "btnInstall", "btnApps", "btnHelp"]]];
   const placed = new Set();
   for (const [name, ids] of groups) {
     const g = document.createElement("div");

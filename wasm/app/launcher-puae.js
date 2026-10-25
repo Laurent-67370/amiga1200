@@ -105,7 +105,8 @@ async function renderLauncher() {
     const acts = lEl("div", "l-acts");
     const o = lEl("button", "gad"); o.textContent = "Ouvrir un fichier…"; o.onclick = () => $("#lOpen").click();
     const h = lEl("button", "gad"); h.textContent = "Créer un disque dur"; h.onclick = () => $('#drive-dh0 [data-act="blank"]').click();
-    acts.append(o, h); s2.appendChild(acts);
+    const sc = lEl("button", "gad"); sc.textContent = "Scanner un dossier…"; sc.title = "Kickstart, disquettes et jeux d'un dossier, reconnus d'un coup"; sc.onclick = () => scanFolder();
+    acts.append(o, sc, h); s2.appendChild(acts);
     const s3 = lEl("li", null, "<b>Allumer</b><span>L'Amiga démarre sur la disquette. " + (isTouch ? "Ensuite, l'écran sert de pavé tactile : un doigt pour la souris, deux doigts pour les menus." : "Cliquez dans l'écran pour prendre la souris, Échap pour la rendre.") + "</span>");
     steps.append(s1, s2, s3); box.appendChild(steps);
   } else {

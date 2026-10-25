@@ -876,6 +876,8 @@ rep("/* Profil par disque */", (APP / "ux-puae.js").read_text(encoding="utf-8") 
 rep("/* Profil par disque */", (APP / "games-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 # Disques durs lus sur place, sans import (WinUAE 6)
 rep("/* Profil par disque */", (APP / "lazyhd-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+# Scanner un dossier : Kickstart, disquettes, jeux, disques, CD et configurations reconnus et rangés d'un coup
+rep("/* Profil par disque */", (APP / "scan-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 # Aide rangée par thèmes, avec recherche (en dernier : elle reprend les rubriques posées par tous les modules)
 rep("/* Profil par disque */", (APP / "helpux-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 rep("</style>", """.help-ui{display:flex;flex-direction:column;gap:12px}

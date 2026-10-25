@@ -64,6 +64,69 @@ async function saveHd(rec, hd) {
   rec.updated = Date.now(); await DB.put(rec);
 }
 
+/* Contenu d'une disquette AmigaDOS (.adf, OFS ou FFS) : ses dossiers et fichiers, avec dates et commentaires ;
+   null si ce n'est pas une disquette AmigaDOS (jeu à chargeur spécial) */
+function readAdf(u8) {
+  const BS = 512, n = Math.floor(u8.length / BS);
+  if (n < 4 || u8[0] !== 0x44 || u8[1] !== 0x4f || u8[2] !== 0x53) return null;
+  const ffs = (u8[3] & 1) === 1;
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  const L = (b, o) => dv.getUint32(b * BS + o), I = (b, o) => dv.getInt32(b * BS + o);
+  const str = (o, max) => u8ToStr(u8.subarray(o + 1, o + 1 + Math.min(u8[o], max)));
+  const name = b => str(b * BS + BS - 80, 30), comment = b => str(b * BS + BS - 184, 79);
+  const date = b => new Date(Date.UTC(1978, 0, 1) + (L(b, BS - 92) * 1440 + L(b, BS - 88)) * 60000 + L(b, BS - 84) * 20);
+  const ok = b => b > 1 && b < n;
+  const root = Math.floor(n / 2);
+  if (I(root, 0) !== 2 || I(root, BS - 4) !== 1) return null;
+  /* Blocs de données : table de l'en-tête puis des blocs d'extension, du dernier au premier rang */
+  const readFile = h => {
+    const size = L(h, BS - 188), data = new Uint8Array(size);
+    let pos = 0, blk = h, guard = 0;
+    while (ok(blk) && pos < size && guard++ < 4000) {
+      const cnt = Math.min(L(blk, 8), BS / 4 - 56);
+      for (let i = 0; i < cnt && pos < size; i++) {
+        const d = L(blk, BS - 204 - i * 4);
+        if (!ok(d)) throw new Error("bloc de données hors de la disquette");
+        const len = ffs ? Math.min(BS, size - pos) : Math.min(L(d, 12), BS - 24, size - pos);
+        data.set(u8.subarray(d * BS + (ffs ? 0 : 24), d * BS + (ffs ? 0 : 24) + len), pos); pos += len;
+      }
+      blk = L(blk, BS - 8);
+    }
+    if (pos < size) throw new Error("fichier incomplet (disquette abîmée ?)");
+    return data;
+  };
+  const items = [], seen = new Set();
+  const walk = (dir, path, depth) => {
+    if (depth > 20) return;
+    for (let i = 0; i < BS / 4 - 56; i++) {
+      let b = L(dir, 24 + i * 4);
+      while (ok(b) && !seen.has(b) && I(b, 0) === 2) {
+        seen.add(b);
+        const st = I(b, BS - 4), p = (path ? path + "/" : "") + name(b);
+        if (st === 2) { items.push({ path: p, dir: true, date: date(b) }); walk(b, p, depth + 1); }
+        else if (st === -3) {
+          try { items.push({ path: p, data: readFile(b), date: date(b), comment: comment(b) }); }
+          catch (e) { items.push({ path: p, error: e.message || String(e) }); }
+        }
+        b = L(b, BS - 16);
+      }
+    }
+  };
+  walk(root, "", 0);
+  return { volume: name(root), items };
+}
+
+/* Préparer un disque pour WHDLoad : WHDLoad dans C:, ses fichiers .RTB et les Kickstart de la Bibliothèque dans
+   Devs:Kickstarts (noms attendus par WHDLoad) */
+async function whdPrepItems() {
+  const [whdload, bootData] = await whdAssetsAmb();
+  const items = [{ path: "C/WHDLoad", data: whdload }];
+  for (const e of await unzip(bootData)) if (/^Devs\/Kickstarts\/[^/]+\.RTB$/i.test(e.path || e.name)) items.push({ path: e.path || e.name, data: e.data });
+  const ks = await whdKickstarts();
+  for (const k of ks) items.push({ path: "Devs/Kickstarts/" + k.file, data: k.data });
+  return { items, kicks: ks };
+}
+
 function cleanPath(p) {
   return p.replace(/\\/g, "/").split("/").filter(s => s && s !== "." && s !== "..").map(amigaName);
 }
@@ -80,6 +143,22 @@ async function collectItems(files, unpack) {
           if (e.error) { problems.push(e.path + " : " + e.error); continue; }
           items.push({ path: e.path, dir: e.dir, data: e.data, date: e.date, comment: e.comment });
         }
+      } else if (unpack && /\.(adf|adz)$|\.adf\.gz$/i.test(f.name)) {
+        /* Disquette : son contenu, dans un dossier à son nom (avec l'icône de la disquette, en tiroir) */
+        const data = /\.adf$/i.test(f.name) ? u8 : ((await expandFile(f.name, u8))[0] || {}).data;
+        const r = data && readAdf(data);
+        if (!r) { problems.push(f.name + " : pas de fichiers AmigaDOS sur cette disquette (jeu à chargeur spécial) ; utilisez-la directement dans un lecteur"); continue; }
+        const folder = amigaName(f.name.replace(/\.(adf\.gz|adf|adz)$/i, ""));
+        items.push({ path: folder, dir: true, date });
+        let icon = null;
+        for (const e of r.items) {
+          if (e.error) problems.push(f.name + " / " + e.path + " : " + e.error);
+          else if (/^disk\.info$/i.test(e.path)) icon = e.data;
+          else items.push({ ...e, path: folder + "/" + e.path });
+        }
+        if (icon && icon.length > 48) { const ic = icon.slice(); ic[48] = 2; /* do_Type : WBDISK → WBDRAWER */ items.push({ path: folder + ".info", data: ic, date }); }
+      } else if (unpack && /\.dms$/i.test(f.name)) {
+        problems.push(f.name + " : les disquettes .dms ne s'ouvrent pas ici ; convertissez-la en .adf (ou utilisez-la dans un lecteur)");
       } else if (unpack && /\.zip$/i.test(f.name)) {
         for (const e of await unzip(u8)) items.push({ path: e.path || e.name, data: e.data, date });
       } else items.push({ path: rel, data: u8, date });
@@ -166,7 +245,7 @@ async function renderFiles(keepLog) {
   hd = null;
   h("Copier");
   const dest = document.createElement("div"); dest.className = "opt";
-  dest.innerHTML = '<label>Dans le dossier <input type="text" id="filesDest" size="18" spellcheck="false" style="font:inherit;padding:3px 6px"></label><label><input type="checkbox" id="filesUnpack" checked> Décompresser les archives .lha et .zip</label>';
+  dest.innerHTML = '<label>Dans le dossier <input type="text" id="filesDest" size="18" spellcheck="false" style="font:inherit;padding:3px 6px"></label><label><input type="checkbox" id="filesUnpack" checked> Décompresser les archives .lha et .zip, ouvrir les disquettes .adf</label>';
   body.appendChild(dest);
   $("#filesDest").value = filesDest; $("#filesDest").oninput = e => { filesDest = e.target.value; };
   const acts = document.createElement("div"); acts.className = "opt";
@@ -175,21 +254,22 @@ async function renderFiles(keepLog) {
   b("Un dossier…", () => $("#dirPick").click());
   body.appendChild(acts);
   const hint = document.createElement("p"); hint.className = "hint";
-  hint.textContent = "Un jeu WHDLoad (.lha) arrive dans son propre dossier, avec son icône. Laissez le champ vide pour copier à la racine du disque. Un fichier du même nom est remplacé.";
+  hint.textContent = "Un jeu WHDLoad (.lha) arrive dans son propre dossier, avec son icône. Une disquette .adf est ouverte : ses fichiers vont dans un dossier à son nom. Laissez le champ vide pour copier à la racine du disque. Un fichier du même nom est remplacé.";
   body.appendChild(hint);
-  h("Kickstart pour WHDLoad");
+  h("Préparer pour WHDLoad");
   const ks = await whdKickstarts();
   const kp = document.createElement("p");
-  kp.textContent = ks.length ? "Dans la Bibliothèque : " + ks.map(k => k.label + " → " + k.file).join(", ") + "."
-    : "Aucun Kickstart reconnu dans la Bibliothèque (1.3 A500, 2.04, 3.0 ou 3.1 A1200).";
+  kp.textContent = "Copie WHDLoad dans C: et, dans Devs:Kickstarts, ses fichiers .RTB et vos Kickstart de la Bibliothèque"
+    + (ks.length ? " (" + ks.map(k => k.label).join(", ") + ")." : ". Aucun Kickstart reconnu dans la Bibliothèque pour l'instant (1.3 A500, 2.04, 3.0 ou 3.1 A1200) : ajoutez-le d'abord.")
+    + " Ensuite, un jeu WHDLoad copié sur ce disque se lance d'un double-clic sur son icône, depuis le Workbench.";
   body.appendChild(kp);
   const ka = document.createElement("div"); ka.className = "opt"; body.appendChild(ka);
-  const kb = document.createElement("button"); kb.className = "gad"; kb.textContent = "Copier dans Devs:Kickstarts"; kb.disabled = !ks.length || running || starting;
-  kb.onclick = () => copyToHd(ks.map(k => ({ path: "Devs/Kickstarts/" + k.file, data: k.data })), "");
+  const kb = document.createElement("button"); kb.className = "gad"; kb.textContent = "Préparer le disque pour WHDLoad"; kb.disabled = running || starting;
+  kb.onclick = async () => {
+    try { const w = await whdPrepItems(); await copyToHd(w.items, ""); }
+    catch (e) { $("#filesLog").textContent = "Préparation impossible : " + (e.message || e); }
+  };
   ka.appendChild(kb);
-  const kh = document.createElement("p"); kh.className = "hint";
-  kh.textContent = "WHDLoad demande aussi les petits fichiers .RTB fournis avec lui : copiez-les dans le même dossier.";
-  body.appendChild(kh);
   const log = document.createElement("pre"); log.id = "filesLog"; log.className = "files-log"; log.textContent = oldLog; body.appendChild(log);
 }
 async function openFiles(rec) {

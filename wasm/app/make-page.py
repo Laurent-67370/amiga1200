@@ -482,7 +482,7 @@ $("#btnShot").onclick = () => {''')
 # Copier des fichiers sur le disque dur (jeux WHDLoad .lha, dossiers, Kickstart)
 rep('import { makeBlankAdf } from "./adf.js";', 'import { makeBlankAdf } from "./adf.js";\nimport { readLha } from "./lha.js";\nimport { listPartitions, AmigaVolume, amigaName } from "./ffs.js";')
 rep('''        <button class="gad small" data-act="blank">Nouveau</button>''', '''        <button class="gad small" data-act="blank">Nouveau</button>
-        <button class="gad small" data-act="files" disabled title="Copier des fichiers, un dossier ou un jeu WHDLoad (.lha) sur ce disque">Fichiers…</button>''')
+        <button class="gad small" data-act="files" disabled title="Ajouter sur ce disque des fichiers, un dossier, des jeux WHDLoad (.lha) ou le contenu de disquettes (.adf)">Fichiers…</button>''')
 rep('''  if (/\\.(lha|lzh|lzx|rar|7z)$/.test(n)) throw new Error(name + " : format d'archive non géré, extrayez-la d'abord (.zip, .adz et .gz sont acceptés)");''',
     '''  if (/\\.(lha|lzh)$/.test(n)) {
     /* Archive LhA : les disquettes et disques qu'elle contient */
@@ -513,7 +513,7 @@ rep(".footnote{margin-top:18px", '''.files-log{white-space:pre-wrap;font:12.5px/
 .footnote{margin-top:18px''')
 rep("/* Profil par disque */", (APP / "hdfiles-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 rep('''      <h3>Sauvegardes d'état</h3>''', '''      <h3>Copier des fichiers sur le disque dur</h3>
-      <p>Amiga éteint, le bouton <b>Fichiers…</b> du disque dur (ou de la Bibliothèque) copie des fichiers, un dossier entier ou des archives .lha et .zip, décompressées au passage, dans le dossier de votre choix. C'est la façon d'installer des jeux <b>WHDLoad</b> : copiez WHDLoad dans C:, vos jeux .lha dans Jeux, et vos Kickstart dans Devs:Kickstarts avec le bouton prévu (1.3 pour l'A500, 3.1 pour l'A1200). Disques OFS et FFS ; PFS, SFS et FFS à cache de dossiers ne sont pas modifiables ici.</p>
+      <p>Amiga éteint, le bouton <b>Fichiers…</b> du disque dur (ou de la Bibliothèque) copie des fichiers, un dossier entier, des archives .lha et .zip (décompressées au passage) ou le contenu de disquettes <b>.adf</b> (chaque disquette dans un dossier à son nom, avec son icône), dans le dossier de votre choix. Pour jouer à des jeux <b>WHDLoad</b> depuis le Workbench : <b>Préparer le disque pour WHDLoad</b> copie WHDLoad dans C:, ses fichiers .RTB et vos Kickstart dans Devs:Kickstarts (1.3 pour l'A500, 3.1 pour l'A1200) ; copiez ensuite vos jeux .lha dans Jeux, et un double-clic sur leur icône les lance. Les disquettes à chargeur spécial (sans fichiers AmigaDOS) et les .dms ne s'ouvrent pas ici. Disques OFS et FFS ; PFS, SFS et FFS à cache de dossiers ne sont pas modifiables ici.</p>
       <h3>Sauvegardes d'état</h3>''')
 
 # Mode Amiga 500

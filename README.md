@@ -6,6 +6,24 @@ WebAssembly, avec **PUAE** ([libretro-uae](https://github.com/libretro/libretro-
 
 ### ▶ **https://laurent-67370.github.io/amiga1200/**
 
+## La famille Amiga 1200
+
+Quatre versions du même émulateur, toutes sur le **même cœur Amiberry 8.3 (WinUAE 6)**, avec les mêmes bases :
+Bibliothèque, jeux WHDLoad en un geste, gros disques durs (AGS), CD32 et CDTV, carte graphique RTG, sauvegardes d'état,
+configurations exportables, MIDI.
+
+| Version | Dépôt | Pour | Particularités | Obtenir |
+|---|---|---|---|---|
+| **Web** (ce dépôt), l'origine du projet | [amiga1200](https://github.com/laurent-67370/amiga1200) | Navigateur : ordinateur, Android, iPhone, iPad | Rien à installer, hors ligne (application PWA), deux moteurs (WinUAE 6 et PUAE) | [Ouvrir la page](https://laurent-67370.github.io/amiga1200/) |
+| **Android** | [amiga1200-android](https://github.com/laurent-67370/amiga1200-android) | Téléphones et tablettes 64 bits (Android 9 et plus) | **JIT**, manette et clavier tactiles, raccourcis sur l'écran d'accueil | [APK (Releases → dev)](https://github.com/laurent-67370/amiga1200-android/releases/tag/dev) |
+| **Mac** | [amiga1200-mac](https://github.com/laurent-67370/amiga1200-mac) | Mac Apple Silicon (macOS 13 et plus) | **JIT**, application macOS (menus, CoreMIDI, manettes Game Controller) | [.dmg (Releases → dev)](https://github.com/laurent-67370/amiga1200-mac/releases/tag/dev) |
+| **Windows et Linux** | [amiga1200-pc](https://github.com/laurent-67370/amiga1200-pc) | PC x64 : Windows 10/11, Linux (AppImage) | Une seule base pour les deux systèmes, .zip portable et AppImage autonome (sans JIT : 68040 interprété) | [.zip et AppImage (Releases → dev)](https://github.com/laurent-67370/amiga1200-pc/releases/tag/dev) |
+
+Passer de l'une à l'autre : une configuration exportée en **.uae** (machine, mémoire, disques) se relit dans les
+quatre versions, et aussi dans WinUAE et Amiberry. Les applications Android, Mac et PC ont un bouton **Web** en haut
+de leur accueil qui mène ici ; Android et Mac ajoutent le **JIT**, que WebAssembly interdit au navigateur. Les
+Kickstart et les disques restent à ajouter dans chaque version : ils ne sont jamais fournis ni envoyés nulle part.
+
 ## Points forts
 
 - **Une vraie machine complète** : A500, A600, A1200, A3000, A4000, CD32, CDTV ; chipsets OCS, ECS, AGA ; cartes

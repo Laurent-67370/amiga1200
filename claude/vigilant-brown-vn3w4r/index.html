@@ -758,7 +758,7 @@ body.is-off #btnTurbo{display:none!important}
         <button class="gad small" data-act="insert">Choisir…</button>
         <button class="gad small" data-act="eject" disabled>Retirer</button>
         <button class="gad small" data-act="blank">Nouveau</button>
-        <button class="gad small" data-act="files" disabled title="Copier des fichiers, un dossier ou un jeu WHDLoad (.lha) sur ce disque">Fichiers…</button>
+        <button class="gad small" data-act="files" disabled title="Ajouter sur ce disque des fichiers, un dossier, des jeux WHDLoad (.lha) ou le contenu de disquettes (.adf)">Fichiers…</button>
         <button class="gad small" data-act="download" disabled>Télécharger</button>
         <button class="gad small" data-act="profile" disabled title="Réglages propres à ce disque">Profil</button>
       </div>
@@ -770,7 +770,7 @@ body.is-off #btnTurbo{display:none!important}
         <button class="gad small" data-act="insert">Choisir…</button>
         <button class="gad small" data-act="eject" disabled>Retirer</button>
         <button class="gad small" data-act="blank">Nouveau</button>
-        <button class="gad small" data-act="files" disabled title="Copier des fichiers, un dossier ou un jeu WHDLoad (.lha) sur ce disque">Fichiers…</button>
+        <button class="gad small" data-act="files" disabled title="Ajouter sur ce disque des fichiers, un dossier, des jeux WHDLoad (.lha) ou le contenu de disquettes (.adf)">Fichiers…</button>
         <button class="gad small" data-act="download" disabled>Télécharger</button>
         <button class="gad small" data-act="profile" disabled title="Réglages propres à ce disque">Profil</button>
       </div>
@@ -782,7 +782,7 @@ body.is-off #btnTurbo{display:none!important}
         <button class="gad small" data-act="insert">Choisir…</button>
         <button class="gad small" data-act="eject" disabled>Retirer</button>
         <button class="gad small" data-act="blank">Nouveau</button>
-        <button class="gad small" data-act="files" disabled title="Copier des fichiers, un dossier ou un jeu WHDLoad (.lha) sur ce disque">Fichiers…</button>
+        <button class="gad small" data-act="files" disabled title="Ajouter sur ce disque des fichiers, un dossier, des jeux WHDLoad (.lha) ou le contenu de disquettes (.adf)">Fichiers…</button>
         <button class="gad small" data-act="download" disabled>Télécharger</button>
         <button class="gad small" data-act="profile" disabled title="Réglages propres à ce disque">Profil</button>
       </div>
@@ -794,7 +794,7 @@ body.is-off #btnTurbo{display:none!important}
         <button class="gad small" data-act="insert">Choisir…</button>
         <button class="gad small" data-act="eject" disabled>Retirer</button>
         <button class="gad small" data-act="blank">Nouveau</button>
-        <button class="gad small" data-act="files" disabled title="Copier des fichiers, un dossier ou un jeu WHDLoad (.lha) sur ce disque">Fichiers…</button>
+        <button class="gad small" data-act="files" disabled title="Ajouter sur ce disque des fichiers, un dossier, des jeux WHDLoad (.lha) ou le contenu de disquettes (.adf)">Fichiers…</button>
         <button class="gad small" data-act="download" disabled>Télécharger</button>
         <button class="gad small" data-act="profile" disabled title="Réglages propres à ce disque">Profil</button>
       </div>
@@ -823,7 +823,7 @@ body.is-off #btnTurbo{display:none!important}
     Vos fichiers restent dans ce navigateur (stockage local) et ne sont envoyés nulle part.
     <br>Aussi en application, sur le même cœur : <a href="https://github.com/laurent-67370/amiga1200-android/releases/tag/dev" rel="noopener" target="_blank">Android</a> et <a href="https://github.com/laurent-67370/amiga1200-mac/releases/tag/dev" rel="noopener" target="_blank">Mac</a> (avec JIT), <a href="https://github.com/laurent-67370/amiga1200-pc/releases/tag/dev" rel="noopener" target="_blank">Windows et Linux</a>.
     <br><a href="sae/">Ancienne version (cœur SAE)</a>, conservée pour comparer : elle partage la même Bibliothèque.
-    <br><b>Version du site : 25/10/2026 18:32 (82d1203)</b> (heure de Paris).
+    <br><b>Version du site : 25/10/2026 20:22 (aebf1a7)</b> (heure de Paris).
   </p>
 </main>
 
@@ -1158,7 +1158,7 @@ body.is-off #btnTurbo{display:none!important}
       <h3>Disquettes protégées (IPF, SCP)</h3>
       <p>Les images <b>.ipf</b> de la Software Preservation Society, qui gardent les protections contre la copie des disquettes d'origine, sont converties à l'import en flux magnétique SCP : minutage des pistes et bits faibles compris (trois tours de disque). Les captures <b>.scp</b> (SuperCard Pro, Greaseweazle) s'importent aussi. Ces disquettes sont protégées en écriture. Conversion par la bibliothèque SPS Decoder Library 5.1 (© 2001-2014 István Fábián, KryoFlux Products &amp; Services Ltd), licence non commerciale, sources dans le dépôt (vendor/capsimg).</p>
       <h3>Copier des fichiers sur le disque dur</h3>
-      <p>Amiga éteint, le bouton <b>Fichiers…</b> du disque dur (ou de la Bibliothèque) copie des fichiers, un dossier entier ou des archives .lha et .zip, décompressées au passage, dans le dossier de votre choix. C'est la façon d'installer des jeux <b>WHDLoad</b> : copiez WHDLoad dans C:, vos jeux .lha dans Jeux, et vos Kickstart dans Devs:Kickstarts avec le bouton prévu (1.3 pour l'A500, 3.1 pour l'A1200). Disques OFS et FFS ; PFS, SFS et FFS à cache de dossiers ne sont pas modifiables ici.</p>
+      <p>Amiga éteint, le bouton <b>Fichiers…</b> du disque dur (ou de la Bibliothèque) copie des fichiers, un dossier entier, des archives .lha et .zip (décompressées au passage) ou le contenu de disquettes <b>.adf</b> (chaque disquette dans un dossier à son nom, avec son icône), dans le dossier de votre choix. Pour jouer à des jeux <b>WHDLoad</b> depuis le Workbench : <b>Préparer le disque pour WHDLoad</b> copie WHDLoad dans C:, ses fichiers .RTB et vos Kickstart dans Devs:Kickstarts (1.3 pour l'A500, 3.1 pour l'A1200) ; copiez ensuite vos jeux .lha dans Jeux, et un double-clic sur leur icône les lance. Les disquettes à chargeur spécial (sans fichiers AmigaDOS) et les .dms ne s'ouvrent pas ici. Disques OFS et FFS ; PFS, SFS et FFS à cache de dossiers ne sont pas modifiables ici.</p>
       <h3>Sauvegardes d'état</h3>
       <p>Le bouton <b>Sauvegardes</b> fige la machine entière dans l'un des 4 emplacements du jeu en cours (la disquette de DF0:, ou le disque dur). <b>Reprendre</b> la remet exactement dans cet état, avec les mêmes disques et réglages ; si besoin l'Amiga se rallume tout seul. Raccourcis : <span class="kbd">Ctrl</span>+<span class="kbd">Maj</span>+<span class="kbd">S</span> sauvegarde dans l'emplacement 1, <span class="kbd">Ctrl</span>+<span class="kbd">Maj</span>+<span class="kbd">R</span> le reprend.</p>
       <h3>Compatibilité et vitesse</h3>
@@ -2166,9 +2166,21 @@ async function unzip(u8) {
   for (let n = 0; n < count; n++) {
     if (dv.getUint32(p, true) !== 0x02014b50) break;
     const flags = dv.getUint16(p + 8, true), method = dv.getUint16(p + 10, true);
-    const csize = dv.getUint32(p + 20, true);
+    let csize = dv.getUint32(p + 20, true);
     const nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
-    const loc = dv.getUint32(p + 42, true);
+    let loc = dv.getUint32(p + 42, true);
+    /* Zip64 : tailles et position à 0xFFFFFFFF, les vraies valeurs sont dans le champ supplémentaire 0x0001 */
+    if (csize === 0xFFFFFFFF || loc === 0xFFFFFFFF || dv.getUint32(p + 24, true) === 0xFFFFFFFF) {
+      for (let x = p + 46 + nlen, end = x + xlen; x + 4 <= end; x += 4 + dv.getUint16(x + 2, true)) {
+        if (dv.getUint16(x, true) !== 1) continue;
+        let q = x + 4;
+        const big = () => { const v = Number(dv.getBigUint64(q, true)); q += 8; return v; };
+        if (dv.getUint32(p + 24, true) === 0xFFFFFFFF) big();
+        if (csize === 0xFFFFFFFF) csize = big();
+        if (loc === 0xFFFFFFFF) loc = big();
+        break;
+      }
+    }
     const name = new TextDecoder((flags & 0x800) ? "utf-8" : "latin1").decode(u8.subarray(p + 46, p + 46 + nlen));
     p += 46 + nlen + xlen + clen;
     if (name.endsWith("/") || /(^|\/)(__MACOSX|\.)/.test(name)) continue;
@@ -3082,6 +3094,69 @@ async function saveHd(rec, hd) {
   rec.updated = Date.now(); await DB.put(rec);
 }
 
+/* Contenu d'une disquette AmigaDOS (.adf, OFS ou FFS) : ses dossiers et fichiers, avec dates et commentaires ;
+   null si ce n'est pas une disquette AmigaDOS (jeu à chargeur spécial) */
+function readAdf(u8) {
+  const BS = 512, n = Math.floor(u8.length / BS);
+  if (n < 4 || u8[0] !== 0x44 || u8[1] !== 0x4f || u8[2] !== 0x53) return null;
+  const ffs = (u8[3] & 1) === 1;
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  const L = (b, o) => dv.getUint32(b * BS + o), I = (b, o) => dv.getInt32(b * BS + o);
+  const str = (o, max) => u8ToStr(u8.subarray(o + 1, o + 1 + Math.min(u8[o], max)));
+  const name = b => str(b * BS + BS - 80, 30), comment = b => str(b * BS + BS - 184, 79);
+  const date = b => new Date(Date.UTC(1978, 0, 1) + (L(b, BS - 92) * 1440 + L(b, BS - 88)) * 60000 + L(b, BS - 84) * 20);
+  const ok = b => b > 1 && b < n;
+  const root = Math.floor(n / 2);
+  if (I(root, 0) !== 2 || I(root, BS - 4) !== 1) return null;
+  /* Blocs de données : table de l'en-tête puis des blocs d'extension, du dernier au premier rang */
+  const readFile = h => {
+    const size = L(h, BS - 188), data = new Uint8Array(size);
+    let pos = 0, blk = h, guard = 0;
+    while (ok(blk) && pos < size && guard++ < 4000) {
+      const cnt = Math.min(L(blk, 8), BS / 4 - 56);
+      for (let i = 0; i < cnt && pos < size; i++) {
+        const d = L(blk, BS - 204 - i * 4);
+        if (!ok(d)) throw new Error("bloc de données hors de la disquette");
+        const len = ffs ? Math.min(BS, size - pos) : Math.min(L(d, 12), BS - 24, size - pos);
+        data.set(u8.subarray(d * BS + (ffs ? 0 : 24), d * BS + (ffs ? 0 : 24) + len), pos); pos += len;
+      }
+      blk = L(blk, BS - 8);
+    }
+    if (pos < size) throw new Error("fichier incomplet (disquette abîmée ?)");
+    return data;
+  };
+  const items = [], seen = new Set();
+  const walk = (dir, path, depth) => {
+    if (depth > 20) return;
+    for (let i = 0; i < BS / 4 - 56; i++) {
+      let b = L(dir, 24 + i * 4);
+      while (ok(b) && !seen.has(b) && I(b, 0) === 2) {
+        seen.add(b);
+        const st = I(b, BS - 4), p = (path ? path + "/" : "") + name(b);
+        if (st === 2) { items.push({ path: p, dir: true, date: date(b) }); walk(b, p, depth + 1); }
+        else if (st === -3) {
+          try { items.push({ path: p, data: readFile(b), date: date(b), comment: comment(b) }); }
+          catch (e) { items.push({ path: p, error: e.message || String(e) }); }
+        }
+        b = L(b, BS - 16);
+      }
+    }
+  };
+  walk(root, "", 0);
+  return { volume: name(root), items };
+}
+
+/* Préparer un disque pour WHDLoad : WHDLoad dans C:, ses fichiers .RTB et les Kickstart de la Bibliothèque dans
+   Devs:Kickstarts (noms attendus par WHDLoad) */
+async function whdPrepItems() {
+  const [whdload, bootData] = await whdAssetsAmb();
+  const items = [{ path: "C/WHDLoad", data: whdload }];
+  for (const e of await unzip(bootData)) if (/^Devs\/Kickstarts\/[^/]+\.RTB$/i.test(e.path || e.name)) items.push({ path: e.path || e.name, data: e.data });
+  const ks = await whdKickstarts();
+  for (const k of ks) items.push({ path: "Devs/Kickstarts/" + k.file, data: k.data });
+  return { items, kicks: ks };
+}
+
 function cleanPath(p) {
   return p.replace(/\\/g, "/").split("/").filter(s => s && s !== "." && s !== "..").map(amigaName);
 }
@@ -3098,6 +3173,22 @@ async function collectItems(files, unpack) {
           if (e.error) { problems.push(e.path + " : " + e.error); continue; }
           items.push({ path: e.path, dir: e.dir, data: e.data, date: e.date, comment: e.comment });
         }
+      } else if (unpack && /\.(adf|adz)$|\.adf\.gz$/i.test(f.name)) {
+        /* Disquette : son contenu, dans un dossier à son nom (avec l'icône de la disquette, en tiroir) */
+        const data = /\.adf$/i.test(f.name) ? u8 : ((await expandFile(f.name, u8))[0] || {}).data;
+        const r = data && readAdf(data);
+        if (!r) { problems.push(f.name + " : pas de fichiers AmigaDOS sur cette disquette (jeu à chargeur spécial) ; utilisez-la directement dans un lecteur"); continue; }
+        const folder = amigaName(f.name.replace(/\.(adf\.gz|adf|adz)$/i, ""));
+        items.push({ path: folder, dir: true, date });
+        let icon = null;
+        for (const e of r.items) {
+          if (e.error) problems.push(f.name + " / " + e.path + " : " + e.error);
+          else if (/^disk\.info$/i.test(e.path)) icon = e.data;
+          else items.push({ ...e, path: folder + "/" + e.path });
+        }
+        if (icon && icon.length > 48) { const ic = icon.slice(); ic[48] = 2; /* do_Type : WBDISK → WBDRAWER */ items.push({ path: folder + ".info", data: ic, date }); }
+      } else if (unpack && /\.dms$/i.test(f.name)) {
+        problems.push(f.name + " : les disquettes .dms ne s'ouvrent pas ici ; convertissez-la en .adf (ou utilisez-la dans un lecteur)");
       } else if (unpack && /\.zip$/i.test(f.name)) {
         for (const e of await unzip(u8)) items.push({ path: e.path || e.name, data: e.data, date });
       } else items.push({ path: rel, data: u8, date });
@@ -3184,7 +3275,7 @@ async function renderFiles(keepLog) {
   hd = null;
   h("Copier");
   const dest = document.createElement("div"); dest.className = "opt";
-  dest.innerHTML = '<label>Dans le dossier <input type="text" id="filesDest" size="18" spellcheck="false" style="font:inherit;padding:3px 6px"></label><label><input type="checkbox" id="filesUnpack" checked> Décompresser les archives .lha et .zip</label>';
+  dest.innerHTML = '<label>Dans le dossier <input type="text" id="filesDest" size="18" spellcheck="false" style="font:inherit;padding:3px 6px"></label><label><input type="checkbox" id="filesUnpack" checked> Décompresser les archives .lha et .zip, ouvrir les disquettes .adf</label>';
   body.appendChild(dest);
   $("#filesDest").value = filesDest; $("#filesDest").oninput = e => { filesDest = e.target.value; };
   const acts = document.createElement("div"); acts.className = "opt";
@@ -3193,21 +3284,22 @@ async function renderFiles(keepLog) {
   b("Un dossier…", () => $("#dirPick").click());
   body.appendChild(acts);
   const hint = document.createElement("p"); hint.className = "hint";
-  hint.textContent = "Un jeu WHDLoad (.lha) arrive dans son propre dossier, avec son icône. Laissez le champ vide pour copier à la racine du disque. Un fichier du même nom est remplacé.";
+  hint.textContent = "Un jeu WHDLoad (.lha) arrive dans son propre dossier, avec son icône. Une disquette .adf est ouverte : ses fichiers vont dans un dossier à son nom. Laissez le champ vide pour copier à la racine du disque. Un fichier du même nom est remplacé.";
   body.appendChild(hint);
-  h("Kickstart pour WHDLoad");
+  h("Préparer pour WHDLoad");
   const ks = await whdKickstarts();
   const kp = document.createElement("p");
-  kp.textContent = ks.length ? "Dans la Bibliothèque : " + ks.map(k => k.label + " → " + k.file).join(", ") + "."
-    : "Aucun Kickstart reconnu dans la Bibliothèque (1.3 A500, 2.04, 3.0 ou 3.1 A1200).";
+  kp.textContent = "Copie WHDLoad dans C: et, dans Devs:Kickstarts, ses fichiers .RTB et vos Kickstart de la Bibliothèque"
+    + (ks.length ? " (" + ks.map(k => k.label).join(", ") + ")." : ". Aucun Kickstart reconnu dans la Bibliothèque pour l'instant (1.3 A500, 2.04, 3.0 ou 3.1 A1200) : ajoutez-le d'abord.")
+    + " Ensuite, un jeu WHDLoad copié sur ce disque se lance d'un double-clic sur son icône, depuis le Workbench.";
   body.appendChild(kp);
   const ka = document.createElement("div"); ka.className = "opt"; body.appendChild(ka);
-  const kb = document.createElement("button"); kb.className = "gad"; kb.textContent = "Copier dans Devs:Kickstarts"; kb.disabled = !ks.length || running || starting;
-  kb.onclick = () => copyToHd(ks.map(k => ({ path: "Devs/Kickstarts/" + k.file, data: k.data })), "");
+  const kb = document.createElement("button"); kb.className = "gad"; kb.textContent = "Préparer le disque pour WHDLoad"; kb.disabled = running || starting;
+  kb.onclick = async () => {
+    try { const w = await whdPrepItems(); await copyToHd(w.items, ""); }
+    catch (e) { $("#filesLog").textContent = "Préparation impossible : " + (e.message || e); }
+  };
   ka.appendChild(kb);
-  const kh = document.createElement("p"); kh.className = "hint";
-  kh.textContent = "WHDLoad demande aussi les petits fichiers .RTB fournis avec lui : copiez-les dans le même dossier.";
-  body.appendChild(kh);
   const log = document.createElement("pre"); log.id = "filesLog"; log.className = "files-log"; log.textContent = oldLog; body.appendChild(log);
 }
 async function openFiles(rec) {
@@ -5877,7 +5969,7 @@ let uxDrivesRefresh = () => {};
   if (body && !body.querySelector(".ux-keys")) {
     const k = s => '<span class="kbd">' + s + "</span>";
     const sec = document.createElement("div"); sec.className = "ux-keys";
-    sec.innerHTML = '<p class="hint" id="siteVersion">Version du site : 25/10/2026 18:32 (82d1203) (heure de Paris). Après une mise à jour, rechargez la page : ce numéro doit changer.</p>' + "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause, <b>Turbo</b> (chargements accélérés, sans le son). <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
+    sec.innerHTML = '<p class="hint" id="siteVersion">Version du site : 25/10/2026 20:22 (aebf1a7) (heure de Paris). Après une mise à jour, rechargez la page : ce numéro doit changer.</p>' + "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause, <b>Turbo</b> (chargements accélérés, sans le son). <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
       + "<h3>Quatre lecteurs de disquettes</h3><p>DF0: (interne) et trois lecteurs externes, DF1: à DF3: (DF2: et DF3: se déplient sous les lecteurs). Pour un jeu sur plusieurs disquettes, choisissez-les ou glissez-les <b>ensemble</b> (Insérer…, Ouvrir un fichier…, ou une archive .zip) : Disk 1 va dans DF0:, Disk 2 dans DF1:, etc., dans l'ordre des noms. DF2: et DF3: existent dès qu'une disquette y est placée à l'allumage ; sinon l'Amiga n'a que deux lecteurs, ce que certains jeux préfèrent. Les jeux qui savent lire plusieurs lecteurs ne demandent alors plus de changer de disquette. Les disquettes d'un même jeu (« Disk 1 », « Disk 2 »…) n'ont qu'une vignette à l'accueil, qui démarre sur la première ; pendant la partie, le bouton <b>Disquette suivante</b> (sous l'écran, et dans la barre du plein écran) met la suivante dans DF0:.</p>"
       + "<h3>Raccourcis clavier</h3><p>" + k("F12") + " ouvre ou ferme la Configuration (l'Amiga se met en pause). "
       + k("Ctrl") + "+" + k("Maj") + "+" + k("S") + " sauvegarde la partie dans l'emplacement 1, " + k("Ctrl") + "+" + k("Maj") + "+" + k("R") + " la reprend. " + k("Ctrl") + "+" + k("Maj") + "+" + k("→") + " active ou arrête le Turbo. "

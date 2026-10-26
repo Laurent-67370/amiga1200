@@ -5,7 +5,10 @@ import android.graphics.RectF
 import kotlin.math.*
 import kotlin.random.Random
 
-internal class GameEngine(private val context: Context) {
+internal class GameEngine(private val loadBricks: (Int) -> Array<Brick>) {
+    /** Le fichier des niveaux est lu une seule fois, puis chaque tableau est décodé à la demande. */
+    constructor(context: Context) : this(assetLevels(context))
+
     companion object {
         const val WIDTH = 360f
         const val HEIGHT = 640f
@@ -27,6 +30,11 @@ internal class GameEngine(private val context: Context) {
             val left = LEFT + column * BRICK_WIDTH
             val top = BRICK_TOP + row * BRICK_HEIGHT
             return RectF(left, top, left + BRICK_WIDTH, top + BRICK_HEIGHT)
+        }
+
+        private fun assetLevels(context: Context): (Int) -> Array<Brick> {
+            val data by lazy { LevelDecoder.readAssets(context) }
+            return { level -> LevelDecoder.decode(data, level) }
         }
     }
 
@@ -80,7 +88,8 @@ internal class GameEngine(private val context: Context) {
     }
 
     private fun loadLevel() {
-        state.bricks = LevelDecoder.fromAssets(context, state.level)
+        state.bricks = loadBricks(state.level)
+        state.bricksVersion++
         state.screen = Screen.INTRO
         state.stateTime = 0f
         state.wormClock = 8f
@@ -98,6 +107,7 @@ internal class GameEngine(private val context: Context) {
         state.stickyTime = 0f
         state.laserTime = 0f
         state.laserCooldown = 0f
+        state.fireHeld = false
         state.paddleWidth = 66f
         state.paddleX = WIDTH / 2f
         state.balls += Ball(state.paddleX, PADDLE_Y - 5f, 0f, 0f)
@@ -109,7 +119,7 @@ internal class GameEngine(private val context: Context) {
 
     fun primaryAction() {
         when (state.screen) {
-            Screen.TITLE, Screen.GAME_OVER, Screen.VICTORY -> startNewGame()
+            Screen.TITLE, Screen.GAME_OVER, Screen.VICTORY -> startNewGame(state.difficulty)
             Screen.INTRO -> {
                 state.screen = Screen.PLAYING
                 state.stateTime = 0f
@@ -135,7 +145,17 @@ internal class GameEngine(private val context: Context) {
     }
 
     private fun launch(ball: Ball) {
-        val angle = Math.toRadians(-68.0)
+        // L'angle dépend de la position de la balle sur le vaisseau : plus elle est
+        // excentrée, plus le départ est rasant. Au centre, le côté est tiré au sort.
+        val half = state.paddleWidth / 2f
+        val offset = (ball.stickOffset / half).coerceIn(-1f, 1f)
+        val side = when {
+            offset > 0.05f -> 1.0
+            offset < -0.05f -> -1.0
+            state.random.nextBoolean() -> 1.0
+            else -> -1.0
+        }
+        val angle = Math.toRadians(-90.0 + side * (20.0 + abs(offset) * 40.0))
         val speed = 210f * state.difficulty.speedScale
         ball.vx = (cos(angle) * speed).toFloat()
         ball.vy = (sin(angle) * speed).toFloat()
@@ -178,6 +198,7 @@ internal class GameEngine(private val context: Context) {
         }
         state.laserTime = max(0f, state.laserTime - dt)
         state.laserCooldown = max(0f, state.laserCooldown - dt)
+        if (state.fireHeld && state.laserTime > 0f && state.balls.none { it.stuck }) fireLaser()
         state.paddleWidth = if (state.wideTime > 0f) 98f else 66f
         movePaddle(state.paddleX)
 
@@ -259,7 +280,7 @@ internal class GameEngine(private val context: Context) {
         } else {
             ball.stickyCatch = false
             ball.stallTime = 0f
-            val speed = hypot(ball.vx, ball.vy).coerceIn(180f, 330f * state.difficulty.speedScale)
+            val speed = hypot(ball.vx, ball.vy).coerceIn(150f, 330f * state.difficulty.speedScale)
             state.stats.resetCombo()
             val offset = ((ball.x - state.paddleX) / half).coerceIn(-1f, 1f)
             val angle = Math.toRadians((-90.0 + offset * 62.0))
@@ -326,6 +347,7 @@ internal class GameEngine(private val context: Context) {
             return
         }
         brick.hits--
+        state.bricksVersion++
         addScore(if (brick.hits == 0) 60 else 15)
         burst(rect.centerX(), rect.centerY(), crystalColor(brick.color), 5)
         if (brick.hits == 0) {
@@ -404,7 +426,10 @@ internal class GameEngine(private val context: Context) {
     }
 
     private fun splitBalls() {
-        val source = state.balls.firstOrNull { !it.stuck } ?: return
+        // Si toutes les balles attendent sur le vaisseau, la première part pour ne pas perdre le bonus.
+        val source = state.balls.firstOrNull { !it.stuck }
+            ?: state.balls.firstOrNull()?.also { launch(it) }
+            ?: return
         val speed = hypot(source.vx, source.vy)
         val base = atan2(source.vy, source.vx)
         for (delta in listOf(-0.48f, 0.48f)) {
@@ -552,7 +577,7 @@ internal class GameEngine(private val context: Context) {
                 } else {
                     state.nextExtraLife + state.difficulty.extraLifeThreshold
                 }
-                eventListener(GameEvent.POWER)
+                eventListener(GameEvent.EXTRA_LIFE)
             }
         }
     }

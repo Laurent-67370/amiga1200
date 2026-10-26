@@ -23,6 +23,20 @@ Recréation jouable du casse-briques **Crystal Hammer**, écrite en Kotlin avec 
 - pause avec réglages du son, de la musique, des vibrations, de la sensibilité, des contrôles et des effets visuels ;
 - checkpoints au début des tableaux, incluant difficulté et statistiques, reprise après interruption et tutoriel interactif.
 
+## Nouveautés de la version 1.8.0
+
+- **Sons entièrement synthétisés** : les bips téléphoniques (`ToneGenerator`) sont remplacés par neuf effets courts générés à la volée (glissandos carrés, arpèges, bruit), sans claquement ni saturation ;
+- **départ de balle visé** : l'angle de lancement dépend de l'endroit où la balle repose sur le vaisseau (au centre, le côté est tiré au sort) au lieu de partir toujours à droite ;
+- **tir laser continu** : garder le doigt, la touche ou le bouton enfoncé tire en rafale, à la cadence normale du laser ;
+- **multitouche** : un second doigt lance la balle ou tire sans interrompre le pilotage ; en mode zones, on peut se déplacer et tirer en même temps ; le pilotage passe sans saut au doigt restant ;
+- **manettes** : croix envoyée comme axe « chapeau » (cas de nombreuses manettes Bluetooth) prise en charge, START, P ou Lecture/Pause mettent en pause et reprennent ;
+- **pause automatique** dès que le jeu perd le focus (volet de notifications, appel, fenêtre système) ;
+- **écrans à encoche ou caméra perforée** : le terrain de jeu reste dans la zone sûre, le décor s'étend dessous ;
+- **vie supplémentaire signalée** par un son et un bandeau dédiés ;
+- **corrections** : le bonus multi-balles n'est plus perdu quand la balle est encore collée ; le bonus « balle lente » n'est plus annulé au premier rebond sur le vaisseau ;
+- **performances** : les 400 cristaux sont dessinés dans un calque mis en cache et redessinés seulement quand ils changent, décors en cache à la résolution de l'écran (plus nets sur les grands écrans), dégradés de la balle et des bonus créés une seule fois, fichier des niveaux lu une seule fois, record enregistré aux changements d'écran plutôt qu'à chaque cristal touché ;
+- nouveaux tests unitaires du moteur (départ, multi-balles, tir continu, vie supplémentaire, calque des cristaux) et des effets sonores.
+
 ## Ouvrir et compiler
 
 1. Ouvrir ce dossier dans **Android Studio**.
@@ -55,7 +69,7 @@ Pour les mises à jour, il faut conserver exactement la même clé release. Un c
 - `GameBalance.kt` : équilibrage testable des difficultés et des bonus ;
 - `LevelDecoder.kt` : lecture des grilles Amiga de 20 × 20 cellules ;
 - `Models.kt` : modèles de données et statistiques ;
-- `SoundPlayer.kt` : effets sonores et synthèse musicale originale ;
+- `SoundPlayer.kt` : effets sonores synthétisés et musique originale ;
 - `app/src/main/assets/levels.bin` : 30 niveaux, 12 000 octets.
 
 ## Format des niveaux

@@ -2,21 +2,25 @@ package fr.crystalhammer.game
 
 import android.media.AudioAttributes
 import android.media.AudioFormat
-import android.media.AudioManager
 import android.media.AudioTrack
-import android.media.ToneGenerator
 import android.util.Log
+import kotlin.math.abs
+import kotlin.math.exp
 import kotlin.math.floor
 import kotlin.math.pow
 import kotlin.math.sin
 
+/** Banque d'effets : une implémentation par plateforme, remplaçable dans les tests. */
+internal interface EffectBank {
+    fun play(event: GameEvent)
+    fun release()
+}
+
 /** Effets et musique sont paresseux : aucun échec audio ne peut empêcher le jeu de démarrer. */
 internal class SoundPlayer(
-    private val toneFactory: (Int) -> ToneGenerator = { volume ->
-        ToneGenerator(AudioManager.STREAM_MUSIC, volume)
-    }
+    private val effectFactory: (Float) -> EffectBank = { volume -> AudioTrackEffectBank(volume) }
 ) {
-    private var tones: ToneGenerator? = null
+    private var effects: EffectBank? = null
     private var effectsDisabled = false
     private var effectsVolume = 70
     private var music: AudioTrack? = null
@@ -26,18 +30,9 @@ internal class SoundPlayer(
 
     fun play(event: GameEvent) {
         if (effectsVolume <= 0) return
-        val generator = getGenerator() ?: return
+        val bank = getEffects() ?: return
         try {
-            when (event) {
-                GameEvent.PADDLE -> generator.startTone(ToneGenerator.TONE_PROP_ACK, 28)
-                GameEvent.BRICK -> generator.startTone(ToneGenerator.TONE_PROP_BEEP, 24)
-                GameEvent.HARD_BRICK -> generator.startTone(ToneGenerator.TONE_PROP_NACK, 22)
-                GameEvent.POWER -> generator.startTone(ToneGenerator.TONE_CDMA_PIP, 90)
-                GameEvent.LASER -> generator.startTone(ToneGenerator.TONE_PROP_BEEP2, 32)
-                GameEvent.LOST -> generator.startTone(ToneGenerator.TONE_CDMA_SOFT_ERROR_LITE, 180)
-                GameEvent.LEVEL -> generator.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 160)
-                GameEvent.WORM -> generator.startTone(ToneGenerator.TONE_CDMA_CONFIRM, 80)
-            }
+            bank.play(event)
         } catch (error: RuntimeException) {
             disableEffects("Lecture audio impossible", error)
         }
@@ -47,7 +42,7 @@ internal class SoundPlayer(
         val newVolume = volume.coerceIn(0, 100)
         if (newVolume == effectsVolume) return
         effectsVolume = newVolume
-        releaseTones()
+        releaseEffects()
     }
 
     fun setMusicVolume(volume: Int) {
@@ -84,10 +79,10 @@ internal class SoundPlayer(
         if (musicRequested) startMusic()
     }
 
-    private fun getGenerator(): ToneGenerator? {
+    private fun getEffects(): EffectBank? {
         if (effectsDisabled) return null
         return try {
-            tones ?: toneFactory((effectsVolume * 0.65f).toInt().coerceIn(1, 100)).also { tones = it }
+            effects ?: effectFactory(effectsVolume / 100f * 0.8f).also { effects = it }
         } catch (error: RuntimeException) {
             disableEffects("Initialisation audio impossible", error)
             null
@@ -126,7 +121,7 @@ internal class SoundPlayer(
     private fun disableEffects(message: String, error: RuntimeException) {
         effectsDisabled = true
         Log.e("CrystalHammer", message + "; le jeu continue sans effets sonores", error)
-        releaseTones()
+        releaseEffects()
     }
 
     private fun disableMusic(message: String, error: RuntimeException) {
@@ -135,13 +130,13 @@ internal class SoundPlayer(
         releaseMusic()
     }
 
-    private fun releaseTones() {
+    private fun releaseEffects() {
         try {
-            tones?.release()
+            effects?.release()
         } catch (_: RuntimeException) {
             // Certains pilotes audio peuvent aussi échouer pendant la libération.
         }
-        tones = null
+        effects = null
     }
 
     private fun releaseMusic() {
@@ -154,11 +149,140 @@ internal class SoundPlayer(
     }
 
     fun release() {
-        releaseTones()
+        releaseEffects()
         releaseMusic()
         effectsDisabled = true
         musicDisabled = true
         musicRequested = false
+    }
+}
+
+/**
+ * Une piste statique par effet, créée au premier usage. Relancer un effet coupe
+ * simplement sa lecture précédente, ce qui suffit pour des sons de moins d'une demi-seconde.
+ */
+internal class AudioTrackEffectBank(private val volume: Float) : EffectBank {
+    private val tracks = HashMap<GameEvent, AudioTrack>()
+
+    override fun play(event: GameEvent) {
+        val track = tracks.getOrPut(event) { createTrack(SoundEffects.synthesize(event, SAMPLE_RATE)) }
+        if (track.playState == AudioTrack.PLAYSTATE_PLAYING) track.stop()
+        track.playbackHeadPosition = 0
+        track.play()
+    }
+
+    private fun createTrack(samples: ShortArray): AudioTrack {
+        val track = AudioTrack.Builder()
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_GAME)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            )
+            .setAudioFormat(
+                AudioFormat.Builder()
+                    .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                    .setSampleRate(SAMPLE_RATE)
+                    .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                    .build()
+            )
+            .setTransferMode(AudioTrack.MODE_STATIC)
+            .setBufferSizeInBytes(samples.size * 2)
+            .build()
+        if (track.write(samples, 0, samples.size) != samples.size) {
+            track.release()
+            throw IllegalStateException("Écriture d'effet incomplète")
+        }
+        track.setVolume(volume)
+        return track
+    }
+
+    override fun release() {
+        tracks.values.forEach { track ->
+            try {
+                track.release()
+            } catch (_: RuntimeException) {
+                // La libération d'une piste ne doit jamais bloquer les suivantes.
+            }
+        }
+        tracks.clear()
+    }
+
+    private companion object {
+        const val SAMPLE_RATE = 22_050
+    }
+}
+
+/** Effets courts synthétisés : glissandos carrés, arpèges et bruit, dans l'esprit des puces Paula. */
+internal object SoundEffects {
+    private class Voice(
+        val start: Double,
+        val duration: Double,
+        val fromHz: Double,
+        val toHz: Double,
+        val gain: Double,
+        val duty: Double = 0.5,
+        val noise: Boolean = false
+    )
+
+    private fun voices(event: GameEvent): List<Voice> = when (event) {
+        GameEvent.PADDLE -> listOf(Voice(0.0, 0.07, 330.0, 250.0, 0.55, duty = 0.35))
+        GameEvent.BRICK -> listOf(
+            Voice(0.0, 0.09, 1320.0, 1760.0, 0.42, duty = 0.25),
+            Voice(0.0, 0.03, 0.0, 0.0, 0.18, noise = true)
+        )
+        GameEvent.HARD_BRICK -> listOf(
+            Voice(0.0, 0.08, 520.0, 470.0, 0.45, duty = 0.5),
+            Voice(0.0, 0.05, 0.0, 0.0, 0.22, noise = true)
+        )
+        GameEvent.POWER -> arpeggio(doubleArrayOf(523.25, 659.25, 783.99, 1046.5), 0.05, 0.42)
+        GameEvent.EXTRA_LIFE -> arpeggio(doubleArrayOf(392.0, 523.25, 659.25, 783.99, 1046.5, 1318.5), 0.06, 0.42)
+        GameEvent.LASER -> listOf(Voice(0.0, 0.11, 1900.0, 520.0, 0.32, duty = 0.2))
+        GameEvent.LOST -> listOf(
+            Voice(0.0, 0.48, 440.0, 70.0, 0.5, duty = 0.5),
+            Voice(0.0, 0.25, 0.0, 0.0, 0.16, noise = true)
+        )
+        GameEvent.LEVEL -> arpeggio(doubleArrayOf(523.25, 659.25, 783.99, 659.25, 783.99, 1046.5), 0.075, 0.4)
+        GameEvent.WORM -> listOf(
+            Voice(0.0, 0.16, 180.0, 900.0, 0.4, duty = 0.3),
+            Voice(0.0, 0.12, 0.0, 0.0, 0.2, noise = true)
+        )
+    }
+
+    private fun arpeggio(notes: DoubleArray, step: Double, gain: Double) = notes.mapIndexed { index, hz ->
+        Voice(index * step, step * 1.6, hz, hz, gain, duty = 0.5)
+    }
+
+    fun synthesize(event: GameEvent, sampleRate: Int): ShortArray {
+        require(sampleRate >= 8_000)
+        val parts = voices(event)
+        val length = parts.maxOf { it.start + it.duration }
+        val result = ShortArray((length * sampleRate).toInt() + 1)
+        var noise = 0x2468ACE
+        for (voice in parts) {
+            val first = (voice.start * sampleRate).toInt()
+            val count = (voice.duration * sampleRate).toInt()
+            var phase = 0.0
+            for (offset in 0 until count) {
+                val index = first + offset
+                if (index >= result.size) break
+                val progress = offset.toDouble() / count
+                // Attaque de 2 ms puis décroissance exponentielle, pour éviter tout claquement.
+                val attack = (offset / (0.002 * sampleRate)).coerceAtMost(1.0)
+                val envelope = attack * exp(-3.2 * progress) * (1.0 - progress)
+                val sample = if (voice.noise) {
+                    noise = noise * 1103515245 + 12345
+                    ((noise ushr 16) and 0x7FFF) / 16_383.5 - 1.0
+                } else {
+                    val hz = voice.fromHz + (voice.toHz - voice.fromHz) * progress
+                    phase = (phase + hz / sampleRate) % 1.0
+                    if (phase < voice.duty) 1.0 else -1.0
+                }
+                val mixed = result[index] / 32_767.0 + sample * envelope * voice.gain * 0.6
+                result[index] = floor(mixed.coerceIn(-1.0, 1.0) * 32_767.0).toInt().toShort()
+            }
+        }
+        return result
     }
 }
 
@@ -193,7 +317,7 @@ internal object ChipTune {
             val lead = if (leadPhase < 0.25) 1.0 else -0.65
             val bassFrequency = bassFrequencies[(step / 8) % bassRoots.size]
             val bassPhase = (time * bassFrequency) % 1.0
-            val bass = 1.0 - 4.0 * kotlin.math.abs(bassPhase - 0.5)
+            val bass = 1.0 - 4.0 * abs(bassPhase - 0.5)
             noise = noise * 1103515245 + 12345
             val percussion = if (step % 2 == 0 && withinStep < 0.025) {
                 ((noise ushr 16) % 2000 - 1000) / 1000.0 * (1.0 - withinStep / 0.025)

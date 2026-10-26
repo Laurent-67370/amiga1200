@@ -32,8 +32,6 @@ internal object LevelDecoder {
         }
     }
 
-    fun fromAssets(context: Context, oneBasedLevel: Int): Array<Brick> {
-        val data = context.assets.open("levels.bin").use { it.readBytes() }
-        return decode(data, oneBasedLevel)
-    }
+    fun readAssets(context: Context): ByteArray =
+        context.assets.open("levels.bin").use { it.readBytes() }
 }

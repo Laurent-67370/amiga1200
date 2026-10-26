@@ -11,6 +11,7 @@ import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
+import android.view.WindowInsets
 import android.widget.EditText
 import java.util.Locale
 import kotlin.math.*
@@ -22,6 +23,7 @@ internal class GameView(context: Context) : View(context) {
     private val highScores = HighScoreStore(context)
     private var leaderboard = highScores.entries()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val bitmapPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     private val path = Path()
     private val bold = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
     private val regular = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
@@ -38,6 +40,11 @@ internal class GameView(context: Context) : View(context) {
     private var viewScale = 1f
     private var offsetX = 0f
     private var offsetY = 0f
+    // Marges sûres autour des encoches et caméras : le terrain de jeu n'y est jamais dessiné.
+    private var safeLeft = 0
+    private var safeTop = 0
+    private var safeRight = 0
+    private var safeBottom = 0
     private var lastFrame = 0L
     private var accumulator = 0f
     private var running = true
@@ -45,6 +52,19 @@ internal class GameView(context: Context) : View(context) {
     private var background: LinearGradient? = null
     private var cachedBackground: Bitmap? = null
     private var cachedBackgroundLevel = -1
+    private var cachedBackgroundScale = 0f
+    private var brickLayer: Bitmap? = null
+    private var brickLayerVersion = -1
+    private var brickLayerScale = 0f
+    private val brickLayerBounds = RectF(
+        GameEngine.LEFT, GameEngine.BRICK_TOP,
+        GameEngine.RIGHT, GameEngine.BRICK_TOP + GameEngine.ROWS * GameEngine.BRICK_HEIGHT
+    )
+    private var ballGlowShader: Shader? = null
+    private var ballBodyShader: Shader? = null
+    private val powerGlowShader = RadialGradient(0f, 0f, 1f, 0x66FFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP)
+    private var steeringPointerId = MotionEvent.INVALID_POINTER_ID
+    private var extraLifeBanner = 0f
     private var lastScreen = engine.state.screen
     private var nameDialog: AlertDialog? = null
     private var lastInteraction = System.nanoTime()
@@ -106,20 +126,21 @@ internal class GameView(context: Context) : View(context) {
                 if (soundEnabled) sound.play(event)
                 if (hapticsEnabled) {
                     when (event) {
-                        GameEvent.POWER -> performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                        GameEvent.POWER, GameEvent.EXTRA_LIFE ->
+                            performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                         GameEvent.LOST -> performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                         GameEvent.LEVEL -> performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
                         else -> Unit
                     }
                 }
                 if (event == GameEvent.POWER && tutorialStep == 3) finishTutorial()
-                if (engine.state.score >= engine.state.highScore) saveHighScore()
+                if (event == GameEvent.EXTRA_LIFE) extraLifeBanner = 1.6f
             }
             if (visualEffects) {
                 when (event) {
                     GameEvent.LOST -> { shakeAmount = 5f; impactFlash = 0.34f }
                     GameEvent.LEVEL -> { shakeAmount = 2.5f; impactFlash = 0.20f }
-                    GameEvent.POWER -> impactFlash = 0.13f
+                    GameEvent.POWER, GameEvent.EXTRA_LIFE -> impactFlash = 0.13f
                     GameEvent.BRICK, GameEvent.WORM -> shakeAmount = max(shakeAmount, 0.8f)
                     else -> Unit
                 }
@@ -128,10 +149,49 @@ internal class GameView(context: Context) : View(context) {
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-        viewScale = min(w / GameEngine.WIDTH, h / GameEngine.HEIGHT)
-        offsetX = (w - GameEngine.WIDTH * viewScale) / 2f
-        offsetY = (h - GameEngine.HEIGHT * viewScale) / 2f
+        updateLayout(w, h)
         background = LinearGradient(0f, 0f, 0f, h.toFloat(), 0xFF030611.toInt(), 0xFF101638.toInt(), Shader.TileMode.CLAMP)
+    }
+
+    override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
+        if (android.os.Build.VERSION.SDK_INT >= 28) {
+            val cutout = insets.displayCutout
+            safeLeft = cutout?.safeInsetLeft ?: 0
+            safeTop = cutout?.safeInsetTop ?: 0
+            safeRight = cutout?.safeInsetRight ?: 0
+            safeBottom = cutout?.safeInsetBottom ?: 0
+            if (width > 0 && height > 0) updateLayout(width, height)
+        }
+        return super.onApplyWindowInsets(insets)
+    }
+
+    private fun updateLayout(w: Int, h: Int) {
+        val availableWidth = (w - safeLeft - safeRight).coerceAtLeast(1)
+        val availableHeight = (h - safeTop - safeBottom).coerceAtLeast(1)
+        viewScale = min(availableWidth / GameEngine.WIDTH, availableHeight / GameEngine.HEIGHT)
+        offsetX = safeLeft + (availableWidth - GameEngine.WIDTH * viewScale) / 2f
+        offsetY = safeTop + (availableHeight - GameEngine.HEIGHT * viewScale) / 2f
+    }
+
+    /** Résolution des calques en cache : nette sur les grands écrans, bornée pour la mémoire. */
+    private fun cacheScale(): Float = viewScale.coerceIn(1f, 3f)
+
+    override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
+        super.onWindowFocusChanged(hasWindowFocus)
+        // Volet de notifications, appel entrant ou fenêtre système : la partie se met en pause.
+        if (!hasWindowFocus && !demoMode) {
+            engine.pause()
+            releaseControls()
+        }
+    }
+
+    private fun releaseControls() {
+        zoneDirection = 0
+        leftPressed = false
+        rightPressed = false
+        gamepadAxis = 0f
+        steeringPointerId = MotionEvent.INVALID_POINTER_ID
+        engine.state.fireHeld = false
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -145,6 +205,7 @@ internal class GameView(context: Context) : View(context) {
         clock += elapsed
         shakeAmount = max(0f, shakeAmount - elapsed * 15f)
         impactFlash = max(0f, impactFlash - elapsed * 1.8f)
+        extraLifeBanner = max(0f, extraLifeBanner - elapsed)
         if (running && !demoMode && engine.state.screen == Screen.TITLE) {
             bonusTimer += elapsed
             bonusAnimation = max(0f, bonusAnimation - elapsed * 3.5f)
@@ -190,19 +251,50 @@ internal class GameView(context: Context) : View(context) {
 
     private fun drawBackground(canvas: Canvas) {
         val level = if (engine.state.screen == Screen.TITLE) 1 else engine.state.level.coerceIn(1, 30)
-        if (cachedBackgroundLevel != level || cachedBackground == null) {
+        val scale = cacheScale()
+        if (cachedBackgroundLevel != level || cachedBackgroundScale != scale || cachedBackground == null) {
             cachedBackground?.recycle()
-            val bitmap = Bitmap.createBitmap(720, 1280, Bitmap.Config.ARGB_8888)
+            val bitmap = Bitmap.createBitmap(
+                ceil(GameEngine.WIDTH * scale).toInt(), ceil(GameEngine.HEIGHT * scale).toInt(),
+                Bitmap.Config.ARGB_8888
+            )
             val offscreen = Canvas(bitmap)
-            offscreen.scale(2f, 2f)
+            offscreen.scale(scale, scale)
             drawBackgroundContent(offscreen, level)
             cachedBackground = bitmap
             cachedBackgroundLevel = level
+            cachedBackgroundScale = scale
         }
-        paint.style = Paint.Style.FILL
-        paint.shader = null
-        paint.alpha = 255
-        canvas.drawBitmap(cachedBackground!!, null, RectF(0f, 0f, GameEngine.WIDTH, GameEngine.HEIGHT), paint)
+        canvas.drawBitmap(cachedBackground!!, null, RectF(0f, 0f, GameEngine.WIDTH, GameEngine.HEIGHT), bitmapPaint)
+    }
+
+    /** Les 400 cristaux ne sont redessinés que lorsqu'ils changent, pas à chaque image. */
+    private fun drawBricks(canvas: Canvas) {
+        val scale = cacheScale()
+        val version = engine.state.bricksVersion
+        var layer = brickLayer
+        if (layer == null || brickLayerScale != scale) {
+            layer?.recycle()
+            layer = Bitmap.createBitmap(
+                ceil(brickLayerBounds.width() * scale).toInt(), ceil(brickLayerBounds.height() * scale).toInt(),
+                Bitmap.Config.ARGB_8888
+            )
+            brickLayer = layer
+            brickLayerScale = scale
+            brickLayerVersion = -1
+        }
+        if (brickLayerVersion != version) {
+            layer.eraseColor(Color.TRANSPARENT)
+            val offscreen = Canvas(layer)
+            offscreen.scale(scale, scale)
+            offscreen.translate(-brickLayerBounds.left, -brickLayerBounds.top)
+            for (index in engine.state.bricks.indices) {
+                val brick = engine.state.bricks[index]
+                if (brick.hits > 0) drawBrick(offscreen, GameEngine.brickRect(index), brick)
+            }
+            brickLayerVersion = version
+        }
+        canvas.drawBitmap(layer, null, brickLayerBounds, bitmapPaint)
     }
 
     private fun drawBackgroundContent(canvas: Canvas, level: Int) {
@@ -543,10 +635,7 @@ internal class GameView(context: Context) : View(context) {
 
     private fun drawGame(canvas: Canvas) {
         drawHud(canvas)
-        for (index in engine.state.bricks.indices) {
-            val brick = engine.state.bricks[index]
-            if (brick.hits > 0) drawBrick(canvas, GameEngine.brickRect(index), brick)
-        }
+        drawBricks(canvas)
         engine.state.worms.forEach { drawWorm(canvas, it) }
         engine.state.powerUps.forEach { drawPowerUp(canvas, it) }
         engine.state.lasers.forEach { laser ->
@@ -569,6 +658,15 @@ internal class GameView(context: Context) : View(context) {
             paint.alpha = (impactFlash * 100).toInt().coerceIn(0, 45)
             canvas.drawRect(GameEngine.LEFT, GameEngine.TOP, GameEngine.RIGHT, GameEngine.HEIGHT, paint)
             paint.alpha = 255
+        }
+
+        if (extraLifeBanner > 0f && engine.state.screen == Screen.PLAYING) {
+            val alpha = (extraLifeBanner / 0.4f).coerceAtMost(1f)
+            val rise = (1.6f - extraLifeBanner) * 10f
+            paint.color = 0xD9081322.toInt()
+            paint.alpha = (alpha * 217).toInt()
+            canvas.drawRoundRect(RectF(92f, 470f - rise, 268f, 494f - rise), 12f, 12f, paint)
+            text(canvas, "VIE SUPPLÉMENTAIRE !", 180f, 486f - rise, 11f, 0xFFFF9B45.toInt(), true, font = monoBold)
         }
 
         if (engine.state.screen == Screen.PLAYING && tutorialStep > 0) {
@@ -957,34 +1055,43 @@ internal class GameView(context: Context) : View(context) {
             }
             paint.alpha = 255
         }
-        paint.shader = RadialGradient(
-            ball.x, ball.y, ball.radius * 2.6f,
+        // Dégradés créés une seule fois autour de l'origine, puis déplacés avec la balle.
+        val glow = ballGlowShader ?: RadialGradient(
+            0f, 0f, ball.radius * 2.6f,
             0x8855E6FF.toInt(), 0x0055E6FF, Shader.TileMode.CLAMP
-        )
-        canvas.drawCircle(ball.x, ball.y, ball.radius * 2.6f, paint)
-        paint.shader = RadialGradient(
-            ball.x - ball.radius * 0.35f, ball.y - ball.radius * 0.4f, ball.radius * 1.25f,
+        ).also { ballGlowShader = it }
+        val body = ballBodyShader ?: RadialGradient(
+            -ball.radius * 0.35f, -ball.radius * 0.4f, ball.radius * 1.25f,
             Color.WHITE, 0xFF28A8E8.toInt(), Shader.TileMode.CLAMP
-        )
-        canvas.drawCircle(ball.x, ball.y, ball.radius, paint)
+        ).also { ballBodyShader = it }
+        canvas.save()
+        canvas.translate(ball.x, ball.y)
+        paint.color = Color.WHITE
+        paint.shader = glow
+        canvas.drawCircle(0f, 0f, ball.radius * 2.6f, paint)
+        paint.shader = body
+        canvas.drawCircle(0f, 0f, ball.radius, paint)
         paint.shader = null
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 0.65f
         paint.color = 0xFF073B66.toInt()
-        canvas.drawCircle(ball.x, ball.y, ball.radius, paint)
+        canvas.drawCircle(0f, 0f, ball.radius, paint)
         paint.style = Paint.Style.FILL
         paint.color = Color.WHITE
-        canvas.drawCircle(ball.x - 1.35f, ball.y - 1.45f, ball.radius * 0.28f, paint)
+        canvas.drawCircle(-1.35f, -1.45f, ball.radius * 0.28f, paint)
+        canvas.restore()
     }
 
     private fun drawPowerUp(canvas: Canvas, power: PowerUp) {
         val pulse = 11f + sin(clock * 7f + power.x) * 1.5f
-        paint.shader = RadialGradient(
-            power.x, power.y, pulse,
-            0x66FFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP
-        )
-        canvas.drawCircle(power.x, power.y, pulse, paint)
+        canvas.save()
+        canvas.translate(power.x, power.y)
+        canvas.scale(pulse, pulse)
+        paint.color = Color.WHITE
+        paint.shader = powerGlowShader
+        canvas.drawCircle(0f, 0f, 1f, paint)
         paint.shader = null
+        canvas.restore()
         canvas.save()
         canvas.rotate(power.rotation, power.x, power.y)
         drawCrystal(canvas, power.x, power.y, 8f, power.type.color.toInt(), 0f)
@@ -1107,7 +1214,7 @@ internal class GameView(context: Context) : View(context) {
         drawMenuButton(canvas, RectF(65f, 410f, 295f, 455f), "QUITTER VERS L'ACCUEIL", 0xFFFF7180.toInt())
         text(canvas, "Reprise au début du tableau en cas d'interruption.", 180f, 499f, 9f, 0xFFB5C8E2.toInt(), false)
         text(canvas, "MANETTE ET CLAVIER PRISES EN CHARGE", 180f, 528f, 8f, 0xFF7F98BD.toInt(), true, font = monoBold)
-        text(canvas, "RETOUR = REPRENDRE", 180f, 552f, 8f, 0xFF7F98BD.toInt(), true, font = monoBold)
+        text(canvas, "RETOUR, START OU P = REPRENDRE", 180f, 552f, 8f, 0xFF7F98BD.toInt(), true, font = monoBold)
     }
 
     private fun drawSettingsMenu(canvas: Canvas) {
@@ -1425,6 +1532,8 @@ internal class GameView(context: Context) : View(context) {
         val currentScreen = engine.state.screen
         val changed = currentScreen != lastScreen
         lastScreen = currentScreen
+        // Le record est écrit aux changements d'écran, plus à chaque cristal touché.
+        if (changed) saveHighScore()
         if (changed && currentScreen == Screen.INTRO) saveProgressCheckpoint()
         if (changed && (currentScreen == Screen.GAME_OVER || currentScreen == Screen.VICTORY)) clearProgress()
     }
@@ -1464,7 +1573,7 @@ internal class GameView(context: Context) : View(context) {
         nameDialog = dialog
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                val name = input.text.toString().trim().uppercase(Locale.getDefault())
+                val name = input.text.toString().trim().uppercase(Locale.ROOT)
                     .take(HighScoreLeaderboard.MAX_NAME_LENGTH)
                 if (name.isEmpty()) {
                     input.error = "Entre au moins une initiale"
@@ -1602,10 +1711,10 @@ internal class GameView(context: Context) : View(context) {
             if (event.actionMasked == MotionEvent.ACTION_DOWN) stopDemo()
             return true
         }
-        val x = (event.x - offsetX) / viewScale
-        val y = (event.y - offsetY) / viewScale
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
+                val x = toGameX(event.getX(0))
+                val y = toGameY(event.getY(0))
                 sound.startMusic()
                 when (engine.state.screen) {
                     Screen.TITLE -> handleTitleTouch(x, y)
@@ -1617,48 +1726,101 @@ internal class GameView(context: Context) : View(context) {
                     Screen.PAUSED -> handlePauseTouch(x, y)
                     Screen.PLAYING -> if (x > 305f && y < 52f) {
                         engine.pause()
-                        zoneDirection = 0
+                        releaseControls()
                     } else if (tutorialStep > 0 && x > 265f && y in 505f..535f) {
                         finishTutorial()
                     } else {
+                        steeringPointerId = event.getPointerId(0)
                         lastTouchX = x
-                        when (controlMode) {
-                            ControlMode.RELATIVE -> engine.primaryAction()
-                            ControlMode.DIRECT -> {
-                                engine.movePaddle(x)
-                                engine.primaryAction()
-                            }
-                            ControlMode.ZONES -> {
-                                zoneDirection = when {
-                                    x < 120f -> -1
-                                    x > 240f -> 1
-                                    else -> 0
-                                }
-                                if (zoneDirection == 0) engine.primaryAction()
-                            }
-                        }
+                        playingPointerDown(x)
                     }
                     else -> engine.primaryAction()
                 }
             }
-            MotionEvent.ACTION_MOVE -> if (engine.state.screen == Screen.PLAYING) {
+            MotionEvent.ACTION_POINTER_DOWN -> if (engine.state.screen == Screen.PLAYING) {
+                // Un second doigt lance ou tire sans interrompre le pilotage du premier.
+                val x = toGameX(event.getX(event.actionIndex))
+                if (steeringPointerId == MotionEvent.INVALID_POINTER_ID) {
+                    steeringPointerId = event.getPointerId(event.actionIndex)
+                    lastTouchX = x
+                }
                 when (controlMode) {
-                    ControlMode.RELATIVE -> {
-                        val delta = (x - lastTouchX) * touchSensitivity
-                        engine.movePaddle(engine.state.paddleX + delta)
+                    ControlMode.ZONES -> {
+                        zoneDirection = zoneFromPointers(event, -1)
+                        if (zoneFor(x) == 0) engine.primaryAction()
                     }
-                    ControlMode.DIRECT -> engine.movePaddle(x)
-                    ControlMode.ZONES -> zoneDirection = when {
-                        x < 120f -> -1
-                        x > 240f -> 1
-                        else -> 0
+                    else -> engine.primaryAction()
+                }
+                engine.state.fireHeld = true
+            }
+            MotionEvent.ACTION_MOVE -> if (engine.state.screen == Screen.PLAYING) {
+                if (controlMode == ControlMode.ZONES) {
+                    zoneDirection = zoneFromPointers(event, -1)
+                } else {
+                    val index = event.findPointerIndex(steeringPointerId)
+                    if (index >= 0) {
+                        val x = toGameX(event.getX(index))
+                        if (controlMode == ControlMode.RELATIVE) {
+                            val delta = (x - lastTouchX) * touchSensitivity
+                            engine.movePaddle(engine.state.paddleX + delta)
+                        } else {
+                            engine.movePaddle(x)
+                        }
+                        lastTouchX = x
                     }
                 }
-                lastTouchX = x
             }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> zoneDirection = 0
+            MotionEvent.ACTION_POINTER_UP -> {
+                val liftedIndex = event.actionIndex
+                if (event.getPointerId(liftedIndex) == steeringPointerId) {
+                    // Le pilotage passe au doigt restant, sans saut du vaisseau.
+                    val nextIndex = if (liftedIndex == 0) 1 else 0
+                    steeringPointerId = event.getPointerId(nextIndex)
+                    lastTouchX = toGameX(event.getX(nextIndex))
+                }
+                if (controlMode == ControlMode.ZONES) zoneDirection = zoneFromPointers(event, liftedIndex)
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                zoneDirection = 0
+                steeringPointerId = MotionEvent.INVALID_POINTER_ID
+                engine.state.fireHeld = false
+            }
         }
         return true
+    }
+
+    private fun playingPointerDown(x: Float) {
+        when (controlMode) {
+            ControlMode.RELATIVE -> engine.primaryAction()
+            ControlMode.DIRECT -> {
+                engine.movePaddle(x)
+                engine.primaryAction()
+            }
+            ControlMode.ZONES -> {
+                zoneDirection = zoneFor(x)
+                if (zoneDirection == 0) engine.primaryAction()
+            }
+        }
+        engine.state.fireHeld = true
+    }
+
+    private fun toGameX(rawX: Float): Float = (rawX - offsetX) / viewScale
+
+    private fun toGameY(rawY: Float): Float = (rawY - offsetY) / viewScale
+
+    private fun zoneFor(x: Float): Int = when {
+        x < 120f -> -1
+        x > 240f -> 1
+        else -> 0
+    }
+
+    /** Somme des zones touchées par tous les doigts, en ignorant celui qui se lève. */
+    private fun zoneFromPointers(event: MotionEvent, ignoredIndex: Int): Int {
+        var direction = 0
+        for (index in 0 until event.pointerCount) {
+            if (index != ignoredIndex) direction += zoneFor(toGameX(event.getX(index)))
+        }
+        return direction.coerceIn(-1, 1)
     }
 
     private fun updateDirectionalControls(dt: Float) {
@@ -1672,6 +1834,7 @@ internal class GameView(context: Context) : View(context) {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        lastInteraction = System.nanoTime()
         when (keyCode) {
             KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_A -> {
                 leftPressed = true
@@ -1681,29 +1844,60 @@ internal class GameView(context: Context) : View(context) {
                 rightPressed = true
                 return true
             }
+            KeyEvent.KEYCODE_BUTTON_START, KeyEvent.KEYCODE_P, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
+                if (event.repeatCount == 0) togglePause()
+                return true
+            }
         }
-        if (keyCode == KeyEvent.KEYCODE_SPACE || keyCode == KeyEvent.KEYCODE_ENTER ||
-            keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_BUTTON_A ||
-            keyCode == KeyEvent.KEYCODE_BUTTON_X
-        ) {
+        if (isFireKey(keyCode)) {
             if (event.repeatCount == 0) handleExternalAction()
+            if (engine.state.screen == Screen.PLAYING) engine.state.fireHeld = true
             return true
         }
         return super.onKeyDown(keyCode, event)
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
-        when (keyCode) {
-            KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_A -> leftPressed = false
-            KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_D -> rightPressed = false
+        when {
+            keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_A -> leftPressed = false
+            keyCode == KeyEvent.KEYCODE_DPAD_RIGHT || keyCode == KeyEvent.KEYCODE_D -> rightPressed = false
+            isFireKey(keyCode) -> engine.state.fireHeld = false
+            keyCode == KeyEvent.KEYCODE_BUTTON_START || keyCode == KeyEvent.KEYCODE_P ||
+                keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> Unit
             else -> return super.onKeyUp(keyCode, event)
         }
         return true
     }
 
+    private fun isFireKey(keyCode: Int): Boolean =
+        keyCode == KeyEvent.KEYCODE_SPACE || keyCode == KeyEvent.KEYCODE_ENTER ||
+            keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER || keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
+            keyCode == KeyEvent.KEYCODE_BUTTON_A || keyCode == KeyEvent.KEYCODE_BUTTON_X
+
+    private fun togglePause() {
+        when {
+            demoMode -> stopDemo()
+            engine.state.screen == Screen.PLAYING -> {
+                engine.pause()
+                releaseControls()
+            }
+            engine.state.screen == Screen.PAUSED -> {
+                settingsOpen = false
+                engine.state.screen = Screen.PLAYING
+            }
+            else -> handleExternalAction()
+        }
+    }
+
     override fun onGenericMotionEvent(event: MotionEvent): Boolean {
-        if (event.source and InputDevice.SOURCE_CLASS_JOYSTICK == InputDevice.SOURCE_CLASS_JOYSTICK) {
-            gamepadAxis = event.getAxisValue(MotionEvent.AXIS_X).coerceIn(-1f, 1f)
+        if (event.source and InputDevice.SOURCE_CLASS_JOYSTICK == InputDevice.SOURCE_CLASS_JOYSTICK &&
+            event.actionMasked == MotionEvent.ACTION_MOVE
+        ) {
+            // Beaucoup de manettes envoient leur croix comme un axe « chapeau » plutôt que des touches.
+            val hat = event.getAxisValue(MotionEvent.AXIS_HAT_X)
+            val stick = event.getAxisValue(MotionEvent.AXIS_X)
+            gamepadAxis = (if (abs(hat) >= 0.5f) hat else stick).coerceIn(-1f, 1f)
+            if (abs(gamepadAxis) >= 0.18f) lastInteraction = System.nanoTime()
             return true
         }
         return super.onGenericMotionEvent(event)
@@ -1736,8 +1930,8 @@ internal class GameView(context: Context) : View(context) {
         if (engine.state.screen == Screen.TITLE) return false
         when (engine.state.screen) {
             Screen.PLAYING -> {
-                zoneDirection = 0
                 engine.pause()
+                releaseControls()
             }
             Screen.PAUSED -> if (settingsOpen) settingsOpen = false else engine.state.screen = Screen.PLAYING
             Screen.GAME_OVER, Screen.VICTORY -> openHighScores()
@@ -1748,10 +1942,7 @@ internal class GameView(context: Context) : View(context) {
 
     fun pause() {
         if (!demoMode) engine.pause()
-        zoneDirection = 0
-        leftPressed = false
-        rightPressed = false
-        gamepadAxis = 0f
+        releaseControls()
         saveHighScore()
         sound.pauseMusic()
         running = false
@@ -1774,6 +1965,9 @@ internal class GameView(context: Context) : View(context) {
         cachedBackground?.recycle()
         cachedBackground = null
         cachedBackgroundLevel = -1
+        brickLayer?.recycle()
+        brickLayer = null
+        brickLayerVersion = -1
         sound.release()
     }
 

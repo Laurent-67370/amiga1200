@@ -36,7 +36,7 @@ internal enum class PowerType(val color: Long, val symbol: String) {
 }
 
 internal enum class GameEvent {
-    PADDLE, BRICK, HARD_BRICK, POWER, LASER, LOST, LEVEL, WORM
+    PADDLE, BRICK, HARD_BRICK, POWER, LASER, LOST, LEVEL, WORM, EXTRA_LIFE
 }
 
 internal data class Brick(
@@ -125,6 +125,10 @@ internal class GameState {
     var stateTime = 0f
     var wormClock = 9f
     var bricks = Array(GameEngine.ROWS * GameEngine.COLS) { Brick(0, 0, 0) }
+    /** Incrémenté à chaque changement visible des cristaux : l'affichage met leur calque en cache. */
+    var bricksVersion = 0
+    /** Tir continu demandé tant qu'un doigt, une touche ou un bouton reste enfoncé. */
+    var fireHeld = false
     val balls = mutableListOf<Ball>()
     val powerUps = mutableListOf<PowerUp>()
     val lasers = mutableListOf<Laser>()

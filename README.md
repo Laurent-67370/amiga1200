@@ -16,7 +16,7 @@ Amiga Forever compris).
 | Version | Dépôt | Pour | Particularités | Obtenir |
 |---|---|---|---|---|
 | **Web** (ce dépôt), l'origine du projet | [amiga1200](https://github.com/laurent-67370/amiga1200) | Navigateur : ordinateur, Android, iPhone, iPad | Rien à installer, hors ligne (application PWA), deux moteurs (WinUAE 6 et PUAE) | [Ouvrir la page](https://laurent-67370.github.io/amiga1200/) |
-| **Android** | [amiga1200-android](https://github.com/laurent-67370/amiga1200-android) | Téléphones et tablettes 64 bits (Android 9 et plus) | **JIT**, manette et clavier tactiles, raccourcis sur l'écran d'accueil | [APK (Releases → dev)](https://github.com/laurent-67370/amiga1200-android/releases/tag/dev) |
+| **Android** | [amiga1200-android](https://github.com/laurent-67370/amiga1200-android) | Téléphones et tablettes 64 bits (Android 9 et plus) | **JIT**, manette et clavier tactiles, raccourcis sur l'écran d'accueil, disques d'un NAS (SMB) lus sur place | [APK (Releases → dev)](https://github.com/laurent-67370/amiga1200-android/releases/tag/dev) |
 | **Mac** | [amiga1200-mac](https://github.com/laurent-67370/amiga1200-mac) | Mac Apple Silicon (macOS 13 et plus) | **JIT**, application macOS (menus, CoreMIDI, manettes Game Controller) | [.dmg (Releases → dev)](https://github.com/laurent-67370/amiga1200-mac/releases/tag/dev) |
 | **Windows et Linux** | [amiga1200-pc](https://github.com/laurent-67370/amiga1200-pc) | PC x64 : Windows 10/11, Linux (AppImage) | Une seule base pour les deux systèmes, .zip portable et AppImage autonome (sans JIT : 68040 interprété) | [.zip et AppImage (Releases → dev)](https://github.com/laurent-67370/amiga1200-pc/releases/tag/dev) |
 
@@ -157,6 +157,9 @@ disques de 4 Go.
 - **Tes fichiers ne sont jamais modifiés.** Ce que l'Amiga écrit (favoris, réglages, fichiers créés) est gardé dans le
   navigateur par blocs de 4 Ko et réappliqué à l'allumage suivant ; un fichier modifié ailleurs entre-temps (WinUAE…) ne
   reçoit pas d'anciens blocs. Case pour le désactiver et bouton *Effacer…* dans le panneau « DH4: et suivants ».
+- **Fichiers sur l'appareil seulement** : le navigateur n'ouvre pas sur place un dossier réseau ou en ligne (NAS, Drive…).
+  Pour jouer depuis un NAS, l'application Android le fait directement (« Serveur / NAS… »), et les versions PC et Mac
+  par un partage monté comme dossier.
 - **Volume `SHARED:` intégré** (case cochée par défaut) : AGS y range les sauvegardes des jeux (`SHARED:SaveGames`) ;
   il est gardé dans le navigateur d'une séance à l'autre.
 - **Éteindre puis Démarrer** ne recharge plus la page avec WinUAE 6 : les disques sur place restent branchés (jusqu'à

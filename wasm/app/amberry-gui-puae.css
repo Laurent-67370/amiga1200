@@ -2,9 +2,13 @@
 @font-face{font-family:"Amiga Topaz";src:url(data:font/ttf;base64,__TOPAZ__) format("truetype");font-display:swap}
 #ambGui{--ab-base:#aaa;--ab-frame:#969696;--ab-text:#000;--ab-dis:#646464;--ab-acc:#0055aa;--ab-sel:#c3d9d9;--ab-border:#787878;
   --ab-shine:#fff;--ab-btn:#aaa;--ab-hover:#b9b9b9;
-  position:fixed;inset:0;z-index:40;background:#5a5a5a;display:flex;align-items:stretch;justify-content:center;
+  position:fixed;inset:0;z-index:40;display:flex;align-items:stretch;justify-content:center;
+  /* Fond d'écran (fond.jpg) autour de la fenêtre ; gris uni si l'image manque */
+  background:linear-gradient(rgba(0,0,0,.2),rgba(0,0,0,.35)),url("fond.jpg") center/cover no-repeat,#5a5a5a;
   font:16px/1.25 "Amiga Topaz",ui-monospace,Menlo,Consolas,monospace;color:var(--ab-text)}
 #ambGui[hidden]{display:none}
+/* Écran assez grand : la fenêtre flotte sur le fond d'écran au lieu de le cacher */
+@media (min-width:900px) and (min-height:640px){#ambGui{padding:28px}.ab-win{box-shadow:0 12px 48px rgba(0,0,0,.6)}}
 #ambGui *{font-family:inherit}
 /* Topaz est dessinée sur une grille de 8 pixels : 16 px partout, sinon les lettres se brouillent */
 #ambGui :is(p,span,label,b,small,li,dt,dd,button,select,input,h3,div,a,legend){font-size:16px}

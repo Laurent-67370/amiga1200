@@ -13,7 +13,8 @@
   --room-top:#0b3a73; --room-bot:#04152d; --glow:rgba(255,136,0,.16);
   --wb-grey:#0055aa; --wb-blue:#ff8800; --wb-text:#fff; --accent:#ff8800; --accent-ink:#000;
 }
-body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%),radial-gradient(ellipse at 50% 0%,var(--room-top),var(--room-bot) 70%);transition:background .4s}
+/* Fond d'écran (fond.jpg) assombri aux couleurs du modèle, pour garder l'écran et les commandes lisibles */
+body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%),linear-gradient(color-mix(in srgb,var(--room-bot) 72%,transparent),color-mix(in srgb,var(--room-bot) 86%,transparent)),url("fond.jpg") center/cover no-repeat fixed,radial-gradient(ellipse at 50% 0%,var(--room-top),var(--room-bot) 70%);background-color:var(--room-bot);transition:background .4s}
 
 /* Arc-en-ciel : coche du logo Amiga, liseré de la barre d'outils */
 .amiga-tick{display:inline-block;width:1.7em;height:1em;vertical-align:-.12em;margin-right:.45em;flex:none}

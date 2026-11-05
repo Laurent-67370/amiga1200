@@ -105,7 +105,7 @@ jobs:
           if [ "$GITHUB_REF_NAME" = "main" ]; then
             # Version principale à la racine
             for f in index.html essai.html puae.js puae.wasm amiberry.js amiberry.wasm ipf.js ipf.wasm puae-frontend.js lazydisk-worker.js adf.js hdf.js lha.js ffs.js coi.js coi-sw.js aros-rom.bin.gz aros-ext.bin.gz \
-                     manifest.webmanifest icon-192.png icon-512.png icon-maskable-512.png apple-touch-icon.png; do
+                     manifest.webmanifest icon-192.png icon-512.png icon-maskable-512.png apple-touch-icon.png fond.jpg; do
               cp "wasm/dist/site/$f" "$SITE/$f"
             done
             mkdir -p "$SITE/whd" && cp wasm/dist/site/whd/* "$SITE/whd/"

@@ -8,7 +8,7 @@ const VERSION = "__VERSION__";
 const CACHE = "a1200-" + VERSION;
 const FILES = ["./", "index.html", "puae.js", "puae.wasm", "amiberry.js", "amiberry.wasm", "ipf.js", "ipf.wasm", "whd/WHDLoad", "whd/boot-data.zip", "whd/WHDLoad_usr.lha", "whd/GenericKick.lha", "sons/drive_click.wav", "sons/drive_spin.wav", "sons/drive_spinnd.wav", "sons/drive_startup.wav", "sons/drive_snatch.wav", "puae-frontend.js", "lazydisk-worker.js", "adf.js", "hdf.js", "lha.js", "ffs.js", "coi.js",
   "aros-rom.bin.gz", "aros-ext.bin.gz", "manifest.webmanifest", "icon-192.png", "icon-512.png",
-  "icon-maskable-512.png", "apple-touch-icon.png"];
+  "icon-maskable-512.png", "apple-touch-icon.png", "fond.jpg"];
 
 /* Copie de chaque fichier (trois essais) : une coupure passagère ne fait plus perdre toute la copie hors ligne */
 async function copy(c, f) {

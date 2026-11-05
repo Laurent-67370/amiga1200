@@ -9,6 +9,11 @@
 #ambGui[hidden]{display:none}
 /* Écran assez grand : la fenêtre flotte sur le fond d'écran au lieu de le cacher */
 @media (min-width:900px) and (min-height:640px){#ambGui{padding:28px}.ab-win{box-shadow:0 12px 48px rgba(0,0,0,.6)}}
+/* Fenêtre translucide : le gris Workbench laisse deviner le fond d'écran, flouté pour garder le texte lisible.
+   Navigateur sans flou : gris opaque, comme avant. */
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  #ambGui{--ab-base:rgba(170,170,170,.8);--ab-frame:rgba(150,150,150,.75);--ab-btn:rgba(170,170,170,.9);--ab-hover:rgba(190,190,190,.9)}
+  .ab-win{-webkit-backdrop-filter:blur(14px) saturate(1.1);backdrop-filter:blur(14px) saturate(1.1)}}
 #ambGui *{font-family:inherit}
 /* Topaz est dessinée sur une grille de 8 pixels : 16 px partout, sinon les lettres se brouillent */
 #ambGui :is(p,span,label,b,small,li,dt,dd,button,select,input,h3,div,a,legend){font-size:16px}

@@ -415,6 +415,11 @@ body{background:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 55%)
 #ambGui[hidden]{display:none}
 /* Écran assez grand : la fenêtre flotte sur le fond d'écran au lieu de le cacher */
 @media (min-width:900px) and (min-height:640px){#ambGui{padding:28px}.ab-win{box-shadow:0 12px 48px rgba(0,0,0,.6)}}
+/* Fenêtre translucide : le gris Workbench laisse deviner le fond d'écran, flouté pour garder le texte lisible.
+   Navigateur sans flou : gris opaque, comme avant. */
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  #ambGui{--ab-base:rgba(170,170,170,.8);--ab-frame:rgba(150,150,150,.75);--ab-btn:rgba(170,170,170,.9);--ab-hover:rgba(190,190,190,.9)}
+  .ab-win{-webkit-backdrop-filter:blur(14px) saturate(1.1);backdrop-filter:blur(14px) saturate(1.1)}}
 #ambGui *{font-family:inherit}
 /* Topaz est dessinée sur une grille de 8 pixels : 16 px partout, sinon les lettres se brouillent */
 #ambGui :is(p,span,label,b,small,li,dt,dd,button,select,input,h3,div,a,legend){font-size:16px}
@@ -828,7 +833,7 @@ body.is-off #btnTurbo{display:none!important}
     Vos fichiers restent dans ce navigateur (stockage local) et ne sont envoyés nulle part.
     <br>Aussi en application, sur le même cœur : <a href="https://github.com/laurent-67370/amiga1200-android/releases/tag/dev" rel="noopener" target="_blank">Android</a> et <a href="https://github.com/laurent-67370/amiga1200-mac/releases/tag/dev" rel="noopener" target="_blank">Mac</a> (avec JIT), <a href="https://github.com/laurent-67370/amiga1200-pc/releases/tag/dev" rel="noopener" target="_blank">Windows et Linux</a>.
     <br><a href="sae/">Ancienne version (cœur SAE)</a>, conservée pour comparer : elle partage la même Bibliothèque.
-    <br><b>Version du site : 05/11/2026 21:34 (c9caaba)</b> (heure de Paris).
+    <br><b>Version du site : 05/11/2026 22:17 (fa7aa1d)</b> (heure de Paris).
   </p>
 </main>
 
@@ -5977,7 +5982,7 @@ let uxDrivesRefresh = () => {};
   if (body && !body.querySelector(".ux-keys")) {
     const k = s => '<span class="kbd">' + s + "</span>";
     const sec = document.createElement("div"); sec.className = "ux-keys";
-    sec.innerHTML = '<p class="hint" id="siteVersion">Version du site : 05/11/2026 21:34 (c9caaba) (heure de Paris). Après une mise à jour, rechargez la page : ce numéro doit changer.</p>' + "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause, <b>Turbo</b> (chargements accélérés, sans le son). <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
+    sec.innerHTML = '<p class="hint" id="siteVersion">Version du site : 05/11/2026 22:17 (fa7aa1d) (heure de Paris). Après une mise à jour, rechargez la page : ce numéro doit changer.</p>' + "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause, <b>Turbo</b> (chargements accélérés, sans le son). <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
       + "<h3>Quatre lecteurs de disquettes</h3><p>DF0: (interne) et trois lecteurs externes, DF1: à DF3: (DF2: et DF3: se déplient sous les lecteurs). Pour un jeu sur plusieurs disquettes, choisissez-les ou glissez-les <b>ensemble</b> (Insérer…, Ouvrir un fichier…, ou une archive .zip) : Disk 1 va dans DF0:, Disk 2 dans DF1:, etc., dans l'ordre des noms. DF2: et DF3: existent dès qu'une disquette y est placée à l'allumage ; sinon l'Amiga n'a que deux lecteurs, ce que certains jeux préfèrent. Les jeux qui savent lire plusieurs lecteurs ne demandent alors plus de changer de disquette. Les disquettes d'un même jeu (« Disk 1 », « Disk 2 »…) n'ont qu'une vignette à l'accueil, qui démarre sur la première ; pendant la partie, le bouton <b>Disquette suivante</b> (sous l'écran, et dans la barre du plein écran) met la suivante dans DF0:.</p>"
       + "<h3>Raccourcis clavier</h3><p>" + k("F12") + " ouvre ou ferme la Configuration (l'Amiga se met en pause). "
       + k("Ctrl") + "+" + k("Maj") + "+" + k("S") + " sauvegarde la partie dans l'emplacement 1, " + k("Ctrl") + "+" + k("Maj") + "+" + k("R") + " la reprend. " + k("Ctrl") + "+" + k("Maj") + "+" + k("→") + " active ou arrête le Turbo. "

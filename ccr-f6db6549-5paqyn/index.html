@@ -651,6 +651,19 @@ body.mode-simple.simple-joy .simple-barre [data-s=joy]{background:#2f6db0}
     flex-direction:column;flex-wrap:nowrap;justify-content:center;gap:6px;z-index:30}
   body.mode-simple .simple-barre button{flex:0 0 auto;min-height:38px;padding:6px 8px;font-size:13px;opacity:.92}
 }
+/* Dans la page du Trainer (?integre=1) : ni retour ni choix du modèle (le Trainer s'en charge), place à l'écran */
+body.mode-integre [data-s=retour],body.mode-integre .simple-modeles{display:none!important}
+body.mode-integre{background:#111!important}
+body.mode-integre .rig{max-width:none;padding:0}
+body.mode-integre .simple-barre{margin:6px 0 0;gap:6px}
+body.mode-integre .simple-barre button{min-height:40px;padding:7px 8px;font-size:14px;flex:1 1 22%}
+@media (orientation:landscape) and (max-height:560px){
+  body.mode-integre.simple-marche .simple-barre{position:static;width:auto;flex-direction:row;flex-wrap:wrap}
+}
+/* Messages (toast) : en haut, jamais devant les boutons, et sans capter les touches (masqué, il restait posé,
+   transparent, sur Clavier, Plein écran ou Éteindre) */
+body.mode-simple .toast{top:8px;bottom:auto!important;pointer-events:none;max-width:92vw}
+body.mode-simple .toast:not(.show){visibility:hidden}
 </style>
 </head>
 <body>
@@ -866,7 +879,7 @@ body.mode-simple.simple-joy .simple-barre [data-s=joy]{background:#2f6db0}
     Vos fichiers restent dans ce navigateur (stockage local) et ne sont envoyés nulle part.
     <br>Aussi en application, sur le même cœur : <a href="https://github.com/laurent-67370/amiga1200-android/releases/tag/dev" rel="noopener" target="_blank">Android</a> et <a href="https://github.com/laurent-67370/amiga1200-mac/releases/tag/dev" rel="noopener" target="_blank">Mac</a> (avec JIT), <a href="https://github.com/laurent-67370/amiga1200-pc/releases/tag/dev" rel="noopener" target="_blank">Windows et Linux</a>.
     <br><a href="sae/">Ancienne version (cœur SAE)</a>, conservée pour comparer : elle partage la même Bibliothèque.
-    <br><b>Version du site : 14/11/2026 12:31 (7aaa238)</b> (heure de Paris).
+    <br><b>Version du site : 14/11/2026 13:10 (835bee9)</b> (heure de Paris).
   </p>
 </main>
 
@@ -6022,7 +6035,7 @@ let uxDrivesRefresh = () => {};
   if (body && !body.querySelector(".ux-keys")) {
     const k = s => '<span class="kbd">' + s + "</span>";
     const sec = document.createElement("div"); sec.className = "ux-keys";
-    sec.innerHTML = '<p class="hint" id="siteVersion">Version du site : 14/11/2026 12:31 (7aaa238) (heure de Paris). Après une mise à jour, rechargez la page : ce numéro doit changer.</p>' + "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause, <b>Turbo</b> (chargements accélérés, sans le son). <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
+    sec.innerHTML = '<p class="hint" id="siteVersion">Version du site : 14/11/2026 13:10 (835bee9) (heure de Paris). Après une mise à jour, rechargez la page : ce numéro doit changer.</p>' + "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause, <b>Turbo</b> (chargements accélérés, sans le son). <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
       + "<h3>Quatre lecteurs de disquettes</h3><p>DF0: (interne) et trois lecteurs externes, DF1: à DF3: (DF2: et DF3: se déplient sous les lecteurs). Pour un jeu sur plusieurs disquettes, choisissez-les ou glissez-les <b>ensemble</b> (Insérer…, Ouvrir un fichier…, ou une archive .zip) : Disk 1 va dans DF0:, Disk 2 dans DF1:, etc., dans l'ordre des noms. DF2: et DF3: existent dès qu'une disquette y est placée à l'allumage ; sinon l'Amiga n'a que deux lecteurs, ce que certains jeux préfèrent. Les jeux qui savent lire plusieurs lecteurs ne demandent alors plus de changer de disquette. Les disquettes d'un même jeu (« Disk 1 », « Disk 2 »…) n'ont qu'une vignette à l'accueil, qui démarre sur la première ; pendant la partie, le bouton <b>Disquette suivante</b> (sous l'écran, et dans la barre du plein écran) met la suivante dans DF0:.</p>"
       + "<h3>Raccourcis clavier</h3><p>" + k("F12") + " ouvre ou ferme la Configuration (l'Amiga se met en pause). "
       + k("Ctrl") + "+" + k("Maj") + "+" + k("S") + " sauvegarde la partie dans l'emplacement 1, " + k("Ctrl") + "+" + k("Maj") + "+" + k("R") + " la reprend. " + k("Ctrl") + "+" + k("Maj") + "+" + k("→") + " active ou arrête le Turbo. "
@@ -7016,10 +7029,13 @@ helpBuild();
 
 /* =========================================================
    68k Trainer : programme envoyé par le Trainer (sous-dossier trainer/ du site, ou son application Android)
-   Adresse : #nom=…&modele=a500|a1200&trainer=<disquette .adf amorçable, compressée gzip, en base64url>.
+   - dans l'adresse : #nom=…&modele=a500|a1200&trainer=<disquette .adf amorçable, gzip, base64url> ;
+   - ou par message, quand l'émulateur est placé dans la page du Trainer (?integre=1) :
+     { type: "68kt-disquette", nom, modele, adf: Uint8Array } ; l'émulateur répond { type: "68kt-pret" } une fois prêt.
    La disquette rejoint la Bibliothèque (à la place de l'essai précédent du même nom), est insérée dans DF0:
-   et l'Amiga choisi démarre dessus : sa Startup-Sequence lance le programme.
+   et l'Amiga démarre dessus (ou redémarre, s'il tourne déjà sur le même modèle) : sa Startup-Sequence lance le programme.
    ========================================================= */
+let trainerModeleLance = null;
 function trainerTake() {
   let h = location.hash.slice(1);
   if (/(^|&)trainer=/.test(h)) {
@@ -7029,6 +7045,36 @@ function trainerTake() {
     return h;
   }
   try { return sessionStorage.getItem("a1200.trainer") || ""; } catch (e) { return ""; }
+}
+/** Range la disquette, l'insère dans DF0: et (re)démarre l'Amiga demandé. */
+async function trainerCharger(u8, nom, modele) {
+  if (!u8 || u8.length !== 901120) { toast("La disquette envoyée par le 68k Trainer est illisible.", true); return; }
+  const model = modele === "a1200" ? "a1200" : "a500";
+  const name = (String(nom || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 30) || "programme") + ".adf";
+  /* Un essai remplace le précédent du même programme (la Bibliothèque ne se remplit pas d'essais) */
+  let all = [];
+  try { all = await DB.all(); } catch (e) {}
+  for (const old of all.filter(r => r.trainer && r.name === name)) {
+    if (mounted.df0 && mounted.df0.id === old.id) await ejectMedia("df0", true);
+    await DB.del(old.id);
+  }
+  const rec = { id: newId(), kind: "adf", name, size: u8.length, blob: new Blob([u8]), crc: crc32u8(u8), added: Date.now(), used: Date.now(), trainer: true };
+  await DB.put(rec);
+  const machineNom = model === "a500" ? "Amiga 500" : "Amiga 1200";
+  /* Déjà allumé sur ce modèle : nouvelle disquette, puis redémarrage (quelques secondes au lieu d'un démarrage complet) */
+  if ((running || starting) && trainerModeleLance === model) {
+    while (starting) await new Promise(r => setTimeout(r, 200));
+    await mountMedia("df0", rec);
+    $("#btnReset").click();
+    toast("68k Trainer : " + name + " dans DF0:, l'" + machineNom + " redémarre.");
+    return;
+  }
+  if (running || starting) { while (starting) await new Promise(r => setTimeout(r, 200)); await powerOff(); }
+  S.model = model; saveSettings();
+  if (typeof themeNow === "function") themeNow();
+  trainerModeleLance = model;
+  toast("68k Trainer : " + name + " est dans DF0:, l'" + machineNom + " démarre et lance le programme.");
+  await launchWith(rec);
 }
 async function trainerHandoff() {
   const h = trainerTake();
@@ -7046,22 +7092,28 @@ async function trainerHandoff() {
     for (let i = 0; i < bin.length; i++) gz[i] = bin.charCodeAt(i);
     u8 = new Uint8Array(await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer());
   } catch (e) { u8 = null; }
-  if (!u8 || u8.length !== 901120) { toast("La disquette envoyée par le 68k Trainer est illisible.", true); return; }
-  const model = p.get("modele") === "a1200" ? "a1200" : "a500";
-  const name = ((p.get("nom") || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 30) || "programme") + ".adf";
-  S.model = model; saveSettings();
-  if (typeof themeNow === "function") themeNow();
-  /* Un essai remplace le précédent du même programme (la Bibliothèque ne se remplit pas d'essais) */
-  let all = [];
-  try { all = await DB.all(); } catch (e) {}
-  for (const old of all.filter(r => r.trainer && r.name === name)) {
-    if (mounted.df0 && mounted.df0.id === old.id) await ejectMedia("df0", true);
-    await DB.del(old.id);
+  await trainerCharger(u8, p.get("nom"), p.get("modele"));
+}
+/* Placé dans la page du Trainer (même origine) : disquettes reçues par message ; « prêt » annoncé à la fin du
+   démarrage de la page (trainerPret, appelé par l'initialisation), y compris après un rechargement */
+if (window.parent !== window) window.addEventListener("message", e => {
+  if (e.origin !== location.origin || !e.data) return;
+  /* « Kickstart… » du Trainer : l'Amiga s'éteint, la carte d'accueil montre le Kickstart et « Importer mon Kickstart… » */
+  if (e.data.type === "68kt-eteindre") { if (running) powerOff(); return; }
+  /* Modèle choisi dans le Trainer (Amiga 500 ou 1200) : pris en compte au prochain allumage */
+  if (e.data.type === "68kt-modele") {
+    if (!running && !starting && (e.data.modele === "a500" || e.data.modele === "a1200")) {
+      S.model = e.data.modele; saveSettings();
+      if (typeof themeNow === "function") themeNow();
+      if (typeof simpleKick === "function") simpleKick();
+    }
+    return;
   }
-  const rec = { id: newId(), kind: "adf", name, size: u8.length, blob: new Blob([u8]), crc: crc32u8(u8), added: Date.now(), used: Date.now(), trainer: true };
-  await DB.put(rec);
-  toast("68k Trainer : " + name + " est dans DF0:, l'" + (model === "a500" ? "Amiga 500" : "Amiga 1200") + " démarre et lance le programme.");
-  await launchWith(rec);
+  if (e.data.type !== "68kt-disquette") return;
+  trainerCharger(e.data.adf instanceof Uint8Array ? e.data.adf : new Uint8Array(e.data.adf || []), e.data.nom, e.data.modele);
+});
+function trainerPret() {
+  if (window.parent !== window) window.parent.postMessage({ type: "68kt-pret" }, location.origin);
 }
 
 
@@ -7071,7 +7123,9 @@ async function trainerHandoff() {
    de quelques gros boutons (Trainer, Relancer, Pause, Clavier, Joystick, Plein écran, Éteindre). Le reste
    (configuration, Bibliothèque, lecteurs) reste à portée par « Réglages avancés », sans rien changer à l'émulateur.
    ========================================================= */
-const SIMPLE = new URLSearchParams(location.search).has("simple");
+const SIMPLE = new URLSearchParams(location.search).has("simple") || new URLSearchParams(location.search).has("integre");
+/* Placé dans la page du Trainer (?integre=1) : le Trainer choisit le modèle et reste affiché autour */
+const INTEGRE = new URLSearchParams(location.search).has("integre");
 let simpleAvance = false;
 function simpleRetour() {
   if (window.AndroidEmulateur && AndroidEmulateur.retour) return AndroidEmulateur.retour();
@@ -7099,6 +7153,7 @@ function simpleMaj(st) {
 }
 if (SIMPLE) {
   document.body.classList.add("mode-simple");
+  if (INTEGRE) document.body.classList.add("mode-integre");
   /* La fenêtre de configuration ne s'ouvre plus d'elle-même (accueil, extinction) : seulement par « Réglages avancés » */
   {
     const ouvrir = abOpen, fermer = abClose;
@@ -7115,14 +7170,14 @@ if (SIMPLE) {
     '<p class="simple-kick">Kickstart : <b id="simpleKick"></b></p>' +
     '<p class="simple-note" id="simpleKickNote"></p>' +
     '<button type="button" class="simple-btn" data-s="kick">Importer mon Kickstart…</button>' +
-    '<button type="button" class="simple-btn simple-allumer" data-s="allumer">⏻ Allumer</button>' +
+    '<button type="button" class="simple-btn simple-allumer" data-s="allumer">▶ Allumer</button>' +
     '<div class="simple-bas"><button type="button" data-s="retour">◀ Trainer</button>' +
     '<button type="button" data-s="avance">Réglages avancés</button></div>';
   $("#tube").appendChild(carte);
   const barre = document.createElement("nav");
   barre.id = "simpleBarre"; barre.className = "simple-barre"; barre.setAttribute("aria-label", "Commandes");
   for (const [k, t] of [["retour", "◀ Trainer"], ["reset", "↻ Relancer"], ["pause", "⏸ Pause"], ["clavier", "⌨ Clavier"],
-    ["joy", "🕹 Joystick"], ["plein", "⛶ Plein écran"], ["eteindre", "⏻ Éteindre"]]) {
+    ["joy", "🕹 Joystick"], ["plein", "⛶ Plein écran"], ["eteindre", "⏹ Éteindre"]]) {
     const b = document.createElement("button"); b.type = "button"; b.dataset.s = k; b.textContent = t; barre.appendChild(b);
   }
   $(".monitor").after(barre);
@@ -7144,6 +7199,20 @@ if (SIMPLE) {
     if (b.dataset.s) agir(b.dataset.s);
   });
   { const avant = setPowerUi; setPowerUi = st => { avant(st); simpleMaj(st); }; }
+  /* Dans la page du Trainer : la hauteur utile (écran, boutons, clavier ouvert) est donnée au Trainer, qui ajuste la
+     place de l'émulateur (sinon le clavier s'ouvrirait hors de vue) */
+  if (INTEGRE && window.parent !== window && window.ResizeObserver) {
+    let derniere = 0;
+    const mesurer = () => {
+      const bas = Math.max(...["#tube", ".monitor", "#simpleBarre", "#vkbd", ".vjoy"].map(s => $(s))
+        .filter(e => e && e.offsetParent !== null).map(e => e.getBoundingClientRect().bottom + scrollY));
+      const h = Math.ceil(bas + 6);
+      if (h > 50 && Math.abs(h - derniere) > 2) { derniere = h; window.parent.postMessage({ type: "68kt-taille", hauteur: h }, location.origin); }
+    };
+    new ResizeObserver(mesurer).observe(document.body);
+    for (const s of [".rig", "#vkbd", "#simpleBarre"]) if ($(s)) new ResizeObserver(mesurer).observe($(s));
+    new MutationObserver(mesurer).observe(document.body, { attributes: true, subtree: true, attributeFilter: ["hidden", "class"] });
+  }
   simpleMaj(running ? "on" : "off");
 }
 
@@ -7233,6 +7302,7 @@ window.addEventListener("beforeunload", e => {
   if (whdId) { sessionStorage.removeItem("a1200.whd"); whdGame = await DB.get(whdId) || null; }
   if (sessionStorage.getItem("a1200.autostart")) { sessionStorage.removeItem("a1200.autostart"); powerOn(); }
   else await trainerHandoff();
+  trainerPret();
 })();
 </script>
 </body>

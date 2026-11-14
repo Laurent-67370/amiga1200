@@ -10,6 +10,7 @@ import { traducteur } from '../../68k-trainer/src/renderer/src/langue'
 import { fabriquerDisquette, lancerDansEmulateur, modeleEssai, NOM_MODELE } from '../essai'
 import { nomAmiga } from '../disquette'
 import { android } from '../plateforme'
+import { essayerSurAmiga } from '../amigaIntegre'
 
 const t = traducteur({
   fr: {
@@ -84,6 +85,9 @@ export async function essayerDansEmulateur(
   dossier?: string,
   _quandFini?: (message: string) => void
 ): Promise<ResultatExport> {
+  // Application Android : le vrai Amiga s'affiche à la place de l'écran, dans la même page
+  const integre = dossier ? null : await essayerSurAmiga(source, nom)
+  if (integre) return integre
   const d = fabriquerDisquette(source, nom, dossier)
   if (!d.adf) return { ok: false, message: d.raison ?? t('essaiImpossible') }
   const ou = await lancerDansEmulateur(d.adf, d.nom)

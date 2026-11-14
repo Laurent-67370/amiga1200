@@ -905,7 +905,8 @@ rep("</style>", (APP / "ux-puae.css").read_text(encoding="utf-8") + "</style>")
 rep("/* Profil par disque */", (APP / "trainer-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
 rep('''  if (sessionStorage.getItem("a1200.autostart")) { sessionStorage.removeItem("a1200.autostart"); powerOn(); }''',
     '''  if (sessionStorage.getItem("a1200.autostart")) { sessionStorage.removeItem("a1200.autostart"); powerOn(); }
-  else await trainerHandoff();''')
+  else await trainerHandoff();
+  trainerPret();''')
 
 # Mode simple (?simple=1) : l'émulateur tel que l'ouvre le 68k Trainer (en dernier : il reprend l'interface entière)
 rep("/* Profil par disque */", (APP / "simple-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")

@@ -82,6 +82,8 @@ const REMPLACES: Record<string, string> = {
 const REMPLACEMENTS: [string, string | RegExp, string][] = [
   // Ce portage suit le parcours Amiga : la machine est toujours l'Amiga 500 (le tronc commun du 68000 compris)
   ['progressionStore.ts', "return state?.machine ?? 'atari'", "return 'amiga'"],
+  // Le vrai Amiga est au-dessus de l'ÉCRAN (web/amigaIntegre.ts) : plus d'onglet « Émulateur »
+  ['main.ts', "  { id: 'emulateurs', render: renderEmulateurs },\n", ''],
   ['main.ts', '<span class="app-title">68k Trainer 2</span>', '<span class="app-title">68k Trainer <small>Amiga</small></span>'],
   ['main.ts', "emulateurs: 'Émulateurs'", "emulateurs: 'Émulateur'"],
   ['main.ts', "emulateursTitre: 'Installer et lancer Hatari (Atari ST) et WinUAE (Amiga)'", "emulateursTitre: \"L'émulateur Amiga 500 / 1200 où « Essayer » lance tes programmes\""],

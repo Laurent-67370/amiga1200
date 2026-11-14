@@ -31,3 +31,12 @@ body.mode-simple.simple-joy .simple-barre [data-s=joy]{background:#2f6db0}
     flex-direction:column;flex-wrap:nowrap;justify-content:center;gap:6px;z-index:30}
   body.mode-simple .simple-barre button{flex:0 0 auto;min-height:38px;padding:6px 8px;font-size:13px;opacity:.92}
 }
+/* Dans la page du Trainer (?integre=1) : ni retour ni choix du modèle (le Trainer s'en charge), place à l'écran */
+body.mode-integre [data-s=retour],body.mode-integre .simple-modeles{display:none!important}
+body.mode-integre{background:#111!important}
+body.mode-integre .rig{max-width:none;padding:0}
+body.mode-integre .simple-barre{margin:6px 0 0;gap:6px}
+body.mode-integre .simple-barre button{min-height:40px;padding:7px 8px;font-size:14px;flex:1 1 22%}
+@media (orientation:landscape) and (max-height:560px){
+  body.mode-integre.simple-marche .simple-barre{position:static;width:auto;flex-direction:row;flex-wrap:wrap}
+}

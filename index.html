@@ -618,6 +618,39 @@ body.is-off #btnTurbo{display:none!important}
 .scan-d{color:#333;font-size:12px}
 #scanActs .scan-left{flex:1}
 #scanActs{flex-wrap:wrap;justify-content:flex-end}
+
+/* Mode simple (?simple=1, 68k Trainer) : l'écran de l'Amiga et quelques gros boutons, rien d'autre */
+.simple-carte,.simple-barre{display:none}
+body.mode-simple .wedge,body.mode-simple .toolbar,body.mode-simple .drives,body.mode-simple .keys,
+body.mode-simple .touch-tip,body.mode-simple #idle,body.mode-simple .footnote{display:none!important}
+body.mode-simple .rig{max-width:960px;margin:0 auto;padding:8px 8px 16px}
+body.mode-simple:not(.simple-joy) .vjoy{display:none!important}
+body.mode-simple.is-off .simple-carte{display:flex}
+body.mode-simple.simple-marche .simple-barre{display:flex}
+.simple-carte{position:absolute;inset:0;z-index:20;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  padding:18px;text-align:center;background:rgba(14,18,26,.92);color:#e8ecf2;font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;overflow:auto}
+.simple-carte h2{margin:0;font-size:22px;letter-spacing:.02em}
+.simple-modeles{display:inline-flex;border:1px solid #4b6a95;border-radius:22px;overflow:hidden}
+.simple-modeles button{font:inherit;font-size:15px;padding:9px 16px;border:0;background:transparent;color:#cfd8e3;cursor:pointer}
+.simple-modeles button[aria-pressed=true]{background:#2f6db0;color:#fff;font-weight:600}
+.simple-kick{margin:4px 0 0}
+.simple-kick b.libre{color:#f0c674;font-weight:600}
+.simple-note{margin:0;font-size:13px;color:#9fb0c3;min-height:1em}
+.simple-btn{font:inherit;font-size:15px;min-height:44px;padding:9px 18px;border-radius:10px;border:1px solid #4b6a95;background:#1d2a3c;color:#e8ecf2;cursor:pointer}
+.simple-allumer{font-size:18px;font-weight:700;background:#2f6db0;border-color:#3d84d1;padding:12px 34px;margin-top:6px}
+.simple-bas{display:flex;gap:16px;margin-top:6px}
+.simple-bas button{font:inherit;font-size:14px;background:none;border:0;color:#9fc3ee;text-decoration:underline;cursor:pointer;min-height:40px}
+.simple-barre{flex-wrap:wrap;justify-content:center;gap:8px;margin:10px auto 0;max-width:960px}
+.simple-barre button{font:600 15px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;min-height:44px;padding:9px 14px;border-radius:10px;
+  border:1px solid #4b6a95;background:#1d2a3c;color:#e8ecf2;cursor:pointer;flex:1 1 30%}
+.simple-barre button:active{background:#2f6db0}
+body.mode-simple.simple-joy .simple-barre [data-s=joy]{background:#2f6db0}
+/* Téléphone en paysage : l'écran prend toute la hauteur, les boutons en colonne sur le côté */
+@media (orientation:landscape) and (max-height:560px){
+  body.mode-simple.simple-marche .simple-barre{position:fixed;left:max(6px,env(safe-area-inset-left));top:6px;bottom:6px;width:128px;margin:0;
+    flex-direction:column;flex-wrap:nowrap;justify-content:center;gap:6px;z-index:30}
+  body.mode-simple .simple-barre button{flex:0 0 auto;min-height:38px;padding:6px 8px;font-size:13px;opacity:.92}
+}
 </style>
 </head>
 <body>
@@ -833,7 +866,7 @@ body.is-off #btnTurbo{display:none!important}
     Vos fichiers restent dans ce navigateur (stockage local) et ne sont envoyés nulle part.
     <br>Aussi en application, sur le même cœur : <a href="https://github.com/laurent-67370/amiga1200-android/releases/tag/dev" rel="noopener" target="_blank">Android</a> et <a href="https://github.com/laurent-67370/amiga1200-mac/releases/tag/dev" rel="noopener" target="_blank">Mac</a> (avec JIT), <a href="https://github.com/laurent-67370/amiga1200-pc/releases/tag/dev" rel="noopener" target="_blank">Windows et Linux</a>.
     <br><a href="sae/">Ancienne version (cœur SAE)</a>, conservée pour comparer : elle partage la même Bibliothèque.
-    <br><b>Version du site : 14/11/2026 11:59 (a83534b)</b> (heure de Paris).
+    <br><b>Version du site : 14/11/2026 12:41 (1fe3d1d)</b> (heure de Paris).
   </p>
 </main>
 
@@ -5989,7 +6022,7 @@ let uxDrivesRefresh = () => {};
   if (body && !body.querySelector(".ux-keys")) {
     const k = s => '<span class="kbd">' + s + "</span>";
     const sec = document.createElement("div"); sec.className = "ux-keys";
-    sec.innerHTML = '<p class="hint" id="siteVersion">Version du site : 14/11/2026 11:59 (a83534b) (heure de Paris). Après une mise à jour, rechargez la page : ce numéro doit changer.</p>' + "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause, <b>Turbo</b> (chargements accélérés, sans le son). <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
+    sec.innerHTML = '<p class="hint" id="siteVersion">Version du site : 14/11/2026 12:41 (1fe3d1d) (heure de Paris). Après une mise à jour, rechargez la page : ce numéro doit changer.</p>' + "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause, <b>Turbo</b> (chargements accélérés, sans le son). <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
       + "<h3>Quatre lecteurs de disquettes</h3><p>DF0: (interne) et trois lecteurs externes, DF1: à DF3: (DF2: et DF3: se déplient sous les lecteurs). Pour un jeu sur plusieurs disquettes, choisissez-les ou glissez-les <b>ensemble</b> (Insérer…, Ouvrir un fichier…, ou une archive .zip) : Disk 1 va dans DF0:, Disk 2 dans DF1:, etc., dans l'ordre des noms. DF2: et DF3: existent dès qu'une disquette y est placée à l'allumage ; sinon l'Amiga n'a que deux lecteurs, ce que certains jeux préfèrent. Les jeux qui savent lire plusieurs lecteurs ne demandent alors plus de changer de disquette. Les disquettes d'un même jeu (« Disk 1 », « Disk 2 »…) n'ont qu'une vignette à l'accueil, qui démarre sur la première ; pendant la partie, le bouton <b>Disquette suivante</b> (sous l'écran, et dans la barre du plein écran) met la suivante dans DF0:.</p>"
       + "<h3>Raccourcis clavier</h3><p>" + k("F12") + " ouvre ou ferme la Configuration (l'Amiga se met en pause). "
       + k("Ctrl") + "+" + k("Maj") + "+" + k("S") + " sauvegarde la partie dans l'emplacement 1, " + k("Ctrl") + "+" + k("Maj") + "+" + k("R") + " la reprend. " + k("Ctrl") + "+" + k("Maj") + "+" + k("→") + " active ou arrête le Turbo. "
@@ -7029,6 +7062,89 @@ async function trainerHandoff() {
   await DB.put(rec);
   toast("68k Trainer : " + name + " est dans DF0:, l'" + (model === "a500" ? "Amiga 500" : "Amiga 1200") + " démarre et lance le programme.");
   await launchWith(rec);
+}
+
+
+/* =========================================================
+   Mode simple (?simple=1) : l'émulateur tel que l'ouvre le 68k Trainer, sans réglages à faire.
+   Éteint : une carte (Amiga 500 ou 1200, Kickstart, Allumer). En marche : l'écran de l'Amiga en grand et une barre
+   de quelques gros boutons (Trainer, Relancer, Pause, Clavier, Joystick, Plein écran, Éteindre). Le reste
+   (configuration, Bibliothèque, lecteurs) reste à portée par « Réglages avancés », sans rien changer à l'émulateur.
+   ========================================================= */
+const SIMPLE = new URLSearchParams(location.search).has("simple");
+let simpleAvance = false;
+function simpleRetour() {
+  if (window.AndroidEmulateur && AndroidEmulateur.retour) return AndroidEmulateur.retour();
+  if (history.length > 1) return history.back();
+  location.href = "trainer/";
+}
+async function simpleKick() {
+  const el = $("#simpleKick"); if (!el) return;
+  let all = [];
+  try { all = await DB.all(); } catch (e) {}
+  const m = S.model === "a500" ? "a500" : "a1200";
+  const id = m === "a500" ? await romFor500(all) : S.romId;
+  const rec = id && id !== "aros" ? all.find(r => r.id === id) : null;
+  el.textContent = rec ? (rec.label || rec.name) : "AROS, le Kickstart libre (fourni)";
+  el.classList.toggle("libre", !rec);
+  $("#simpleKickNote").textContent = rec ? "" : (m === "a500" ? "Pour un vrai Amiga 500 : ton Kickstart 1.3." : "Pour un vrai Amiga 1200 : ton Kickstart 3.1.");
+  $$("#simpleCarte [data-modele]").forEach(b => b.setAttribute("aria-pressed", b.dataset.modele === m ? "true" : "false"));
+}
+function simpleMaj(st) {
+  if (!SIMPLE) return;
+  document.body.classList.toggle("simple-marche", st === "on" || st === "starting");
+  const p = $("#simpleBarre [data-s=pause]");
+  if (p) p.textContent = paused ? "▶ Reprendre" : "⏸ Pause";
+  if (st === "off") simpleKick();
+}
+if (SIMPLE) {
+  document.body.classList.add("mode-simple");
+  /* La fenêtre de configuration ne s'ouvre plus d'elle-même (accueil, extinction) : seulement par « Réglages avancés » */
+  {
+    const ouvrir = abOpen, fermer = abClose;
+    abOpen = p => { if (simpleAvance) ouvrir(p); };
+    abClose = () => { fermer(); simpleAvance = false; };
+    fermer();
+  }
+  const carte = document.createElement("div");
+  carte.id = "simpleCarte"; carte.className = "simple-carte";
+  carte.innerHTML =
+    '<h2>Amiga</h2>' +
+    '<div class="simple-modeles" role="group" aria-label="Modèle">' +
+    '<button type="button" data-modele="a500">Amiga 500</button><button type="button" data-modele="a1200">Amiga 1200</button></div>' +
+    '<p class="simple-kick">Kickstart : <b id="simpleKick"></b></p>' +
+    '<p class="simple-note" id="simpleKickNote"></p>' +
+    '<button type="button" class="simple-btn" data-s="kick">Importer mon Kickstart…</button>' +
+    '<button type="button" class="simple-btn simple-allumer" data-s="allumer">⏻ Allumer</button>' +
+    '<div class="simple-bas"><button type="button" data-s="retour">◀ Trainer</button>' +
+    '<button type="button" data-s="avance">Réglages avancés</button></div>';
+  $("#tube").appendChild(carte);
+  const barre = document.createElement("nav");
+  barre.id = "simpleBarre"; barre.className = "simple-barre"; barre.setAttribute("aria-label", "Commandes");
+  for (const [k, t] of [["retour", "◀ Trainer"], ["reset", "↻ Relancer"], ["pause", "⏸ Pause"], ["clavier", "⌨ Clavier"],
+    ["joy", "🕹 Joystick"], ["plein", "⛶ Plein écran"], ["eteindre", "⏻ Éteindre"]]) {
+    const b = document.createElement("button"); b.type = "button"; b.dataset.s = k; b.textContent = t; barre.appendChild(b);
+  }
+  $(".monitor").after(barre);
+  const agir = k => {
+    if (k === "retour") return simpleRetour();
+    if (k === "avance") { simpleAvance = true; return abOpen("play"); }
+    if (k === "allumer") return powerOn();
+    if (k === "kick") return pickFiles(".rom,.bin,.key", files => { (async () => { for (const f of files) await importFile(f); simpleKick(); })(); });
+    if (k === "reset") return $("#btnReset").click();
+    if (k === "pause") { $("#btnPause").click(); return setTimeout(() => simpleMaj(running ? "on" : "off"), 50); }
+    if (k === "clavier") return $("#kbdToggle").click();
+    if (k === "joy") return document.body.classList.toggle("simple-joy");
+    if (k === "plein") return $("#btnFull").click();
+    if (k === "eteindre") return powerOff();
+  };
+  for (const el of [carte, barre]) el.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.modele) { S.model = b.dataset.modele; saveSettings(); if (typeof themeNow === "function") themeNow(); simpleKick(); return; }
+    if (b.dataset.s) agir(b.dataset.s);
+  });
+  { const avant = setPowerUi; setPowerUi = st => { avant(st); simpleMaj(st); }; }
+  simpleMaj(running ? "on" : "off");
 }
 
 /* Profil par disque */

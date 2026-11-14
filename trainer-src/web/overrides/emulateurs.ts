@@ -20,7 +20,8 @@ const t = traducteur({
     kick:
       "Sans Kickstart d'origine, l'émulateur démarre sur <b>AROS</b>, un Kickstart libre : la plupart des programmes du cours y fonctionnent. Pour retrouver le vrai système, importe ta ROM dans l'émulateur (bouton <b>Importer le mien…</b> sur son écran d'accueil) : un Kickstart 1.3 pour l'Amiga 500, un 3.1 pour l'Amiga 1200 ; il choisit tout seul celui qui convient au modèle. Les ROM ne sont ni fournies ni envoyées nulle part.",
     kickWeb: "Le Trainer et l'émulateur partagent le même site : la Bibliothèque de l'émulateur (Kickstart, disquettes) sert aussi aux essais.",
-    kickAndroid: "Dans l'application, l'émulateur s'ouvre dans le navigateur du téléphone (Chrome) : importe ton Kickstart une fois dans cet émulateur-là.",
+    kickAndroid:
+      "Sur le téléphone, les essais vont dans l'<b>application Amiga 1200</b> si elle est installée (bouton ci-dessous) : tout se passe sur le téléphone, sans connexion, avec les Kickstart que tu y as ajoutés. Sans elle, l'émulateur s'ouvre dans le navigateur (Chrome) : importe alors ton Kickstart une fois dans cet émulateur-là.",
     ouvrir: "Ouvrir l'émulateur",
     disqueTitre: 'Garder la disquette',
     disque:
@@ -43,7 +44,8 @@ const t = traducteur({
     kick:
       'Without an original Kickstart, the emulator boots <b>AROS</b>, a free Kickstart: most programs of the course run on it. To get the real system, import your ROM in the emulator (<b>Importer le mien…</b> button on its home screen): a Kickstart 1.3 for the Amiga 500, a 3.1 for the Amiga 1200; it picks the right one for the model. ROMs are neither supplied nor sent anywhere.',
     kickWeb: 'The Trainer and the emulator share the same site: the emulator Library (Kickstarts, disks) is also used by test runs.',
-    kickAndroid: 'In the app, the emulator opens in the phone browser (Chrome): import your Kickstart once in that emulator.',
+    kickAndroid:
+      'On the phone, test runs go to the <b>Amiga 1200 app</b> when it is installed (button below): everything stays on the phone, offline, with the Kickstarts you added there. Without it, the emulator opens in the browser (Chrome): import your Kickstart once in that emulator.',
     ouvrir: 'Open the emulator',
     disqueTitre: 'Keeping the disk',
     disque:

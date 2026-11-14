@@ -42,6 +42,9 @@ class MainActivity : Activity() {
         private const val HOTE = "appassets.androidplatform.net"
         private const val ENREGISTRER = 1
         private const val CHOISIR = 2
+        /** Application Amiga 1200 (dépôt amiga1200-android) et son entrée pour les programmes du Trainer (Trainer.kt) */
+        private const val EMU_PAQUET = "io.github.laurent67370.amiga1200"
+        private const val EMU_ACTION = "io.github.laurent67370.amiga1200.TRAINER"
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -191,6 +194,28 @@ class MainActivity : Activity() {
                     Toast.makeText(this@MainActivity, "Pas de gestionnaire de fichiers sur ce téléphone.", Toast.LENGTH_LONG).show()
                 }
             }
+        }
+
+        /**
+         * « Essayer sur l'Amiga » : la disquette (gzip, base64) part dans l'application Amiga 1200 (amiga1200-android)
+         * si elle est installée et sait la recevoir ; faux sinon (la page ouvre alors l'émulateur web).
+         */
+        @JavascriptInterface
+        fun lancerAmiga(nom: String, gzBase64: String, modele: String): Boolean {
+            val intent = Intent(EMU_ACTION).setPackage(EMU_PAQUET)
+                .putExtra("adf_gz", Base64.decode(gzBase64, Base64.DEFAULT))
+                .putExtra("nom", nom)
+                .putExtra("modele", if (modele == "a1200") "A1200" else "A500")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            if (intent.resolveActivity(packageManager) == null) return false
+            runOnUiThread {
+                try {
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    Toast.makeText(this@MainActivity, "Application Amiga 1200 injoignable : ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+            return true
         }
 
         @JavascriptInterface

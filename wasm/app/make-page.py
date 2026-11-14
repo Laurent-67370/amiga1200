@@ -907,6 +907,10 @@ rep('''  if (sessionStorage.getItem("a1200.autostart")) { sessionStorage.removeI
     '''  if (sessionStorage.getItem("a1200.autostart")) { sessionStorage.removeItem("a1200.autostart"); powerOn(); }
   else await trainerHandoff();''')
 
+# Mode simple (?simple=1) : l'émulateur tel que l'ouvre le 68k Trainer (en dernier : il reprend l'interface entière)
+rep("/* Profil par disque */", (APP / "simple-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+rep("</style>", (APP / "simple-puae.css").read_text(encoding="utf-8") + "</style>")
+
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)
 assert not leftovers, f"restes de SAE : {sorted(set(leftovers))[:10]}"
 

@@ -49,7 +49,8 @@ export async function lancerDansEmulateur(adf: Uint8Array, nom: string, modele =
   }
   if (a?.lancerAmiga && a.lancerAmiga(nom, await compresser(adf), modele)) return 'application'
   const donnees = await compresserPourAdresse(adf)
-  ouvrirLien(`${adresseEmulateur()}#${params.toString()}&trainer=${donnees}`, 'amiga1200')
+  // Mode simple de l'émulateur : l'écran et quelques gros boutons (?simple=1)
+  ouvrirLien(`${adresseEmulateur()}?simple=1#${params.toString()}&trainer=${donnees}`, 'amiga1200')
   return 'web'
 }
 

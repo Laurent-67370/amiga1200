@@ -94,7 +94,9 @@ class EmulateurActivity : Activity() {
             Toast.makeText(this, "Cette version de WebView ne permet pas l'émulateur intégré : mettez à jour « Android System WebView » (Play Store).", Toast.LENGTH_LONG).show()
         }
         val fragment = intent.getStringExtra(EXTRA_FRAGMENT) ?: ""
-        web.loadUrl("${Pages.ORIGINE}/emu/index.html$fragment")
+        // Mode simple : l'écran de l'Amiga et quelques gros boutons (wasm/app/simple-puae.js)
+        web.addJavascriptInterface(Pont(), "AndroidEmulateur")
+        web.loadUrl("${Pages.ORIGINE}/emu/index.html?simple=1$fragment")
     }
 
     @Deprecated("Activity sans AndroidX")
@@ -109,6 +111,12 @@ class EmulateurActivity : Activity() {
         }
         choixFichiers?.onReceiveValue(uris)
         choixFichiers = null
+    }
+
+    /** Appelé par la page (bouton « ◀ Trainer » du mode simple). */
+    inner class Pont {
+        @android.webkit.JavascriptInterface
+        fun retour() = runOnUiThread { finish() }
     }
 
     override fun onDestroy() {

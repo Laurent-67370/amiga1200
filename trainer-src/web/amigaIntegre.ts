@@ -93,6 +93,8 @@ function emulateur(): HTMLIFrameElement {
       for (const p of document.querySelectorAll<HTMLElement>('.amiga-place')) p.style.height = `${hauteurEmulateur}px`
       return
     }
+    // « ◀ Simulateur » de la barre de l'émulateur : retour à l'Amiga simulé
+    if (d?.type === '68kt-simulateur') return choisirAffichage('simulateur')
     if ((e.data as { type?: string })?.type === '68kt-pret') {
       pret = true
       for (const m of enAttente.splice(0)) cadre!.contentWindow!.postMessage(m, location.origin)
@@ -114,7 +116,8 @@ function suivre(): void {
   if (boite) {
     if (place) {
       const r = place.getBoundingClientRect()
-      Object.assign(boite.style, { visibility: 'visible', top: `${r.top + scrollY}px`, left: `${r.left + scrollX}px`, width: `${r.width}px`, height: `${r.height}px` })
+      // Position par rapport à la fenêtre (cadre en position fixe), recalculée à chaque image : il suit le défilement
+      Object.assign(boite.style, { visibility: 'visible', top: `${r.top}px`, left: `${r.left}px`, width: `${r.width}px`, height: `${r.height}px` })
     } else boite.style.visibility = 'hidden'
   }
   requestAnimationFrame(suivre)

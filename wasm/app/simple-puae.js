@@ -58,13 +58,15 @@ if (SIMPLE) {
   $("#tube").appendChild(carte);
   const barre = document.createElement("nav");
   barre.id = "simpleBarre"; barre.className = "simple-barre"; barre.setAttribute("aria-label", "Commandes");
-  for (const [k, t] of [["retour", "◀ Trainer"], ["reset", "↻ Relancer"], ["pause", "⏸ Pause"], ["clavier", "⌨ Clavier"],
+  for (const [k, t] of [["simulateur", "◀ Simulateur"], ["retour", "◀ Trainer"], ["reset", "↻ Relancer"], ["pause", "⏸ Pause"], ["clavier", "⌨ Clavier"],
     ["joy", "🕹 Joystick"], ["plein", "⛶ Plein écran"], ["eteindre", "⏹ Éteindre"]]) {
     const b = document.createElement("button"); b.type = "button"; b.dataset.s = k; b.textContent = t; barre.appendChild(b);
   }
   $(".monitor").after(barre);
   const agir = k => {
     if (k === "retour") return simpleRetour();
+    /* Dans la page du Trainer : retour à l'Amiga simulé (le sélecteur du Trainer peut être hors de vue) */
+    if (k === "simulateur") return window.parent.postMessage({ type: "68kt-simulateur" }, location.origin);
     if (k === "avance") { simpleAvance = true; return abOpen("play"); }
     if (k === "allumer") return powerOn();
     if (k === "kick") return pickFiles(".rom,.bin,.key", files => { (async () => { for (const f of files) await importFile(f); simpleKick(); })(); });

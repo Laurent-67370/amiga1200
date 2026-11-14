@@ -44,3 +44,5 @@ body.mode-integre .simple-barre button{min-height:40px;padding:7px 8px;font-size
    transparent, sur Clavier, Plein écran ou Éteindre) */
 body.mode-simple .toast{top:8px;bottom:auto!important;pointer-events:none;max-width:92vw}
 body.mode-simple .toast:not(.show){visibility:hidden}
+/* « ◀ Simulateur » : seulement dans la page du Trainer */
+body.mode-simple:not(.mode-integre) [data-s=simulateur]{display:none!important}

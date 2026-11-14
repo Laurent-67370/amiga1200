@@ -368,7 +368,7 @@ html[lang='en'] .dbg-bloc-sortie.sortie-vide .dbg-sortie::before {
   border-radius: 6px;
 }
 .amiga-integre {
-  position: absolute;
+  position: fixed;
   z-index: 40;
   visibility: hidden;
 }

@@ -46,3 +46,6 @@ body.mode-simple .toast{top:8px;bottom:auto!important;pointer-events:none;max-wi
 body.mode-simple .toast:not(.show){visibility:hidden}
 /* « ◀ Simulateur » : seulement dans la page du Trainer */
 body.mode-simple:not(.mode-integre) [data-s=simulateur]{display:none!important}
+/* Dans la page du Trainer : pas de bandeau sous l'écran, toute la place pour l'écran et les boutons */
+body.mode-integre .monitor-foot{display:none!important}
+body.mode-integre .bezel{padding:8px!important}

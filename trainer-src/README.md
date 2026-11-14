@@ -3,8 +3,8 @@
 Le **68k Trainer** de Yannick Montfort ([github.com/yannickmontfort-rgb/68k-trainer](https://github.com/yannickmontfort-rgb/68k-trainer),
 application Electron pour Windows, Linux et macOS) dans le navigateur et sur **Android**, consacré au parcours
 **Amiga** : les trois chapitres du 68000, puis Exec, les puces, le Copper, le Blitter, les sprites, Paula et
-l'exécutable AmigaDOS. Il est relié à l'émulateur de ce dépôt : le bouton **Essayer sur l'Amiga** lance ton
-programme sur un vrai Amiga 500 ou Amiga 1200 émulé (WinUAE 6).
+l'exécutable AmigaDOS. L'émulateur de ce dépôt y est intégré : sous l'éditeur, un sélecteur **Simulateur / Amiga 500 /
+Amiga 1200** fait tourner ton programme sur l'Amiga simulé du Trainer ou sur un vrai Amiga 500 ou 1200 émulé (WinUAE 6).
 
 - **Web** : <https://laurent-67370.github.io/amiga1200/trainer/> (installable, fonctionne hors ligne)
 - **Android** : `68k-trainer-amiga.apk`, sur <https://laurent-67370.github.io/amiga1200/trainer/68k-trainer-amiga.apk>
@@ -13,8 +13,9 @@ programme sur un vrai Amiga 500 ou Amiga 1200 émulé (WinUAE 6).
 
 ## Ce qui est repris, ce qui change
 
-Tout le contenu pédagogique et le moteur viennent de 68k-trainer, **sans modification** (sous-module
-`68k-trainer/`, version figée) : cours, exemples, prédictions, exercices et QCM ; l'assembleur compatible Devpac ; le
+Tout le contenu pédagogique et le moteur viennent de 68k-trainer, **sans modification** des fichiers (sous-module
+`68k-trainer/`, version figée ; les quelques adaptations sont faites à la construction et vérifiées, voir
+`vite.config.ts`) : cours, exemples, prédictions, exercices et QCM ; l'assembleur compatible Devpac ; le
 68000 et l'Amiga 500 simulés (Copper, Blitter, sprites, Paula, CIA, Kickstart simulé) ; le débogueur ; les profils,
 la progression et le certificat.
 
@@ -25,27 +26,30 @@ la progression et le certificat.
 | Exporter : boîte « Enregistrer sous » | Téléchargement (web) ou sélecteur de fichiers d'Android |
 | Émulateurs installés sous Windows (WinUAE + AROS) | L'émulateur amiga1200, au-dessus de l'ÉCRAN : sélecteur **Simulateur / Amiga 500 / Amiga 1200** |
 | Certificat en PDF | Boîte d'impression → « Enregistrer au format PDF » |
-| Écran d'ordinateur | Mise en page adaptée au téléphone (colonnes empilées, onglets qui défilent) |
+| Écran d'ordinateur | Mise en page adaptée au téléphone en portrait : sommaire des cours en plein écran ; bac à sable compact (barre d'outils sur une ligne avec un menu « Fichier ▾ », l'éditeur en haut, l'écran et le débogueur en bas) |
 
 ## Simulateur ou vrai Amiga
 
-Au-dessus de l'ÉCRAN (bac à sable, exemples, exercices), un sélecteur **Simulateur | Amiga 500 | Amiga 1200** :
+Dans le bloc ÉCRAN (bac à sable, exemples, exercices), un sélecteur **Simulateur | Amiga 500 | Amiga 1200** :
 
 - **Simulateur** : l'Amiga 500 simulé de 68k-trainer, pour apprendre (pas à pas, registres, mémoire, vérification des
   exercices) ; ce que le programme écrit s'affiche dans une fenêtre AmigaDOS de l'écran simulé ;
 - **Amiga 500 / 1200** (application Android) : l'émulateur, en mode simple, prend la place de l'écran ; « Exécuter »
   y lance le programme. Un seul émulateur pour toute la page, gardé allumé : l'essai suivant change seulement la
-  disquette et redémarre. « Kickstart… » éteint l'Amiga pour importer son Kickstart. « Pas » revient au simulateur.
-  Sur le web, le vrai Amiga s'ouvre dans un onglet.
+  disquette et redémarre. Sous l'écran, de gros boutons : ◀ Simulateur, Relancer, Pause, Clavier, Joystick, Plein
+  écran, Éteindre. « Kickstart… » éteint l'Amiga pour importer son Kickstart. « Pas » revient au simulateur.
+  Sur le web, le vrai Amiga s'ouvre dans un onglet, avec les mêmes boutons.
 
 ## « Essayer sur l'Amiga »
 
 1. Le programme est assemblé en exécutable AmigaDOS (avec le code de démarrage Shell/Workbench de 68k-trainer),
    chargé en Chip RAM pour que les puces voient ses listes Copper, images et sons.
 2. Il est posé sur une **disquette amorçable** (OFS, lisible par le Kickstart 1.3), avec une `S:Startup-Sequence` qui
-   le lance puis lance `Fin`, un petit programme qui garde la fenêtre ouverte jusqu'au clic gauche.
-3. La disquette, compressée, passe dans l'adresse de l'émulateur (`#nom=…&modele=a500|a1200&trainer=…`) :
-   l'émulateur la range dans sa Bibliothèque (à la place de l'essai précédent du même programme), la met dans
+   le lance puis lance `Fin`, un petit programme qui garde la fenêtre ouverte (Ctrl+C la ferme) : toucher l'écran ne
+   la ferme plus.
+3. Dans l'application, la disquette est envoyée par message à l'émulateur intégré à la page (`68kt-disquette`) ;
+   sur le web, elle passe, compressée, dans l'adresse de l'émulateur (`#nom=…&modele=a500|a1200&trainer=…`).
+   L'émulateur la range dans sa Bibliothèque (à la place de l'essai précédent du même programme), la met dans
    DF0: et démarre le modèle choisi (`wasm/app/trainer-puae.js`).
 
 **Dans l'APK Android, l'émulateur est intégré** (`assets/emu/`, préparé par `android/preparer-emulateur.sh` : la page
@@ -56,8 +60,8 @@ ou plus récente. Ordre d'essai : émulateur intégré, sinon l'application Amig
 installée, sinon l'émulateur web dans le navigateur.
 
 Sur le web, le Trainer et l'émulateur partagent le même site : le Kickstart importé dans l'émulateur sert aussi aux
-essais. Sans Kickstart 1.3, l'émulateur prend un Amiga 1200 avec AROS (le programme tourne quand même). Dans
-l'application Android, l'émulateur s'ouvre dans le navigateur du téléphone.
+essais. Sans Kickstart, AROS (libre, fourni) le remplace : le programme tourne quand même. Pour un vrai Amiga 500,
+importer son Kickstart 1.3 ; pour un Amiga 1200, son Kickstart 3.1.
 
 ## Construire
 
@@ -84,8 +88,11 @@ code d'origine a changé à un endroit adapté ici, la construction s'arrête et
 | `web/plateforme.ts` | Web ou Android : fichiers, liens, impression |
 | `web/overrides/` | Les deux modules de l'interface remplacés (export ; l'ancien onglet Émulateur n'est plus affiché) |
 | `web/amigaIntegre.ts` | Le vrai Amiga dans la page : sélecteur, émulateur gardé allumé, disquettes envoyées par message |
+| `web/consoleAmiga.ts` | Ce que le programme écrit, affiché dans une fenêtre AmigaDOS sur l'écran simulé |
+| `web/mobile.css`, `web/marqueurs.ts`, `web/sommaire.ts`, `web/editeurMobile.ts` | Mise en page du téléphone |
 | `web/shims/` | `fs`, `path`, `electron` imités pour le code du processus principal |
-| `android/` | Application Android (WebView, sans dépendance) : la page servie depuis l'APK, pont `AndroidTrainer` |
+| `android/` | Application Android (WebView) : la page et l'émulateur servis depuis l'APK, ponts `AndroidTrainer` et `AndroidEmulateur` |
+| `wasm/app/trainer-puae.js`, `wasm/app/simple-puae.*` (racine du dépôt) | Côté émulateur : réception des disquettes, mode simple (carte d'allumage, gros boutons) |
 
 ## Crédits
 

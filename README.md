@@ -30,8 +30,9 @@ Kickstart et les disques restent à ajouter dans chaque version : ils ne sont ja
 Le **[68k Trainer](https://laurent-67370.github.io/amiga1200/trainer/)** de Yannick Montfort, porté dans le
 navigateur et sur **Android** (APK : [trainer-dev](https://github.com/laurent-67370/amiga1200/releases/tag/trainer-dev)),
 apprend l'assembleur 68000 pas à pas sur un Amiga 500 simulé : Exec, Copper, Blitter, sprites, Paula, exécutable
-AmigaDOS. Son bouton **Essayer sur l'Amiga** ouvre cet émulateur avec le programme sur une disquette amorçable, sur un
-Amiga 500 ou un Amiga 1200. Détails : [trainer-src/README.md](trainer-src/README.md).
+AmigaDOS. Cet émulateur y est intégré : sous l'éditeur, un sélecteur **Simulateur / Amiga 500 / Amiga 1200** lance le
+programme sur l'Amiga simulé ou, depuis une disquette amorçable, sur un vrai Amiga 500 ou 1200 émulé, dans la même
+page (application Android, hors ligne) ou dans un onglet (web). Détails : [trainer-src/README.md](trainer-src/README.md).
 
 ## Points forts
 

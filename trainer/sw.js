@@ -1,9 +1,9 @@
 /* Copie hors ligne du 68k Trainer (sous-dossier trainer/ du site de l'émulateur). Sa portée est plus précise que
    celle du service worker de l'émulateur : c'est lui qui sert les pages du Trainer. La liste des fichiers et la
    version sont écrites à la construction (vite.config.ts). */
-const VERSION = "mwg8l2w5";
+const VERSION = "mwg9bvow";
 const CACHE = "68kt-" + VERSION;
-const FILES = ["./","assets/icone-presentation-CfbyWGji.png","assets/monaco-CP2cXDiA.css","assets/index-DqNAldPH.css","assets/monaco-DcOKjXPt.js","assets/index-BBuefVed.js","assets/editor.worker-7tlZL6ZP.js","index.html"];
+const FILES = ["./","assets/icone-presentation-CfbyWGji.png","assets/monaco-CP2cXDiA.css","assets/index-B-E6PtYr.css","assets/monaco-DcOKjXPt.js","assets/index-DRNZsnA6.js","assets/editor.worker-7tlZL6ZP.js","index.html"];
 
 self.addEventListener("install", e => e.waitUntil((async () => {
   const c = await caches.open(CACHE);

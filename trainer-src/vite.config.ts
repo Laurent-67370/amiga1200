@@ -78,7 +78,7 @@ const REMPLACES: Record<string, string> = {
   [join(RENDERER, 'views/emulateurs.ts')]: join(ICI, 'web/overrides/emulateurs.ts')
 }
 
-/** Textes adaptés dans le code d'origine : [fichier, avant, après]. */
+/** Adaptations du code d'origine : [fichier, avant, après] ; « @chemin » pour un fichier hors de l'interface (depuis src). */
 const REMPLACEMENTS: [string, string | RegExp, string][] = [
   // Ce portage suit le parcours Amiga : la machine est toujours l'Amiga 500 (le tronc commun du 68000 compris)
   ['progressionStore.ts', "return state?.machine ?? 'atari'", "return 'amiga'"],
@@ -94,7 +94,36 @@ const REMPLACEMENTS: [string, string | RegExp, string][] = [
   ['views/parcours/ecrans.ts', "essayer: 'Essayer dans {emulateur}'", "essayer: 'Essayer sur l’Amiga'"],
   ['views/parcours/ecrans.ts', "essayer: 'Try in {emulateur}'", "essayer: 'Try on the Amiga'"],
   ['views/parcours/ecrans.ts', "essayerTitre: \"Lancer ton programme dans un vrai émulateur (onglet « Émulateurs » pour l'installer)\"", "essayerTitre: \"Lancer ton programme dans l'émulateur Amiga 500 / 1200 (onglet « Émulateur » pour choisir le modèle)\""],
-  ['views/parcours/ecrans.ts', "essayerTitre: 'Run your program in a real emulator (see the “Emulators” tab to install it)'", "essayerTitre: 'Run your program in the Amiga 500 / 1200 emulator (choose the model in the “Emulator” tab)'"]
+  ['views/parcours/ecrans.ts', "essayerTitre: 'Run your program in a real emulator (see the “Emulators” tab to install it)'", "essayerTitre: 'Run your program in the Amiga 500 / 1200 emulator (choose the model in the “Emulator” tab)'"],
+  // Fenêtre du CLI dessinée sur l'écran de l'Amiga simulé (web/consoleAmiga.ts), en exécution interactive seulement
+  [
+    '@platforms/amiga/kickstart.ts',
+    'function ecrireConsole(cpu: Cpu, adresse: number, longueur: number): void {',
+    'function ecrireConsole(cpu: Cpu, adresse: number, longueur: number): void {\n' +
+      '    ecrireConsole0(cpu, adresse, longueur)\n' +
+      '    if (options.clavierInteractif) (globalThis as { __consoleAmiga?: (c: Cpu) => void }).__consoleAmiga?.(cpu)\n' +
+      '  }\n' +
+      '  function ecrireConsole0(cpu: Cpu, adresse: number, longueur: number): void {'
+  ],
+  [
+    '@platforms/amiga/kickstart.ts',
+    'function lireConsole(cpu: Cpu): boolean {',
+    'function lireConsole(cpu: Cpu): boolean {\n' +
+      '    try {\n' +
+      '      return lireConsole0(cpu)\n' +
+      '    } finally {\n' +
+      '      if (options.clavierInteractif) (globalThis as { __consoleAmiga?: (c: Cpu) => void }).__consoleAmiga?.(cpu)\n' +
+      '    }\n' +
+      '  }\n' +
+      '  function lireConsole0(cpu: Cpu): boolean {'
+  ],
+  // Programme terminé juste après avoir écrit : l'écran balaye une image de plus pour montrer le texte du CLI
+  [
+    'components/ecranAmiga.ts',
+    '    const image = materielAmiga(cpu)?.image()',
+    '    ;(globalThis as { __consoleAvantImage?: (c: Cpu, m: unknown) => void }).__consoleAvantImage?.(cpu, materielAmiga(cpu))\n' +
+      '    const image = materielAmiga(cpu)?.image()'
+  ]
 ]
 
 function adaptationAmont(): Plugin {
@@ -108,8 +137,13 @@ function adaptationAmont(): Plugin {
       return r && REMPLACES[r.id] ? REMPLACES[r.id] : null
     },
     transform(code, id) {
-      if (!id.startsWith(RENDERER)) return null
-      const rel = relative(RENDERER, id).split(sep).join('/')
+      // Fichiers de l'interface : chemin depuis src/renderer/src ; autres fichiers d'origine : « @ » + chemin depuis src
+      const rel = id.startsWith(RENDERER)
+        ? relative(RENDERER, id).split(sep).join('/')
+        : id.startsWith(join(AMONT, 'src'))
+          ? '@' + relative(join(AMONT, 'src'), id).split(sep).join('/')
+          : null
+      if (!rel) return null
       let sortie = code
       REMPLACEMENTS.forEach(([fichier, avant, apres], i) => {
         if (fichier !== rel) return

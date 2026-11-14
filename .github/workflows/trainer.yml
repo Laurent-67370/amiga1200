@@ -1,11 +1,12 @@
 name: 68k Trainer (web et Android)
 
 # Le 68k Trainer (parcours Amiga 500 / 1200, d'après github.com/yannickmontfort-rgb/68k-trainer) :
+# Sources dans trainer-src/ ; la page est publiée dans trainer/ du site (jamais dans trainer-src/)
 # - page web publiée dans trainer/ du site de l'émulateur (main), ou /<branche>/trainer/ (essais) ;
 # - APK Android, publié à côté de la page (trainer/68k-trainer-amiga.apk) et, pour main, dans la version « trainer-dev ».
 on:
   push:
-    paths: ["trainer/**", ".gitmodules", ".github/workflows/trainer.yml"]
+    paths: ["trainer-src/**", ".gitmodules", ".github/workflows/trainer.yml"]
   workflow_dispatch:
 
 jobs:
@@ -18,16 +19,16 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Sources de 68k-trainer (sous-module)
-        run: git submodule update --init --depth 1 trainer/68k-trainer
+        run: git submodule update --init --depth 1 trainer-src/68k-trainer
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: trainer/package-lock.json
+          cache-dependency-path: trainer-src/package-lock.json
 
       - name: Page web
-        working-directory: trainer
+        working-directory: trainer-src
         run: |
           npm ci
           npm run typecheck
@@ -45,8 +46,8 @@ jobs:
 
       - name: APK Android
         run: |
-          gradle --no-daemon -p trainer/android assembleRelease
-          cp trainer/android/app/build/outputs/apk/release/app-release.apk 68k-trainer-amiga.apk
+          gradle --no-daemon -p trainer-src/android assembleRelease
+          cp trainer-src/android/app/build/outputs/apk/release/app-release.apk 68k-trainer-amiga.apk
           ls -l 68k-trainer-amiga.apk
 
       - uses: actions/upload-artifact@v4
@@ -54,7 +55,7 @@ jobs:
           name: 68k-trainer-amiga
           path: |
             68k-trainer-amiga.apk
-            trainer/dist
+            trainer-src/dist
 
       - name: Publier la page et l'APK
         run: |
@@ -63,7 +64,7 @@ jobs:
           if [ "$GITHUB_REF_NAME" = "main" ]; then DEST=trainer; URL="https://laurent-67370.github.io/amiga1200/trainer/"
           else DEST="$GITHUB_REF_NAME/trainer"; URL="https://laurent-67370.github.io/amiga1200/$GITHUB_REF_NAME/trainer/"; fi
           rm -rf "../site-main/$DEST" && mkdir -p "../site-main/$DEST"
-          cp -r trainer/dist/* "../site-main/$DEST/"
+          cp -r trainer-src/dist/* "../site-main/$DEST/"
           cp 68k-trainer-amiga.apk "../site-main/$DEST/"
           cd ../site-main
           git add -A "$DEST"

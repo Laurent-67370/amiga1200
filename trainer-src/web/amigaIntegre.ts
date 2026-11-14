@@ -68,6 +68,7 @@ function choisirAffichage(a: Affichage): void {
 let cadre: HTMLIFrameElement | null = null
 let boite: HTMLDivElement | null = null
 let pret = false
+let hauteurEmulateur = 0
 const enAttente: unknown[] = []
 
 function emulateur(): HTMLIFrameElement {
@@ -85,6 +86,15 @@ function emulateur(): HTMLIFrameElement {
   enAttente.push({ type: '68kt-modele', modele: a === 'simulateur' ? modeleEssai() : a })
   window.addEventListener('message', (e) => {
     if (e.origin !== location.origin || e.source !== cadre?.contentWindow) return
+    // Hauteur utile de l'émulateur (écran, boutons, clavier ouvert) : la place réservée s'y ajuste
+    const d = e.data as { type?: string; hauteur?: number }
+    if (d?.type === '68kt-taille' && typeof d.hauteur === 'number') {
+      hauteurEmulateur = Math.min(Math.max(d.hauteur, 200), 2000)
+      for (const p of document.querySelectorAll<HTMLElement>('.amiga-place')) p.style.height = `${hauteurEmulateur}px`
+      return
+    }
+    // « ◀ Simulateur » de la barre de l'émulateur : retour à l'Amiga simulé
+    if (d?.type === '68kt-simulateur') return choisirAffichage('simulateur')
     if ((e.data as { type?: string })?.type === '68kt-pret') {
       pret = true
       for (const m of enAttente.splice(0)) cadre!.contentWindow!.postMessage(m, location.origin)
@@ -106,7 +116,8 @@ function suivre(): void {
   if (boite) {
     if (place) {
       const r = place.getBoundingClientRect()
-      Object.assign(boite.style, { visibility: 'visible', top: `${r.top + scrollY}px`, left: `${r.left + scrollX}px`, width: `${r.width}px`, height: `${r.height}px` })
+      // Position par rapport à la fenêtre (cadre en position fixe), recalculée à chaque image : il suit le défilement
+      Object.assign(boite.style, { visibility: 'visible', top: `${r.top}px`, left: `${r.left}px`, width: `${r.width}px`, height: `${r.height}px` })
     } else boite.style.visibility = 'hidden'
   }
   requestAnimationFrame(suivre)
@@ -130,6 +141,7 @@ function marquer(): void {
       titre ? titre.after(sel) : bloc.prepend(sel)
       const place = document.createElement('div')
       place.className = 'amiga-place'
+      if (hauteurEmulateur) place.style.height = `${hauteurEmulateur}px`
       sel.after(place)
     }
     const kick = sel.querySelector<HTMLButtonElement>('[data-aff=kick]')

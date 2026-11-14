@@ -121,7 +121,8 @@ jobs:
             ADD=". "; URL="https://laurent-67370.github.io/amiga1200/"
           else
             DIR="$GITHUB_REF_NAME"
-            rm -rf "$SITE/$DIR" && mkdir -p "$SITE/$DIR" && cp -r wasm/dist/site/* "$SITE/$DIR/"
+            # Le 68k Trainer de la branche (workflow trainer.yml) est gardé
+            mkdir -p "$SITE/$DIR" && find "$SITE/$DIR" -mindepth 1 -maxdepth 1 ! -name trainer -exec rm -rf {} + && cp -r wasm/dist/site/* "$SITE/$DIR/"
             ADD="$DIR"; URL="https://laurent-67370.github.io/amiga1200/$DIR/"
           fi
           cd "$SITE"

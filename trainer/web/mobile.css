@@ -1,0 +1,188 @@
+/* Adaptation au téléphone et à la tablette de l'interface d'origine (pensée pour un écran d'ordinateur).
+   Sur un écran étroit, les colonnes s'empilent et la page défile ; l'éditeur garde une hauteur fixe. */
+
+/* Ce portage suit le parcours Amiga : pas de choix de machine */
+#nav-machine,
+label:has(> input[name='machine'][value='atari']) {
+  display: none !important;
+}
+.app-title small {
+  font-weight: 400;
+  color: #e0a040;
+  margin-left: 4px;
+}
+
+@media (max-width: 900px) {
+  html,
+  body,
+  #app {
+    height: auto;
+    min-height: 100vh;
+  }
+  body {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Onglets : une seule ligne qui défile au doigt, toujours visible en haut */
+  .app-nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 4px 8px;
+    padding-top: max(4px, env(safe-area-inset-top));
+  }
+  .app-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .app-nav > * {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .app-title {
+    margin-right: 6px;
+  }
+  .nav-tab {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  .nav-espace {
+    flex: 0 0 8px !important;
+  }
+
+  .view-container {
+    display: block;
+    min-height: 0;
+  }
+
+  /* Barres de boutons : sur plusieurs lignes, boutons faciles à toucher */
+  .toolbar,
+  .toolbar-mini,
+  .ecran-actions,
+  .exercice-actions,
+  .parcours-nav,
+  .profils-form-boutons {
+    flex-wrap: wrap;
+  }
+  .toolbar button,
+  .toolbar-mini button,
+  .ecran button,
+  .parcours-nav button {
+    min-height: 40px;
+    font-size: 14px;
+  }
+  .toolbar .status {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+
+  /* Bac à sable : éditeur puis débogueur, l'un sous l'autre */
+  .main {
+    flex-direction: column;
+  }
+  #editor {
+    flex: none;
+    height: 55vh;
+    min-height: 260px;
+  }
+  .sidebar,
+  .sidebar-dbg {
+    width: 100% !important;
+    border-left: none;
+    overflow: visible;
+  }
+
+  /* Parcours : sommaire, puis l'étape en cours */
+  .parcours-entete {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+  .entete-titre h1 {
+    font-size: 20px;
+  }
+  .entete-progression {
+    flex: 1 1 100%;
+  }
+  .parcours-corps {
+    flex-direction: column;
+  }
+  .sommaire {
+    width: 100%;
+    max-height: 38vh;
+    border-right: none;
+    border-bottom: 1px solid var(--bord, #333);
+  }
+  .parcours-contenu {
+    overflow: visible;
+  }
+  .chapitre-bandeau {
+    position: static;
+    padding: 8px 12px;
+  }
+  .ecran {
+    padding: 12px !important;
+  }
+  .parcours-nav {
+    padding: 10px 12px 16px;
+  }
+  .exemple-zone,
+  .exercice-zone,
+  .prediction-zone {
+    flex-direction: column;
+  }
+  .exemple-droite,
+  .exercice-droite,
+  .prediction-droite {
+    width: 100% !important;
+  }
+  .editeur-exemple,
+  .editeur-exercice {
+    height: 45vh;
+    min-height: 240px;
+  }
+
+  /* Écran de l'Amiga simulé et tableaux : jamais plus larges que le téléphone */
+  canvas {
+    max-width: 100%;
+    height: auto;
+  }
+  .markdown-body {
+    overflow-wrap: anywhere;
+  }
+  .markdown-body pre,
+  .markdown-body table {
+    overflow-x: auto;
+    max-width: 100%;
+    display: block;
+  }
+
+  /* Fiches, Émulateur, À propos : une colonne */
+  .cours-body {
+    flex-direction: column;
+  }
+  .cours-list {
+    width: 100% !important;
+    max-height: 35vh;
+  }
+  .apropos-view,
+  .emulateurs-view {
+    padding: 12px !important;
+  }
+  .apropos-card {
+    max-width: none;
+  }
+  .dialogue {
+    max-width: calc(100vw - 32px);
+  }
+}
+
+/* Onglet Émulateur : choix du modèle aligné à gauche */
+.emulateurs-colonne .rom-choix {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  text-align: left;
+  margin: 6px 0;
+}

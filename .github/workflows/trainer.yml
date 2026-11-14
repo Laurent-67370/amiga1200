@@ -1,0 +1,89 @@
+name: 68k Trainer (web et Android)
+
+# Le 68k Trainer (parcours Amiga 500 / 1200, d'après github.com/yannickmontfort-rgb/68k-trainer) :
+# - page web publiée dans trainer/ du site de l'émulateur (main), ou /<branche>/trainer/ (essais) ;
+# - APK Android, publié à côté de la page (trainer/68k-trainer-amiga.apk) et, pour main, dans la version « trainer-dev ».
+on:
+  push:
+    paths: ["trainer/**", ".gitmodules", ".github/workflows/trainer.yml"]
+  workflow_dispatch:
+
+jobs:
+  construire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sources de 68k-trainer (sous-module)
+        run: git submodule update --init --depth 1 trainer/68k-trainer
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: trainer/package-lock.json
+
+      - name: Page web
+        working-directory: trainer
+        run: |
+          npm ci
+          npm run typecheck
+          npm run build
+          du -sh dist
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+
+      - name: APK Android
+        run: |
+          gradle --no-daemon -p trainer/android assembleRelease
+          cp trainer/android/app/build/outputs/apk/release/app-release.apk 68k-trainer-amiga.apk
+          ls -l 68k-trainer-amiga.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 68k-trainer-amiga
+          path: |
+            68k-trainer-amiga.apk
+            trainer/dist
+
+      - name: Publier la page et l'APK
+        run: |
+          git fetch --depth 1 origin main
+          git worktree add ../site-main origin/main
+          if [ "$GITHUB_REF_NAME" = "main" ]; then DEST=trainer; URL="https://laurent-67370.github.io/amiga1200/trainer/"
+          else DEST="$GITHUB_REF_NAME/trainer"; URL="https://laurent-67370.github.io/amiga1200/$GITHUB_REF_NAME/trainer/"; fi
+          rm -rf "../site-main/$DEST" && mkdir -p "../site-main/$DEST"
+          cp -r trainer/dist/* "../site-main/$DEST/"
+          cp 68k-trainer-amiga.apk "../site-main/$DEST/"
+          cd ../site-main
+          git add -A "$DEST"
+          if git diff --cached --quiet; then echo "rien à publier"; exit 0; fi
+          git -c user.name="github-actions[bot]" -c user.email="41898099+github-actions[bot]@users.noreply.github.com" \
+            commit -m "Publication 68k Trainer ($GITHUB_REF_NAME) : ${GITHUB_SHA::7}"
+          for i in 1 2 3 4; do git push origin HEAD:main && break; sleep $((i * 5)); git pull --rebase origin main; done
+          echo "::notice title=Publié::$URL (APK : ${URL}68k-trainer-amiga.apk)"
+
+      # Version de test téléchargeable directement depuis le téléphone (page Releases du dépôt)
+      - name: Publication « trainer-dev »
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: trainer-dev
+          name: 68k Trainer Amiga, Android (compilation ${{ github.run_number }})
+          prerelease: true
+          make_latest: false
+          body: |
+            68k Trainer (parcours Amiga 500 / 1200) pour Android, construit automatiquement depuis main (${{ github.sha }}).
+            Installation : télécharger 68k-trainer-amiga.apk sur le téléphone, l'ouvrir et autoriser l'installation.
+            Version web : https://laurent-67370.github.io/amiga1200/trainer/
+          files: 68k-trainer-amiga.apk

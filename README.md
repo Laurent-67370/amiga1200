@@ -25,6 +25,14 @@ quatre versions, et aussi dans WinUAE et Amiberry. Les applications Android, Mac
 de leur accueil qui mène ici, et la page web un bouton **Applications** (barre d'outils) qui mène à elles ; Android et Mac ajoutent le **JIT**, que WebAssembly interdit au navigateur. Les
 Kickstart et les disques restent à ajouter dans chaque version : ils ne sont jamais fournis ni envoyés nulle part.
 
+## Apprendre l'assembleur : 68k Trainer (Amiga 500 / 1200)
+
+Le **[68k Trainer](https://laurent-67370.github.io/amiga1200/trainer/)** de Yannick Montfort, porté dans le
+navigateur et sur **Android** (APK : [trainer-dev](https://github.com/laurent-67370/amiga1200/releases/tag/trainer-dev)),
+apprend l'assembleur 68000 pas à pas sur un Amiga 500 simulé : Exec, Copper, Blitter, sprites, Paula, exécutable
+AmigaDOS. Son bouton **Essayer sur l'Amiga** ouvre cet émulateur avec le programme sur une disquette amorçable, sur un
+Amiga 500 ou un Amiga 1200. Détails : [trainer/README.md](trainer/README.md).
+
 ## Points forts
 
 - **Une vraie machine complète** : A500, A600, A1200, A3000, A4000, CD32, CDTV ; chipsets OCS, ECS, AGA ; cartes

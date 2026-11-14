@@ -1,3 +1,7 @@
 [submodule "vendor/puae"]
 	path = vendor/puae
 	url = https://github.com/libretro/libretro-uae.git
+[submodule "trainer/68k-trainer"]
+	path = trainer/68k-trainer
+	url = https://github.com/yannickmontfort-rgb/68k-trainer.git
+	shallow = true

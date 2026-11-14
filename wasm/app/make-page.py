@@ -901,6 +901,12 @@ rep("</style>", """.help-ui{display:flex;flex-direction:column;gap:12px}
 </style>""")
 rep("</style>", (APP / "ux-puae.css").read_text(encoding="utf-8") + "</style>")
 
+# 68k Trainer (sous-dossier trainer/) : programme reçu dans l'adresse, posé dans DF0: et lancé au démarrage de la page
+rep("/* Profil par disque */", (APP / "trainer-puae.js").read_text(encoding="utf-8") + "\n/* Profil par disque */")
+rep('''  if (sessionStorage.getItem("a1200.autostart")) { sessionStorage.removeItem("a1200.autostart"); powerOn(); }''',
+    '''  if (sessionStorage.getItem("a1200.autostart")) { sessionStorage.removeItem("a1200.autostart"); powerOn(); }
+  else await trainerHandoff();''')
+
 leftovers = re.findall(r"\b(?:sae\.|SAER|SAEC_|SAEE_|SAEO_|SAEF_|cfg\.|inf\.|ZREG|liveData|getAros|AROS_ROM_GZ)\S*", page)
 assert not leftovers, f"restes de SAE : {sorted(set(leftovers))[:10]}"
 

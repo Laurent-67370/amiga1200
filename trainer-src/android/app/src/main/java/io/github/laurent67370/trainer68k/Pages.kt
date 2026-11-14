@@ -62,7 +62,9 @@ object Pages {
         ) else mapOf("Cache-Control" to "no-cache")
         return try {
             val texte = type.startsWith("text/") || type == "application/json"
-            WebResourceResponse(type, if (texte) "utf-8" else null, 200, "OK", enTetes, ctx.assets.open(nom))
+            // Fichiers .gz : rangés sous « nom.gz.data » (preparer-emulateur.sh), les outils d'Android les traitant à part
+            val fichier = if (nom.endsWith(".gz")) "$nom.data" else nom
+            WebResourceResponse(type, if (texte) "utf-8" else null, 200, "OK", enTetes, ctx.assets.open(fichier))
         } catch (e: IOException) {
             WebResourceResponse("text/plain", "utf-8", 404, "Not Found", enTetes, "".byteInputStream())
         }

@@ -3,7 +3,7 @@
 
 /* Ce portage suit le parcours Amiga : pas de choix de machine */
 #nav-machine,
-label:has(> input[name='machine'][value='atari']) {
+.choix-atari {
   display: none !important;
 }
 .app-title small {
@@ -95,10 +95,10 @@ label:has(> input[name='machine'][value='atari']) {
 
   /* Débogueur (bac à sable, exemples, exercices) : ce que le programme écrit vient en premier, juste sous l'éditeur,
      et seulement s'il a écrit quelque chose */
-  .debogueur > .dbg-bloc:has(.dbg-sortie) {
+  .debogueur > .dbg-bloc-sortie {
     order: -1;
   }
-  .debogueur > .dbg-bloc:has(.dbg-sortie:empty) {
+  .debogueur > .dbg-bloc-sortie.sortie-vide {
     display: none;
   }
   .dbg-sortie {
@@ -191,9 +191,9 @@ label:has(> input[name='machine'][value='atari']) {
   }
   /* Une étape est ouverte : elle prend tout l'écran (en-tête et détail du chapitre retirés ; le bouton Sommaire
      et Suivant / Précédent servent à naviguer) */
-  .parcours-view:has(.sommaire-etape.actif) .parcours-entete,
-  .parcours-view:has(.sommaire-etape.actif) .bandeau-detail,
-  .parcours-view:has(.sommaire-etape.actif) .chapitre-bandeau .barre {
+  body.etape-ouverte .parcours-entete,
+  body.etape-ouverte .bandeau-detail,
+  body.etape-ouverte .chapitre-bandeau .barre {
     display: none;
   }
   .parcours-nav {
@@ -271,7 +271,7 @@ label:has(> input[name='machine'][value='atari']) {
   display: none;
 }
 @media (max-width: 900px) {
-  body:has(.parcours-view .sommaire) .btn-sommaire {
+  body.avec-sommaire .btn-sommaire {
     display: block;
     position: fixed;
     left: 50%;

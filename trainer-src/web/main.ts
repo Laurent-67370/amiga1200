@@ -4,6 +4,7 @@ import { installerEditeurMobile } from './editeurMobile'
 import './mobile.css'
 import '../68k-trainer/src/renderer/src/main'
 import { installerSommaireMobile } from './sommaire'
+import { installerMarqueurs } from './marqueurs'
 
 // Copie hors ligne (navigateur seulement : l'application Android a déjà tous ses fichiers)
 if ('serviceWorker' in navigator && location.protocol === 'https:' && !window.AndroidTrainer) {
@@ -11,5 +12,6 @@ if ('serviceWorker' in navigator && location.protocol === 'https:' && !window.An
 }
 
 // Téléphone : sommaire en panneau plein écran, lignes de code repliées dans les éditeurs
+installerMarqueurs()
 installerSommaireMobile()
 installerEditeurMobile()

@@ -409,6 +409,19 @@ body.amiga-integre-dispo .toolbar #btn-essayer {
     min-height: 0 !important;
     overflow: hidden;
   }
+  /* La page elle-même ne défile jamais : sur Chrome, après le clavier ou un glissé, elle restait décalée vers le haut
+     (barre d'outils coupée, bande vide en bas) sans pouvoir revenir */
+  html.vue-bac {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  body.vue-bac {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    overscroll-behavior: none;
+  }
   body.vue-bac .view-container {
     display: flex !important;
     flex-direction: column;

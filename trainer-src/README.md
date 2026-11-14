@@ -87,6 +87,15 @@ code d'origine a changé à un endroit adapté ici, la construction s'arrête et
 | `web/shims/` | `fs`, `path`, `electron` imités pour le code du processus principal |
 | `android/` | Application Android (WebView, sans dépendance) : la page servie depuis l'APK, pont `AndroidTrainer` |
 
+## Crédits
+
+Tout le **68k Trainer** revient à **Yannick Montfort** :
+[github.com/yannickmontfort-rgb/68k-trainer](https://github.com/yannickmontfort-rgb/68k-trainer). Cela comprend les
+cours, les exercices, le simulateur 68000 et son Amiga 500 simulé, l'assembleur, l'éditeur et l'interface. Ce portage
+les reprend tels quels et n'y ajoute que la couche web et Android et le passage vers l'émulateur Amiga de ce dépôt.
+Pour les composants tiers du Trainer et les sources des cours, voir son
+[THIRD_PARTY.md](https://github.com/yannickmontfort-rgb/68k-trainer/blob/main/THIRD_PARTY.md).
+
 ## Licence
 
 68k-trainer est sous licence **GPL v3 ou ultérieure** (© Yannick Montfort) ; ce portage (dossier `trainer-src/`) l'est

@@ -222,6 +222,16 @@ publiée s'affiche en bas de la page (date, heure de Paris, et numéro du commit
 
 Détails techniques et historique du portage : `wasm/README.md`.
 
+## Crédits
+
+- **68k Trainer** : © Yannick Montfort,
+  [github.com/yannickmontfort-rgb/68k-trainer](https://github.com/yannickmontfort-rgb/68k-trainer) (GPL v3 ou ultérieure).
+  Les cours, les exercices, le simulateur 68000, l'assembleur et l'interface sont son œuvre. Ils sont repris sans
+  modification (sous-module `trainer-src/68k-trainer`) ; ce dépôt n'ajoute que l'adaptation au navigateur et à Android,
+  et l'émulateur Amiga intégré.
+- **Émulateurs** : WinUAE (Toni Wilen), libretro-uae / PUAE, Amiberry (Dimitris Panokostas), SAE (Rupert Hausberger).
+- **AROS** : l'équipe de développement d'AROS, pour le Kickstart libre fourni.
+
 ## Licences
 
 - Cœur WinUAE 6 (Amiberry, dérivé de WinUAE) : GNU GPL v3.

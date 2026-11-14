@@ -93,13 +93,9 @@
     overflow: visible;
   }
 
-  /* Débogueur (bac à sable, exemples, exercices) : ce que le programme écrit vient en premier, juste sous l'éditeur,
-     et seulement s'il a écrit quelque chose */
+  /* Débogueur (bac à sable, exemples, exercices) : ce que le programme écrit vient en premier, juste sous l'éditeur */
   .debogueur > .dbg-bloc-sortie {
     order: -1;
-  }
-  .debogueur > .dbg-bloc-sortie.sortie-vide {
-    display: none;
   }
   .dbg-sortie {
     font-size: 14px;
@@ -289,4 +285,19 @@
     min-height: 44px;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
   }
+}
+
+/* Sortie texte toujours visible : tant que le programme n'a rien écrit, on dit où son texte apparaîtra
+   (ce que le programme écrit avec Write() ne se dessine pas dans l'ÉCRAN, comme dans la fenêtre du Shell) */
+.dbg-bloc-sortie .dbg-sortie {
+  min-height: 1.4em;
+}
+.dbg-bloc-sortie.sortie-vide .dbg-sortie::before {
+  content: "Rien pour l'instant : ce que le programme écrit (Write() de la dos.library) s'affiche ici, pas dans l'écran.";
+  color: #888;
+  font-style: italic;
+  white-space: normal;
+}
+html[lang='en'] .dbg-bloc-sortie.sortie-vide .dbg-sortie::before {
+  content: "Nothing yet: what the program writes (dos.library Write()) appears here, not on the screen.";
 }

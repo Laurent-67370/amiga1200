@@ -35,6 +35,9 @@ class MainActivity : Activity() {
     private var choixFichiers: ValueCallback<Array<Uri>>? = null
     /** Page du certificat en cours d'impression (gardée tant que l'impression en a besoin). */
     private var pageImpression: WebView? = null
+    private lateinit var cadre: FrameLayout
+    private var vuePleinEcran: View? = null
+    private var rappelPleinEcran: WebChromeClient.CustomViewCallback? = null
 
     companion object {
         private const val HOTE = Pages.HOTE
@@ -62,6 +65,8 @@ class MainActivity : Activity() {
             textZoom = 100
         }
         web.addJavascriptInterface(Pont(), "AndroidTrainer")
+        // L'émulateur s'affiche aussi dans la page du Trainer (sélecteur Simulateur / Amiga 500 / Amiga 1200)
+        Pages.autoriserFils(web)
         web.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
                 if (request.url.host == HOTE) Pages.reponse(this@MainActivity, request.url.path ?: "/") else null
@@ -73,6 +78,21 @@ class MainActivity : Activity() {
             }
         }
         web.webChromeClient = object : WebChromeClient() {
+            // Plein écran demandé par l'émulateur (bouton « Plein écran ») : sa vue occupe toute la fenêtre
+            override fun onShowCustomView(view: View, callback: CustomViewCallback) {
+                vuePleinEcran?.let { cadre.removeView(it) }
+                vuePleinEcran = view
+                rappelPleinEcran = callback
+                cadre.addView(view, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+            }
+
+            override fun onHideCustomView() {
+                vuePleinEcran?.let { cadre.removeView(it) }
+                vuePleinEcran = null
+                rappelPleinEcran?.onCustomViewHidden()
+                rappelPleinEcran = null
+            }
+
             override fun onShowFileChooser(view: WebView, rappel: ValueCallback<Array<Uri>>, params: FileChooserParams): Boolean {
                 choixFichiers?.onReceiveValue(null)
                 choixFichiers = rappel
@@ -88,7 +108,7 @@ class MainActivity : Activity() {
         }
         // Barres du système (Android 15 dessine l'application dessous) : la page est placée entre la barre d'état et
         // la barre de navigation, et au-dessus du clavier. La marge est donnée au cadre : une WebView n'en tient pas compte.
-        val cadre = FrameLayout(this)
+        cadre = FrameLayout(this)
         cadre.setBackgroundColor(Color.rgb(24, 24, 24))
         cadre.addView(web, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
         if (Build.VERSION.SDK_INT >= 30) {

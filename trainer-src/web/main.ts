@@ -6,6 +6,7 @@ import '../68k-trainer/src/renderer/src/main'
 import { installerSommaireMobile } from './sommaire'
 import { installerMarqueurs } from './marqueurs'
 import { installerConsoleAmiga } from './consoleAmiga'
+import { installerAmigaIntegre } from './amigaIntegre'
 
 // Copie hors ligne (navigateur seulement : l'application Android a déjà tous ses fichiers)
 if ('serviceWorker' in navigator && location.protocol === 'https:' && !window.AndroidTrainer) {
@@ -17,3 +18,4 @@ installerConsoleAmiga()
 installerMarqueurs()
 installerSommaireMobile()
 installerEditeurMobile()
+installerAmigaIntegre()

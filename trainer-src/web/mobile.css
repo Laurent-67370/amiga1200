@@ -301,3 +301,82 @@
 html[lang='en'] .dbg-bloc-sortie.sortie-vide .dbg-sortie::before {
   content: "Nothing yet: what the program writes (dos.library Write()) appears here, not on the screen.";
 }
+
+/* Le vrai Amiga au-dessus de l'ÉCRAN (web/amigaIntegre.ts) : sélecteur, emplacement, émulateur posé dessus */
+.amiga-selecteur {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 2px 0 8px;
+}
+.amiga-choix {
+  display: inline-flex;
+  border: 1px solid #3c5a80;
+  border-radius: 18px;
+  overflow: hidden;
+}
+.amiga-choix button {
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 12px;
+  min-height: 36px;
+  border: 0;
+  background: transparent;
+  color: #c8d3df;
+  cursor: pointer;
+}
+.amiga-choix button[aria-pressed='true'] {
+  background: #0e639c;
+  color: #fff;
+  font-weight: 600;
+}
+.amiga-kick {
+  font: inherit;
+  font-size: 12px;
+  background: none;
+  border: 0;
+  color: #8fb8e6;
+  text-decoration: underline;
+  cursor: pointer;
+  min-height: 32px;
+}
+.amiga-aide {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12px;
+  color: #9aa7b4;
+}
+.amiga-aide:empty {
+  display: none;
+}
+.amiga-place {
+  display: none;
+}
+.dbg-ecran-bloc.mode-amiga > :not(h4):not(.amiga-selecteur):not(.amiga-place) {
+  display: none !important;
+}
+.dbg-ecran-bloc.mode-amiga-integre > .amiga-place {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 4.75;
+  max-height: 88vh;
+  background: #111;
+  border-radius: 6px;
+}
+.amiga-integre {
+  position: absolute;
+  z-index: 40;
+  visibility: hidden;
+}
+.amiga-integre iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 6px;
+  background: #111;
+}
+/* Bac à sable de l'application : le sélecteur remplace « Essayer sur l'Amiga » */
+body.amiga-integre-dispo .toolbar #btn-essayer {
+  display: none;
+}

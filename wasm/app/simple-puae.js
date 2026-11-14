@@ -5,7 +5,9 @@
    de quelques gros boutons (Trainer, Relancer, Pause, Clavier, Joystick, Plein écran, Éteindre). Le reste
    (configuration, Bibliothèque, lecteurs) reste à portée par « Réglages avancés », sans rien changer à l'émulateur.
    ========================================================= */
-const SIMPLE = new URLSearchParams(location.search).has("simple");
+const SIMPLE = new URLSearchParams(location.search).has("simple") || new URLSearchParams(location.search).has("integre");
+/* Placé dans la page du Trainer (?integre=1) : le Trainer choisit le modèle et reste affiché autour */
+const INTEGRE = new URLSearchParams(location.search).has("integre");
 let simpleAvance = false;
 function simpleRetour() {
   if (window.AndroidEmulateur && AndroidEmulateur.retour) return AndroidEmulateur.retour();
@@ -33,6 +35,7 @@ function simpleMaj(st) {
 }
 if (SIMPLE) {
   document.body.classList.add("mode-simple");
+  if (INTEGRE) document.body.classList.add("mode-integre");
   /* La fenêtre de configuration ne s'ouvre plus d'elle-même (accueil, extinction) : seulement par « Réglages avancés » */
   {
     const ouvrir = abOpen, fermer = abClose;

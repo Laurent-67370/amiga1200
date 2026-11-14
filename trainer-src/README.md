@@ -23,9 +23,20 @@ la progression et le certificat.
 | Atari ST ou Amiga 500, au choix | Amiga 500 seulement (le tronc commun du 68000 compris) |
 | Fichiers et profils dans le dossier de l'utilisateur | Stockage local du navigateur (ou de l'application) ; export et import de profil `.68kprofil` comme avant |
 | Exporter : boîte « Enregistrer sous » | Téléchargement (web) ou sélecteur de fichiers d'Android |
-| Émulateurs installés sous Windows (WinUAE + AROS) | L'émulateur amiga1200 : onglet **Émulateur**, choix **Amiga 500** ou **Amiga 1200** |
+| Émulateurs installés sous Windows (WinUAE + AROS) | L'émulateur amiga1200, au-dessus de l'ÉCRAN : sélecteur **Simulateur / Amiga 500 / Amiga 1200** |
 | Certificat en PDF | Boîte d'impression → « Enregistrer au format PDF » |
 | Écran d'ordinateur | Mise en page adaptée au téléphone (colonnes empilées, onglets qui défilent) |
+
+## Simulateur ou vrai Amiga
+
+Au-dessus de l'ÉCRAN (bac à sable, exemples, exercices), un sélecteur **Simulateur | Amiga 500 | Amiga 1200** :
+
+- **Simulateur** : l'Amiga 500 simulé de 68k-trainer, pour apprendre (pas à pas, registres, mémoire, vérification des
+  exercices) ; ce que le programme écrit s'affiche dans une fenêtre AmigaDOS de l'écran simulé ;
+- **Amiga 500 / 1200** (application Android) : l'émulateur, en mode simple, prend la place de l'écran ; « Exécuter »
+  y lance le programme. Un seul émulateur pour toute la page, gardé allumé : l'essai suivant change seulement la
+  disquette et redémarre. « Kickstart… » éteint l'Amiga pour importer son Kickstart. « Pas » revient au simulateur.
+  Sur le web, le vrai Amiga s'ouvre dans un onglet.
 
 ## « Essayer sur l'Amiga »
 
@@ -71,7 +82,8 @@ code d'origine a changé à un endroit adapté ici, la construction s'arrête et
 | `web/profils.ts` | Profils et progression (stockage local, mot de passe haché PBKDF2) |
 | `web/disquette.ts`, `web/essai.ts` | Disquette amorçable et ouverture de l'émulateur |
 | `web/plateforme.ts` | Web ou Android : fichiers, liens, impression |
-| `web/overrides/` | Les deux modules de l'interface remplacés (export, onglet Émulateur) |
+| `web/overrides/` | Les deux modules de l'interface remplacés (export ; l'ancien onglet Émulateur n'est plus affiché) |
+| `web/amigaIntegre.ts` | Le vrai Amiga dans la page : sélecteur, émulateur gardé allumé, disquettes envoyées par message |
 | `web/shims/` | `fs`, `path`, `electron` imités pour le code du processus principal |
 | `android/` | Application Android (WebView, sans dépendance) : la page servie depuis l'APK, pont `AndroidTrainer` |
 

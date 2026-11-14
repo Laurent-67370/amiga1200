@@ -1,3 +1,10 @@
+/* Fils d'exécution WebAssembly (mémoire partagée) disponibles : page isolée (navigateur, avec coi-sw.js), ou WebView
+   d'Android qui les autorise pour l'application (68k Trainer : liste d'origines de confiance + Document-Isolation-Policy) */
+function filsPossibles() {
+  if (window.crossOriginIsolated) return true;
+  try { return typeof SharedArrayBuffer === "function" && new WebAssembly.Memory({ initial: 1, maximum: 1, shared: true }).buffer instanceof SharedArrayBuffer; }
+  catch (e) { return false; }
+}
 /* =========================================================
    Émulateur : cœur PUAE (WinUAE) en WebAssembly
    ========================================================= */
@@ -253,7 +260,7 @@ async function powerOn() {
     if (machine.M && machine.M.terminateAllThreads && inPageRestarts < inPageRestartsMax()) { machine.destroy(); machine = null; restarted = true; inPageRestarts++; }
     else return reloadToStart();
   }
-  if (!window.crossOriginIsolated) { toast("La page doit être rechargée une fois pour activer l'émulateur (isolation du navigateur).", true); return; }
+  if (!filsPossibles()) { toast("La page doit être rechargée une fois pour activer l'émulateur (isolation du navigateur).", true); return; }
   starting = true; setPowerUi("starting");
   try {
     /* Reprise d'une sauvegarde : mêmes disques, même Kickstart, mêmes réglages qu'au moment de la sauvegarde */

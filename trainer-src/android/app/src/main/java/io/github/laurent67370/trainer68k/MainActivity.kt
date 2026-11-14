@@ -14,7 +14,6 @@ import android.util.Base64
 import android.view.View
 import android.view.WindowInsets
 import android.webkit.JavascriptInterface
-import android.webkit.MimeTypeMap
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -23,7 +22,6 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import android.widget.Toast
-import java.io.IOException
 
 /**
  * 68k Trainer (parcours Amiga 500 / 1200) : la page web du Trainer, embarquée dans l'APK et servie hors ligne
@@ -39,7 +37,7 @@ class MainActivity : Activity() {
     private var pageImpression: WebView? = null
 
     companion object {
-        private const val HOTE = "appassets.androidplatform.net"
+        private const val HOTE = Pages.HOTE
         private const val ENREGISTRER = 1
         private const val CHOISIR = 2
         /** Application Amiga 1200 (dépôt amiga1200-android) et son entrée pour les programmes du Trainer (Trainer.kt) */
@@ -66,7 +64,7 @@ class MainActivity : Activity() {
         web.addJavascriptInterface(Pont(), "AndroidTrainer")
         web.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
-                if (request.url.host == HOTE) fichierLocal(request.url.path ?: "/") else null
+                if (request.url.host == HOTE) Pages.reponse(this@MainActivity, request.url.path ?: "/") else null
 
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 if (request.url.host == HOTE) return false
@@ -120,27 +118,6 @@ class MainActivity : Activity() {
             if (r != "1") {
                 if (web.canGoBack()) web.goBack() else finish()
             }
-        }
-    }
-
-    /** Fichiers de la page, rangés à la racine des « assets » de l'APK. */
-    private fun fichierLocal(chemin: String): WebResourceResponse {
-        val nom = chemin.trimStart('/').ifEmpty { "index.html" }
-        val ext = nom.substringAfterLast('.', "").lowercase()
-        val type = when (ext) {
-            "js", "mjs" -> "text/javascript"
-            "css" -> "text/css"
-            "html" -> "text/html"
-            "json", "webmanifest" -> "application/json"
-            "wasm" -> "application/wasm"
-            "svg" -> "image/svg+xml"
-            "ttf" -> "font/ttf"
-            else -> MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: "application/octet-stream"
-        }
-        return try {
-            WebResourceResponse(type, if (type.startsWith("text/") || type == "application/json") "utf-8" else null, assets.open(nom))
-        } catch (e: IOException) {
-            WebResourceResponse("text/plain", "utf-8", 404, "Not Found", mapOf(), "".byteInputStream())
         }
     }
 
@@ -216,6 +193,19 @@ class MainActivity : Activity() {
                 }
             }
             return true
+        }
+
+        /** L'émulateur Amiga intégré à l'APK peut démarrer sur ce téléphone (WebView assez récente). */
+        @JavascriptInterface
+        fun emulateurInterne(): Boolean = Pages.emulateurDisponible(this@MainActivity)
+
+        /** Ouvre l'émulateur intégré ; `fragment` : « #nom=…&modele=…&trainer=… » pour lancer une disquette, ou vide. */
+        @JavascriptInterface
+        fun ouvrirEmulateur(fragment: String) {
+            val f = if (fragment.isEmpty() || fragment.startsWith("#")) fragment else ""
+            runOnUiThread {
+                startActivity(Intent(this@MainActivity, EmulateurActivity::class.java).putExtra(EmulateurActivity.EXTRA_FRAGMENT, f))
+            }
         }
 
         @JavascriptInterface

@@ -24,6 +24,8 @@ const t = traducteur({
       "L'émulateur s'ouvre sur un {modele} : ta disquette {nom}.adf est dans DF0: et le programme démarre tout seul (une dizaine de secondes avec le Kickstart, un peu plus avec AROS). Modèle et Kickstart : onglet « Émulateur ».",
     lanceAndroid:
       "L'émulateur s'ouvre dans le navigateur du téléphone sur un {modele}, avec ta disquette {nom}.adf dans DF0: : le programme démarre tout seul. Installe l'application Amiga 1200 pour faire tes essais sans connexion (onglet « Émulateur »).",
+    lanceInterne:
+      "L'émulateur intégré démarre un {modele} avec ta disquette {nom}.adf dans DF0: : le programme se lance tout seul, sans connexion. Touche « retour » pour revenir au Trainer.",
     lanceApplication:
       "L'application Amiga 1200 démarre un {modele} avec ta disquette {nom}.adf dans DF0: : le programme se lance tout seul. Reviens au Trainer avec le bouton « récents » du téléphone."
   },
@@ -39,6 +41,8 @@ const t = traducteur({
       'The emulator opens on an {modele}: your disk {nom}.adf is in DF0: and the program starts by itself (about ten seconds with the Kickstart, a little more with AROS). Model and Kickstart: “Emulator” tab.',
     lanceAndroid:
       'The emulator opens in the phone browser on an {modele}, with your disk {nom}.adf in DF0:: the program starts by itself. Install the Amiga 1200 app to test without a connection (“Emulator” tab).',
+    lanceInterne:
+      'The built-in emulator starts an {modele} with your disk {nom}.adf in DF0:: the program runs by itself, offline. Press “back” to return to the Trainer.',
     lanceApplication:
       'The Amiga 1200 app starts an {modele} with your disk {nom}.adf in DF0:: the program runs by itself. Come back to the Trainer with the phone “recent apps” button.'
   }
@@ -83,6 +87,6 @@ export async function essayerDansEmulateur(
   const d = fabriquerDisquette(source, nom, dossier)
   if (!d.adf) return { ok: false, message: d.raison ?? t('essaiImpossible') }
   const ou = await lancerDansEmulateur(d.adf, d.nom)
-  const cle = ou === 'application' ? 'lanceApplication' : android() ? 'lanceAndroid' : 'lance'
+  const cle = ou === 'interne' ? 'lanceInterne' : ou === 'application' ? 'lanceApplication' : android() ? 'lanceAndroid' : 'lance'
   return { ok: true, message: t(cle, { modele: NOM_MODELE[modeleEssai()], nom: d.nom }) }
 }

@@ -110,7 +110,7 @@ export function renderEmulateurs(root: HTMLElement): () => void {
     if (!b) return
     if (b.id === 'btn-ouvrir-emulateur') {
       if (emulateurInterne()) android()!.ouvrirEmulateur!('')
-      else ouvrirLien(adresseEmulateur(), 'amiga1200')
+      else ouvrirLien(adresseEmulateur() + '?simple=1', 'amiga1200')
     }
     else if (b.dataset.lien) ouvrirLien(b.dataset.lien)
   }

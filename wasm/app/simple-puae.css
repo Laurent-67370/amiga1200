@@ -1,0 +1,33 @@
+
+/* Mode simple (?simple=1, 68k Trainer) : l'écran de l'Amiga et quelques gros boutons, rien d'autre */
+.simple-carte,.simple-barre{display:none}
+body.mode-simple .wedge,body.mode-simple .toolbar,body.mode-simple .drives,body.mode-simple .keys,
+body.mode-simple .touch-tip,body.mode-simple #idle,body.mode-simple .footnote{display:none!important}
+body.mode-simple .rig{max-width:960px;margin:0 auto;padding:8px 8px 16px}
+body.mode-simple:not(.simple-joy) .vjoy{display:none!important}
+body.mode-simple.is-off .simple-carte{display:flex}
+body.mode-simple.simple-marche .simple-barre{display:flex}
+.simple-carte{position:absolute;inset:0;z-index:20;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  padding:18px;text-align:center;background:rgba(14,18,26,.92);color:#e8ecf2;font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;overflow:auto}
+.simple-carte h2{margin:0;font-size:22px;letter-spacing:.02em}
+.simple-modeles{display:inline-flex;border:1px solid #4b6a95;border-radius:22px;overflow:hidden}
+.simple-modeles button{font:inherit;font-size:15px;padding:9px 16px;border:0;background:transparent;color:#cfd8e3;cursor:pointer}
+.simple-modeles button[aria-pressed=true]{background:#2f6db0;color:#fff;font-weight:600}
+.simple-kick{margin:4px 0 0}
+.simple-kick b.libre{color:#f0c674;font-weight:600}
+.simple-note{margin:0;font-size:13px;color:#9fb0c3;min-height:1em}
+.simple-btn{font:inherit;font-size:15px;min-height:44px;padding:9px 18px;border-radius:10px;border:1px solid #4b6a95;background:#1d2a3c;color:#e8ecf2;cursor:pointer}
+.simple-allumer{font-size:18px;font-weight:700;background:#2f6db0;border-color:#3d84d1;padding:12px 34px;margin-top:6px}
+.simple-bas{display:flex;gap:16px;margin-top:6px}
+.simple-bas button{font:inherit;font-size:14px;background:none;border:0;color:#9fc3ee;text-decoration:underline;cursor:pointer;min-height:40px}
+.simple-barre{flex-wrap:wrap;justify-content:center;gap:8px;margin:10px auto 0;max-width:960px}
+.simple-barre button{font:600 15px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;min-height:44px;padding:9px 14px;border-radius:10px;
+  border:1px solid #4b6a95;background:#1d2a3c;color:#e8ecf2;cursor:pointer;flex:1 1 30%}
+.simple-barre button:active{background:#2f6db0}
+body.mode-simple.simple-joy .simple-barre [data-s=joy]{background:#2f6db0}
+/* Téléphone en paysage : l'écran prend toute la hauteur, les boutons en colonne sur le côté */
+@media (orientation:landscape) and (max-height:560px){
+  body.mode-simple.simple-marche .simple-barre{position:fixed;left:max(6px,env(safe-area-inset-left));top:6px;bottom:6px;width:128px;margin:0;
+    flex-direction:column;flex-wrap:nowrap;justify-content:center;gap:6px;z-index:30}
+  body.mode-simple .simple-barre button{flex:0 0 auto;min-height:38px;padding:6px 8px;font-size:13px;opacity:.92}
+}

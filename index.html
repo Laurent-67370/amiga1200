@@ -833,7 +833,7 @@ body.is-off #btnTurbo{display:none!important}
     Vos fichiers restent dans ce navigateur (stockage local) et ne sont envoyés nulle part.
     <br>Aussi en application, sur le même cœur : <a href="https://github.com/laurent-67370/amiga1200-android/releases/tag/dev" rel="noopener" target="_blank">Android</a> et <a href="https://github.com/laurent-67370/amiga1200-mac/releases/tag/dev" rel="noopener" target="_blank">Mac</a> (avec JIT), <a href="https://github.com/laurent-67370/amiga1200-pc/releases/tag/dev" rel="noopener" target="_blank">Windows et Linux</a>.
     <br><a href="sae/">Ancienne version (cœur SAE)</a>, conservée pour comparer : elle partage la même Bibliothèque.
-    <br><b>Version du site : 05/11/2026 22:17 (fa7aa1d)</b> (heure de Paris).
+    <br><b>Version du site : 14/11/2026 10:24 (810627c)</b> (heure de Paris).
   </p>
 </main>
 
@@ -5982,7 +5982,7 @@ let uxDrivesRefresh = () => {};
   if (body && !body.querySelector(".ux-keys")) {
     const k = s => '<span class="kbd">' + s + "</span>";
     const sec = document.createElement("div"); sec.className = "ux-keys";
-    sec.innerHTML = '<p class="hint" id="siteVersion">Version du site : 05/11/2026 22:17 (fa7aa1d) (heure de Paris). Après une mise à jour, rechargez la page : ce numéro doit changer.</p>' + "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause, <b>Turbo</b> (chargements accélérés, sans le son). <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
+    sec.innerHTML = '<p class="hint" id="siteVersion">Version du site : 14/11/2026 10:24 (810627c) (heure de Paris). Après une mise à jour, rechargez la page : ce numéro doit changer.</p>' + "<h3>Où trouver quoi</h3><p><b>Machine</b> : allumer, réinitialiser, pause, <b>Turbo</b> (chargements accélérés, sans le son). <b>Jeux et fichiers</b> : la Bibliothèque (disquettes, disques durs, jeux WHDLoad, CD, Kickstart) et les Sauvegardes d'état. <b>Écran et son</b> : plein écran, capture, son. <b>Configuration</b> : tous les réglages de l'émulateur, rangés comme dans Amiberry ; un réglage se retrouve avec la recherche en haut à gauche. Sous la barre, les lecteurs : <b>Insérer</b> et <b>Éjecter</b> une disquette, <b>Brancher</b> et <b>Débrancher</b> un disque dur.</p>"
       + "<h3>Quatre lecteurs de disquettes</h3><p>DF0: (interne) et trois lecteurs externes, DF1: à DF3: (DF2: et DF3: se déplient sous les lecteurs). Pour un jeu sur plusieurs disquettes, choisissez-les ou glissez-les <b>ensemble</b> (Insérer…, Ouvrir un fichier…, ou une archive .zip) : Disk 1 va dans DF0:, Disk 2 dans DF1:, etc., dans l'ordre des noms. DF2: et DF3: existent dès qu'une disquette y est placée à l'allumage ; sinon l'Amiga n'a que deux lecteurs, ce que certains jeux préfèrent. Les jeux qui savent lire plusieurs lecteurs ne demandent alors plus de changer de disquette. Les disquettes d'un même jeu (« Disk 1 », « Disk 2 »…) n'ont qu'une vignette à l'accueil, qui démarre sur la première ; pendant la partie, le bouton <b>Disquette suivante</b> (sous l'écran, et dans la barre du plein écran) met la suivante dans DF0:.</p>"
       + "<h3>Raccourcis clavier</h3><p>" + k("F12") + " ouvre ou ferme la Configuration (l'Amiga se met en pause). "
       + k("Ctrl") + "+" + k("Maj") + "+" + k("S") + " sauvegarde la partie dans l'emplacement 1, " + k("Ctrl") + "+" + k("Maj") + "+" + k("R") + " la reprend. " + k("Ctrl") + "+" + k("Maj") + "+" + k("→") + " active ou arrête le Turbo. "
@@ -6973,6 +6973,57 @@ helpBuild();
 /* Panneau « Aide et à propos » de la Configuration : l'aide d'abord, les crédits ensuite */
 { const p = typeof AB_PANELS !== "undefined" && AB_PANELS.find(x => x.id === "about"); if (p && p.hosts[0] === "about") p.hosts = ["help", "about"]; }
 
+
+/* =========================================================
+   68k Trainer : programme envoyé par le Trainer (sous-dossier trainer/ du site, ou son application Android)
+   Adresse : #nom=…&modele=a500|a1200&trainer=<disquette .adf amorçable, compressée gzip, en base64url>.
+   La disquette rejoint la Bibliothèque (à la place de l'essai précédent du même nom), est insérée dans DF0:
+   et l'Amiga choisi démarre dessus : sa Startup-Sequence lance le programme.
+   ========================================================= */
+function trainerTake() {
+  let h = location.hash.slice(1);
+  if (/(^|&)trainer=/.test(h)) {
+    /* Gardé pour la session : la page peut se recharger une fois (isolation, coi.js) avant d'être prête */
+    try { sessionStorage.setItem("a1200.trainer", h); } catch (e) {}
+    history.replaceState(null, "", location.pathname + location.search);
+    return h;
+  }
+  try { return sessionStorage.getItem("a1200.trainer") || ""; } catch (e) { return ""; }
+}
+async function trainerHandoff() {
+  const h = trainerTake();
+  if (!h) return;
+  /* Première visite : coi.js recharge la page dès que l'isolation est en place ; on attend ce rechargement */
+  if (!window.crossOriginIsolated && window.isSecureContext && "serviceWorker" in navigator) await new Promise(r => setTimeout(r, 6000));
+  try { sessionStorage.removeItem("a1200.trainer"); } catch (e) {}
+  if (running || starting) return;
+  const p = new URLSearchParams(h);
+  let u8;
+  try {
+    const b64 = (p.get("trainer") || "").replace(/-/g, "+").replace(/_/g, "/");
+    const bin = atob(b64 + "===".slice((b64.length + 3) % 4));
+    const gz = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) gz[i] = bin.charCodeAt(i);
+    u8 = new Uint8Array(await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer());
+  } catch (e) { u8 = null; }
+  if (!u8 || u8.length !== 901120) { toast("La disquette envoyée par le 68k Trainer est illisible.", true); return; }
+  const model = p.get("modele") === "a1200" ? "a1200" : "a500";
+  const name = ((p.get("nom") || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 30) || "programme") + ".adf";
+  S.model = model; saveSettings();
+  if (typeof themeNow === "function") themeNow();
+  /* Un essai remplace le précédent du même programme (la Bibliothèque ne se remplit pas d'essais) */
+  let all = [];
+  try { all = await DB.all(); } catch (e) {}
+  for (const old of all.filter(r => r.trainer && r.name === name)) {
+    if (mounted.df0 && mounted.df0.id === old.id) await ejectMedia("df0", true);
+    await DB.del(old.id);
+  }
+  const rec = { id: newId(), kind: "adf", name, size: u8.length, blob: new Blob([u8]), crc: crc32u8(u8), added: Date.now(), used: Date.now(), trainer: true };
+  await DB.put(rec);
+  toast("68k Trainer : " + name + " est dans DF0:, l'" + (model === "a500" ? "Amiga 500" : "Amiga 1200") + " démarre et lance le programme.");
+  await launchWith(rec);
+}
+
 /* Profil par disque */
 let profTarget = null;
 async function openProfile(tag) {
@@ -7058,6 +7109,7 @@ window.addEventListener("beforeunload", e => {
   const whdId = sessionStorage.getItem("a1200.whd");
   if (whdId) { sessionStorage.removeItem("a1200.whd"); whdGame = await DB.get(whdId) || null; }
   if (sessionStorage.getItem("a1200.autostart")) { sessionStorage.removeItem("a1200.autostart"); powerOn(); }
+  else await trainerHandoff();
 })();
 </script>
 </body>

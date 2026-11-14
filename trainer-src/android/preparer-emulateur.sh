@@ -17,6 +17,9 @@ cp -r "$ROOT/whd" "$ROOT/sons" "$OUT/"
 python3 "$ROOT/wasm/app/make-page.py" "$OUT/index.html"
 BUILD=$(cd "$ROOT" && TZ=Europe/Paris git log -1 --date=format-local:'%d/%m/%Y %H:%M' --format='%cd (%h)' 2>/dev/null || echo "locale")
 sed -i "s|__BUILD__|$BUILD, 68k Trainer|g" "$OUT/index.html"
+# Les outils d'Android traitent à part les fichiers .gz des « assets » (introuvables ensuite sous leur nom) : ils sont
+# rangés sous « nom.gz.data », et Pages.kt les sert sous leur nom d'origine
+for f in "$OUT"/*.gz; do mv "$f" "$f.data"; done
 # Pas de service worker dans l'application : la WebView fournit l'isolation (MainActivity.kt) et tous les fichiers
 # sont déjà sur le téléphone
 printf '/* 68k Trainer (Android) : isolation fournie par la WebView, pas de service worker */\n' > "$OUT/coi.js"

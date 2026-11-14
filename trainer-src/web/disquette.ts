@@ -32,17 +32,19 @@ nomdos:
 `
 
 /**
- * Petit programme lancé après celui de l'élève : il laisse lire ce que le programme a écrit (la fenêtre du Shell
- * d'AROS se ferme sinon dès la fin de la Startup-Sequence) et attend le bouton gauche de la souris.
+ * Petit programme lancé après celui de l'élève : il garde ouverte la fenêtre du Shell (celle d'AROS se ferme dès la
+ * fin de la Startup-Sequence) pour qu'on lise ce que le programme a écrit. Il attend Ctrl+C, pas un clic : sur un
+ * écran tactile, toucher l'écran de l'Amiga vaut un clic gauche et refermait la fenêtre.
  */
 const FIN = `
     MOVEA.L 4.W,A6
     LEA     dosnom(PC),A1
     MOVEQ   #0,D0
     JSR     -552(A6)        ; OpenLibrary
+    MOVE.L  D0,A5           ; A5 = DOSBase
     TST.L   D0
     BEQ.S   sortie
-    MOVEA.L D0,A6
+    MOVEA.L A5,A6
     JSR     -60(A6)         ; Output()
     MOVE.L  D0,D1
     BEQ.S   attente
@@ -51,12 +53,19 @@ const FIN = `
     MOVEQ   #textefin-texte,D3
     JSR     -48(A6)         ; Write()
 attente:
-    MOVEQ   #5,D1
-    JSR     -198(A6)        ; Delay(5) : 1/10 de seconde
-    BTST    #6,$BFE001      ; bouton gauche de la souris ?
-    BNE.S   attente
-    MOVEA.L A6,A1
+    MOVEA.L A5,A6
+    MOVEQ   #10,D1
+    JSR     -198(A6)        ; Delay(10) : 1/5 de seconde
     MOVEA.L 4.W,A6
+    MOVEQ   #0,D0
+    MOVEQ   #0,D1
+    JSR     -306(A6)        ; SetSignal(0, 0) : signaux reçus
+    BTST    #12,D0          ; Ctrl+C (SIGBREAKF_CTRL_C) ?
+    BEQ.S   attente
+    MOVEQ   #0,D0
+    MOVE.L  #$1000,D1
+    JSR     -306(A6)        ; SetSignal(0, Ctrl+C) : signal consommé
+    MOVEA.L A5,A1
     JSR     -414(A6)        ; CloseLibrary
 sortie:
     MOVEQ   #0,D0
@@ -64,7 +73,7 @@ sortie:
 dosnom:
     DC.B    'dos.library',0
 texte:
-    DC.B    10,'-- Fin du programme (68k Trainer) : clic gauche pour fermer --',10
+    DC.B    10,'-- Fin du programme (68k Trainer) --',10
 textefin:
 `
 

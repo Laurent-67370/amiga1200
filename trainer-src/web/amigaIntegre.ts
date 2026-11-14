@@ -117,7 +117,22 @@ function suivre(): void {
     if (place) {
       const r = place.getBoundingClientRect()
       // Position par rapport à la fenêtre (cadre en position fixe), recalculée à chaque image : il suit le défilement
-      Object.assign(boite.style, { visibility: 'visible', top: `${r.top}px`, left: `${r.left}px`, width: `${r.width}px`, height: `${r.height}px` })
+      // La place peut être dans une zone qui défile (débogueur du bac à sable) : ce qui en dépasse est masqué
+      let haut = 0, bas = 0
+      const zone = place.closest<HTMLElement>('.sidebar')
+      if (zone && getComputedStyle(zone).overflowY !== 'visible') {
+        const z = zone.getBoundingClientRect()
+        haut = Math.max(0, z.top - r.top)
+        bas = Math.max(0, r.bottom - z.bottom)
+      }
+      Object.assign(boite.style, {
+        visibility: haut + bas >= r.height ? 'hidden' : 'visible',
+        top: `${r.top}px`,
+        left: `${r.left}px`,
+        width: `${r.width}px`,
+        height: `${r.height}px`,
+        clipPath: haut || bas ? `inset(${haut}px 0 ${bas}px 0)` : ''
+      })
     } else boite.style.visibility = 'hidden'
   }
   requestAnimationFrame(suivre)

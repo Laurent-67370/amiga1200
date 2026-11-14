@@ -383,3 +383,133 @@ html[lang='en'] .dbg-bloc-sortie.sortie-vide .dbg-sortie::before {
 body.amiga-integre-dispo .toolbar #btn-essayer {
   display: none;
 }
+
+/* Bac à sable sur téléphone : une barre compacte en haut, puis deux zones qui se partagent l'écran : l'éditeur
+   (40 %) et, dessous, l'ÉCRAN avec son sélecteur Simulateur / Amiga, puis la sortie et les registres (qui défilent) */
+.btn-fichier {
+  display: none;
+}
+@media (max-width: 900px) {
+  .app-nav {
+    padding: 2px 6px;
+    padding-top: max(2px, env(safe-area-inset-top));
+    gap: 2px;
+  }
+  .nav-tab {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  .app-title {
+    font-size: 13px;
+    margin-right: 4px;
+  }
+  body.vue-bac,
+  body.vue-bac #app {
+    height: 100dvh !important;
+    min-height: 0 !important;
+    overflow: hidden;
+  }
+  body.vue-bac .view-container {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0 !important;
+  }
+  body.vue-bac .toolbar {
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 5px 6px;
+  }
+  body.vue-bac .toolbar button {
+    min-height: 36px !important;
+    font-size: 13px !important;
+    padding: 6px 10px !important;
+    white-space: nowrap;
+  }
+  body.vue-bac .toolbar .btn-fichier {
+    display: inline-block;
+    background: #3a3d41;
+    order: 10;
+  }
+  /* Actions principales d'abord ; le reste dans le menu Fichier */
+  body.vue-bac .toolbar #btn-run {
+    order: 1;
+    font-weight: 600;
+  }
+  body.vue-bac .toolbar #btn-step {
+    order: 2;
+  }
+  body.vue-bac .toolbar #btn-assemble {
+    order: 3;
+  }
+  body.vue-bac .toolbar #btn-reset {
+    order: 4;
+  }
+  body.vue-bac .toolbar #btn-ouvrir,
+  body.vue-bac .toolbar #btn-enregistrer,
+  body.vue-bac .toolbar #btn-enregistrer-sous,
+  body.vue-bac .toolbar #btn-exemple,
+  body.vue-bac .toolbar #btn-prg,
+  body.vue-bac .toolbar #btn-essayer,
+  body.vue-bac .toolbar .toolbar-fichier {
+    display: none;
+    order: 20;
+  }
+  body.vue-bac .toolbar.fichier-ouvert #btn-ouvrir,
+  body.vue-bac .toolbar.fichier-ouvert #btn-enregistrer,
+  body.vue-bac .toolbar.fichier-ouvert #btn-enregistrer-sous,
+  body.vue-bac .toolbar.fichier-ouvert #btn-exemple,
+  body.vue-bac .toolbar.fichier-ouvert #btn-prg,
+  body.vue-bac .toolbar.fichier-ouvert .toolbar-fichier {
+    display: inline-block;
+  }
+  body.vue-bac:not(.amiga-integre-dispo) .toolbar.fichier-ouvert #btn-essayer {
+    display: inline-block;
+  }
+  body.vue-bac .toolbar .status {
+    order: 30;
+    flex-basis: 100%;
+    font-size: 11px;
+    line-height: 1.2;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  body.vue-bac .main {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0 !important;
+  }
+  body.vue-bac #editor {
+    flex: 0 0 40% !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+  body.vue-bac .main > .sidebar {
+    flex: 1 1 auto;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    border-top: 2px solid #333;
+  }
+  /* Dans le débogueur : l'écran (et son sélecteur) en premier, puis ce que le programme écrit */
+  body.vue-bac .debogueur > .dbg-ecran-bloc {
+    order: -2;
+  }
+  body.vue-bac .errors:empty {
+    display: none;
+  }
+  body.vue-bac .errors {
+    flex: 0 0 auto;
+    max-height: 22vh;
+    overflow-y: auto;
+  }
+}
+@media (max-width: 900px) {
+  /* Bac à sable : la phrase d'aide sous le sélecteur laisse sa place au vrai Amiga (le titre des boutons la garde) */
+  body.vue-bac .amiga-aide {
+    display: none;
+  }
+}

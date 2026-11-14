@@ -17,6 +17,30 @@ function marquer(): void {
     bloc.classList.add('dbg-bloc-sortie')
     bloc.classList.toggle('sortie-vide', !sortie.textContent?.trim())
   }
+  // Bac à sable : mise en page en deux zones sur téléphone (éditeur en haut, écran et débogueur en bas)
+  document.body.classList.toggle('vue-bac', !!document.querySelector('.view-container .toolbar #btn-run') && !!document.querySelector('.view-container .sidebar-dbg'))
+  const barre = document.querySelector<HTMLElement>('.view-container .toolbar')
+  if (barre?.querySelector('#btn-ouvrir') && !barre.querySelector('.btn-fichier')) {
+    // Menu « Fichier » : Ouvrir, Enregistrer, Exemple, Exporter… regroupés, la barre tient sur une ligne
+    const b = document.createElement('button')
+    b.type = 'button'
+    b.className = 'btn-fichier'
+    b.setAttribute('aria-expanded', 'false')
+    b.textContent = langueCourante() === 'en' ? 'File ▾' : 'Fichier ▾'
+    b.addEventListener('click', () => {
+      const ouvert = barre.classList.toggle('fichier-ouvert')
+      b.setAttribute('aria-expanded', String(ouvert))
+    })
+    barre.prepend(b)
+    // Un choix dans le menu le referme
+    barre.addEventListener('click', (e) => {
+      const c = (e.target as HTMLElement).closest('#btn-ouvrir, #btn-enregistrer, #btn-enregistrer-sous, #btn-exemple, #btn-prg, #btn-essayer')
+      if (c) {
+        barre.classList.remove('fichier-ouvert')
+        b.setAttribute('aria-expanded', 'false')
+      }
+    })
+  }
   document.body.classList.toggle('avec-sommaire', !!document.querySelector('.parcours-view .sommaire'))
   document.body.classList.toggle('etape-ouverte', !!document.querySelector('.parcours-view .sommaire-etape.actif'))
   for (const r of document.querySelectorAll<HTMLInputElement>("input[name='machine'][value='atari']")) {

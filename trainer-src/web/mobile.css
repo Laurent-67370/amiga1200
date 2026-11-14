@@ -93,6 +93,20 @@ label:has(> input[name='machine'][value='atari']) {
     overflow: visible;
   }
 
+  /* Débogueur (bac à sable, exemples, exercices) : ce que le programme écrit vient en premier, juste sous l'éditeur,
+     et seulement s'il a écrit quelque chose */
+  .debogueur > .dbg-bloc:has(.dbg-sortie) {
+    order: -1;
+  }
+  .debogueur > .dbg-bloc:has(.dbg-sortie:empty) {
+    display: none;
+  }
+  .dbg-sortie {
+    font-size: 14px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
   /* Parcours : le cours occupe l'écran ; le sommaire est un panneau plein écran (bouton « Sommaire ») */
   .parcours-entete {
     flex-wrap: wrap;

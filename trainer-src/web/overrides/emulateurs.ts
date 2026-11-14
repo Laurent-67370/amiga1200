@@ -5,7 +5,7 @@
  */
 import { traducteur } from '../../68k-trainer/src/renderer/src/langue'
 import { choisirModeleEssai, modeleEssai, NOM_MODELE, type ModeleAmiga } from '../essai'
-import { adresseEmulateur, android, ouvrirLien } from '../plateforme'
+import { adresseEmulateur, android, emulateurInterne, ouvrirLien } from '../plateforme'
 
 const t = traducteur({
   fr: {
@@ -22,6 +22,8 @@ const t = traducteur({
     kickWeb: "Le Trainer et l'émulateur partagent le même site : la Bibliothèque de l'émulateur (Kickstart, disquettes) sert aussi aux essais.",
     kickAndroid:
       "Sur le téléphone, les essais vont dans l'<b>application Amiga 1200</b> si elle est installée (bouton ci-dessous) : tout se passe sur le téléphone, sans connexion, avec les Kickstart que tu y as ajoutés. Sans elle, l'émulateur s'ouvre dans le navigateur (Chrome) : importe alors ton Kickstart une fois dans cet émulateur-là.",
+    kickInterne:
+      "L'émulateur est <b>intégré à l'application</b> : il marche sans connexion, et ce que tu y importes (Kickstart, disquettes) y reste. Ouvre-le une fois avec le bouton ci-dessus et importe ton Kickstart 1.3 (et 3.1 pour l'A1200) sur son écran d'accueil.",
     ouvrir: "Ouvrir l'émulateur",
     disqueTitre: 'Garder la disquette',
     disque:
@@ -46,6 +48,8 @@ const t = traducteur({
     kickWeb: 'The Trainer and the emulator share the same site: the emulator Library (Kickstarts, disks) is also used by test runs.',
     kickAndroid:
       'On the phone, test runs go to the <b>Amiga 1200 app</b> when it is installed (button below): everything stays on the phone, offline, with the Kickstarts you added there. Without it, the emulator opens in the browser (Chrome): import your Kickstart once in that emulator.',
+    kickInterne:
+      'The emulator is <b>built into the app</b>: it works offline, and what you import there (Kickstarts, disks) stays there. Open it once with the button above and import your Kickstart 1.3 (and 3.1 for the A1200) on its home screen.',
     ouvrir: 'Open the emulator',
     disqueTitre: 'Keeping the disk',
     disque:
@@ -79,7 +83,7 @@ export function renderEmulateurs(root: HTMLElement): () => void {
       <div class="apropos-card">
         <h3>${t('kickTitre')}</h3>
         <p class="apropos-texte">${t('kick')}</p>
-        <p class="apropos-texte">${android() ? t('kickAndroid') : t('kickWeb')}</p>
+        <p class="apropos-texte">${emulateurInterne() ? t('kickInterne') : android() ? t('kickAndroid') : t('kickWeb')}</p>
       </div>
       <div class="apropos-card">
         <h3>${t('disqueTitre')}</h3>
@@ -104,7 +108,10 @@ export function renderEmulateurs(root: HTMLElement): () => void {
   const surClic = (ev: Event): void => {
     const b = (ev.target as HTMLElement).closest<HTMLButtonElement>('button')
     if (!b) return
-    if (b.id === 'btn-ouvrir-emulateur') ouvrirLien(adresseEmulateur(), 'amiga1200')
+    if (b.id === 'btn-ouvrir-emulateur') {
+      if (emulateurInterne()) android()!.ouvrirEmulateur!('')
+      else ouvrirLien(adresseEmulateur(), 'amiga1200')
+    }
     else if (b.dataset.lien) ouvrirLien(b.dataset.lien)
   }
   root.addEventListener('change', surChange)

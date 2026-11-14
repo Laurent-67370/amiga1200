@@ -3,10 +3,10 @@ name: 68k Trainer (web et Android)
 # Le 68k Trainer (parcours Amiga 500 / 1200, d'après github.com/yannickmontfort-rgb/68k-trainer) :
 # Sources dans trainer-src/ ; la page est publiée dans trainer/ du site (jamais dans trainer-src/)
 # - page web publiée dans trainer/ du site de l'émulateur (main), ou /<branche>/trainer/ (essais) ;
-# - APK Android, publié à côté de la page (trainer/68k-trainer-amiga.apk) et, pour main, dans la version « trainer-dev ».
+# - APK Android (avec l'émulateur amiga1200 intégré), publié à côté de la page (trainer/68k-trainer-amiga.apk) et, pour main, dans la version « trainer-dev ».
 on:
   push:
-    paths: ["trainer-src/**", ".gitmodules", ".github/workflows/trainer.yml"]
+    paths: ["trainer-src/**", "wasm/app/**", "src/template.html", ".gitmodules", ".github/workflows/trainer.yml"]
   workflow_dispatch:
 
 jobs:
@@ -43,6 +43,10 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.14.3"
+
+      # Émulateur amiga1200 intégré à l'APK (assets/emu) : page reconstruite, cœurs publiés à la racine du dépôt
+      - name: Émulateur intégré
+        run: trainer-src/android/preparer-emulateur.sh
 
       - name: APK Android
         run: |

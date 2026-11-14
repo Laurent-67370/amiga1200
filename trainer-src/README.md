@@ -37,6 +37,13 @@ la progression et le certificat.
    l'émulateur la range dans sa Bibliothèque (à la place de l'essai précédent du même programme), la met dans
    DF0: et démarre le modèle choisi (`wasm/app/trainer-puae.js`).
 
+**Dans l'APK Android, l'émulateur est intégré** (`assets/emu/`, préparé par `android/preparer-emulateur.sh` : la page
+reconstruite par `wasm/app/make-page.py` et les cœurs WinUAE 6 et PUAE publiés à la racine du dépôt). L'application
+autorise pour sa seule origine les fils d'exécution WebAssembly (`Profile#setCrossOriginIsolatedAllowlist`,
+androidx.webkit 1.18, avec l'en-tête `Document-Isolation-Policy`) : il faut une « Android System WebView » d'octobre 2026
+ou plus récente. Ordre d'essai : émulateur intégré, sinon l'application Amiga 1200 (amiga1200-android) si elle est
+installée, sinon l'émulateur web dans le navigateur.
+
 Sur le web, le Trainer et l'émulateur partagent le même site : le Kickstart importé dans l'émulateur sert aussi aux
 essais. Sans Kickstart 1.3, l'émulateur prend un Amiga 1200 avec AROS (le programme tourne quand même). Dans
 l'application Android, l'émulateur s'ouvre dans le navigateur du téléphone.

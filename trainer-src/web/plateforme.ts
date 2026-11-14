@@ -7,6 +7,9 @@ interface PontAndroid {
   ouvrirLien(url: string): void
   /** Absent des versions de l'APK antérieures à l'envoi vers l'application Amiga 1200 */
   lancerAmiga?(nom: string, gzBase64: string, modele: string): boolean
+  /** Émulateur amiga1200 intégré à l'APK (absent des versions antérieures) */
+  emulateurInterne?(): boolean
+  ouvrirEmulateur?(fragment: string): void
   imprimer(html: string, nom: string): void
   version(): string
 }
@@ -26,6 +29,15 @@ export const EMULATEUR_PUBLIC = 'https://laurent-67370.github.io/amiga1200/'
  * L'émulateur amiga1200 : le Trainer web est publié dans son sous-dossier trainer/, l'émulateur est donc
  * juste au-dessus (même origine : même Bibliothèque, même Kickstart). L'application Android ouvre la version publiée.
  */
+/** L'émulateur intégré à l'application Android peut démarrer sur ce téléphone. */
+export function emulateurInterne(): boolean {
+  try {
+    return !!android()?.emulateurInterne?.()
+  } catch {
+    return false
+  }
+}
+
 export function adresseEmulateur(): string {
   if (android() || !/^https?:$/.test(location.protocol)) return EMULATEUR_PUBLIC
   if (/\/trainer\/(index\.html)?$/.test(location.pathname)) return new URL('../', location.href).href

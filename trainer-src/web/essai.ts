@@ -4,7 +4,7 @@
  */
 import { fabriquerPrg } from '../68k-trainer/src/main/assemblage'
 import { disquetteAmorcable, enChip, nomAmiga } from './disquette'
-import { adresseEmulateur, android, compresser, compresserPourAdresse, enregistrerFichier, ouvrirLien } from './plateforme'
+import { adresseEmulateur, android, compresser, compresserPourAdresse, emulateurInterne, enregistrerFichier, ouvrirLien } from './plateforme'
 
 export type ModeleAmiga = 'a500' | 'a1200'
 const CLE_MODELE = '68kt:modele'
@@ -36,14 +36,19 @@ export function fabriquerDisquette(source: string, nom: string, dossier?: string
 }
 
 /**
- * Ouvre l'émulateur avec la disquette : dans l'application Amiga 1200 (amiga1200-android) si elle est installée sur le
- * téléphone, hors ligne ; sinon dans l'émulateur web. Renvoie où l'essai a été lancé.
+ * Ouvre l'émulateur avec la disquette : celui intégré à l'APK du Trainer, sinon l'application Amiga 1200
+ * (amiga1200-android) si elle est installée, sinon l'émulateur web. Renvoie où l'essai a été lancé.
  */
-export async function lancerDansEmulateur(adf: Uint8Array, nom: string, modele = modeleEssai()): Promise<'application' | 'web'> {
+export async function lancerDansEmulateur(adf: Uint8Array, nom: string, modele = modeleEssai()): Promise<'interne' | 'application' | 'web'> {
   const a = android()
+  const params = new URLSearchParams({ nom, modele })
+  // 1. L'émulateur intégré à l'APK du Trainer (WebView récente) ; 2. l'application Amiga 1200 ; 3. le navigateur
+  if (emulateurInterne()) {
+    a!.ouvrirEmulateur!(`#${params.toString()}&trainer=${await compresserPourAdresse(adf)}`)
+    return 'interne'
+  }
   if (a?.lancerAmiga && a.lancerAmiga(nom, await compresser(adf), modele)) return 'application'
   const donnees = await compresserPourAdresse(adf)
-  const params = new URLSearchParams({ nom, modele })
   ouvrirLien(`${adresseEmulateur()}#${params.toString()}&trainer=${donnees}`, 'amiga1200')
   return 'web'
 }

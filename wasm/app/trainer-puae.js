@@ -19,7 +19,7 @@ async function trainerHandoff() {
   const h = trainerTake();
   if (!h) return;
   /* Première visite : coi.js recharge la page dès que l'isolation est en place ; on attend ce rechargement */
-  if (!window.crossOriginIsolated && window.isSecureContext && "serviceWorker" in navigator) await new Promise(r => setTimeout(r, 6000));
+  if (!filsPossibles() && window.isSecureContext && "serviceWorker" in navigator) await new Promise(r => setTimeout(r, 6000));
   try { sessionStorage.removeItem("a1200.trainer"); } catch (e) {}
   if (running || starting) return;
   const p = new URLSearchParams(h);

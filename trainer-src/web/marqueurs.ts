@@ -18,7 +18,9 @@ function marquer(): void {
     bloc.classList.toggle('sortie-vide', !sortie.textContent?.trim())
   }
   // Bac à sable : mise en page en deux zones sur téléphone (éditeur en haut, écran et débogueur en bas)
-  document.body.classList.toggle('vue-bac', !!document.querySelector('.view-container .toolbar #btn-run') && !!document.querySelector('.view-container .sidebar-dbg'))
+  const bac = !!document.querySelector('.view-container .toolbar #btn-run') && !!document.querySelector('.view-container .sidebar-dbg')
+  document.body.classList.toggle('vue-bac', bac)
+  document.documentElement.classList.toggle('vue-bac', bac)
   const barre = document.querySelector<HTMLElement>('.view-container .toolbar')
   if (barre?.querySelector('#btn-ouvrir') && !barre.querySelector('.btn-fichier')) {
     // Menu « Fichier » : Ouvrir, Enregistrer, Exemple, Exporter… regroupés, la barre tient sur une ligne
@@ -59,5 +61,11 @@ export function installerMarqueurs(): void {
     })
   }
   new MutationObserver(plus_tard).observe(document.body, { childList: true, subtree: true, characterData: true })
+  // Bac à sable : la page reste calée en haut (le navigateur la décale parfois pour montrer le curseur sous le clavier)
+  const recaler = (): void => {
+    if (document.body.classList.contains('vue-bac') && (window.scrollY || document.documentElement.scrollTop)) window.scrollTo(0, 0)
+  }
+  window.addEventListener('scroll', recaler, { passive: true })
+  window.visualViewport?.addEventListener('resize', () => setTimeout(recaler, 50))
   marquer()
 }

@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <!-- L'application Amiga 1200 (amiga1200-android), qui reçoit les programmes de « Essayer sur l'Amiga » -->
+    <queries>
+        <package android:name="io.github.laurent67370.amiga1200" />
+    </queries>
 
     <application
         android:label="@string/app_name"

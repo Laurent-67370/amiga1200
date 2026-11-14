@@ -5,6 +5,8 @@
 interface PontAndroid {
   enregistrer(nom: string, base64: string, mime: string): void
   ouvrirLien(url: string): void
+  /** Absent des versions de l'APK antérieures à l'envoi vers l'application Amiga 1200 */
+  lancerAmiga?(nom: string, gzBase64: string, modele: string): boolean
   imprimer(html: string, nom: string): void
   version(): string
 }
@@ -107,9 +109,13 @@ export function imprimerHtml(html: string, nom: string): boolean {
   return true
 }
 
-/** Disquette compressée (gzip) puis encodée pour l'adresse de l'émulateur. */
-export async function compresserPourAdresse(octets: Uint8Array): Promise<string> {
+/** Disquette compressée (gzip), en base64. */
+export async function compresser(octets: Uint8Array): Promise<string> {
   const flux = new Blob([octets as BlobPart]).stream().pipeThrough(new CompressionStream('gzip'))
-  const gz = new Uint8Array(await new Response(flux).arrayBuffer())
-  return base64(gz).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+  return base64(new Uint8Array(await new Response(flux).arrayBuffer()))
+}
+
+/** Disquette compressée (gzip) puis encodée pour l'adresse de l'émulateur (base64url). */
+export async function compresserPourAdresse(octets: Uint8Array): Promise<string> {
+  return (await compresser(octets)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }

@@ -353,6 +353,10 @@ html[lang='en'] .dbg-bloc-sortie.sortie-vide .dbg-sortie::before {
 .amiga-place {
   display: none;
 }
+/* Hauteur donnée par l'émulateur (68kt-taille) : elle remplace la proportion de départ */
+.amiga-place[style*='height'] {
+  aspect-ratio: auto !important;
+}
 .dbg-ecran-bloc.mode-amiga > :not(h4):not(.amiga-selecteur):not(.amiga-place) {
   display: none !important;
 }
@@ -360,7 +364,6 @@ html[lang='en'] .dbg-bloc-sortie.sortie-vide .dbg-sortie::before {
   display: block;
   width: 100%;
   aspect-ratio: 4 / 4.75;
-  max-height: 88vh;
   background: #111;
   border-radius: 6px;
 }

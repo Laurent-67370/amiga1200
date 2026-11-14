@@ -52,14 +52,14 @@ if (SIMPLE) {
     '<p class="simple-kick">Kickstart : <b id="simpleKick"></b></p>' +
     '<p class="simple-note" id="simpleKickNote"></p>' +
     '<button type="button" class="simple-btn" data-s="kick">Importer mon Kickstart…</button>' +
-    '<button type="button" class="simple-btn simple-allumer" data-s="allumer">⏻ Allumer</button>' +
+    '<button type="button" class="simple-btn simple-allumer" data-s="allumer">▶ Allumer</button>' +
     '<div class="simple-bas"><button type="button" data-s="retour">◀ Trainer</button>' +
     '<button type="button" data-s="avance">Réglages avancés</button></div>';
   $("#tube").appendChild(carte);
   const barre = document.createElement("nav");
   barre.id = "simpleBarre"; barre.className = "simple-barre"; barre.setAttribute("aria-label", "Commandes");
   for (const [k, t] of [["retour", "◀ Trainer"], ["reset", "↻ Relancer"], ["pause", "⏸ Pause"], ["clavier", "⌨ Clavier"],
-    ["joy", "🕹 Joystick"], ["plein", "⛶ Plein écran"], ["eteindre", "⏻ Éteindre"]]) {
+    ["joy", "🕹 Joystick"], ["plein", "⛶ Plein écran"], ["eteindre", "⏹ Éteindre"]]) {
     const b = document.createElement("button"); b.type = "button"; b.dataset.s = k; b.textContent = t; barre.appendChild(b);
   }
   $(".monitor").after(barre);
@@ -81,5 +81,19 @@ if (SIMPLE) {
     if (b.dataset.s) agir(b.dataset.s);
   });
   { const avant = setPowerUi; setPowerUi = st => { avant(st); simpleMaj(st); }; }
+  /* Dans la page du Trainer : la hauteur utile (écran, boutons, clavier ouvert) est donnée au Trainer, qui ajuste la
+     place de l'émulateur (sinon le clavier s'ouvrirait hors de vue) */
+  if (INTEGRE && window.parent !== window && window.ResizeObserver) {
+    let derniere = 0;
+    const mesurer = () => {
+      const bas = Math.max(...["#tube", ".monitor", "#simpleBarre", "#vkbd", ".vjoy"].map(s => $(s))
+        .filter(e => e && e.offsetParent !== null).map(e => e.getBoundingClientRect().bottom + scrollY));
+      const h = Math.ceil(bas + 6);
+      if (h > 50 && Math.abs(h - derniere) > 2) { derniere = h; window.parent.postMessage({ type: "68kt-taille", hauteur: h }, location.origin); }
+    };
+    new ResizeObserver(mesurer).observe(document.body);
+    for (const s of [".rig", "#vkbd", "#simpleBarre"]) if ($(s)) new ResizeObserver(mesurer).observe($(s));
+    new MutationObserver(mesurer).observe(document.body, { attributes: true, subtree: true, attributeFilter: ["hidden", "class"] });
+  }
   simpleMaj(running ? "on" : "off");
 }
